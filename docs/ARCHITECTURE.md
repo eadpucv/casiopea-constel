@@ -5,44 +5,47 @@ Cómo se construye la extensión. El **qué** (comportamiento observable) está 
 fuente de verdad. Este documento cubre el **cómo** y los detalles que el spec
 deja fuera a propósito: esquema, API, módulos, algoritmos y diseño visual.
 
+Versión documentada: **0.2.0**.
+
+## Contenido
+
+1. [Doctrina](#doctrina)
+2. [Visión general](#visión-general)
+3. [Modelo de entidades](#modelo-de-entidades)
+4. [Modelo de datos](#modelo-de-datos)
+5. [Modelo de interacción](#modelo-de-interacción)
+6. [Conceptos](#conceptos)
+7. [Anclaje](#anclaje)
+8. [Lectura en la página](#lectura-en-la-página)
+9. [Mapa y páginas especiales](#mapa-y-páginas-especiales)
+10. [API](#api)
+11. [Moderación](#moderación)
+12. [Diseño](#diseño)
+13. [Calidad y tests](#calidad-y-tests)
+14. [Privacidad](#privacidad)
+15. [Estructura del repo](#estructura-del-repo)
+16. [Hitos](#hitos)
+
 ## Doctrina
 
 - **Spec primero.** Un cambio de comportamiento actualiza el `.allium` en el
   mismo commit. `allium check` y `allium analyse` quedan limpios.
 - **Todo declarativo.** `extension.json` (manifest v2) registra hooks, API,
-  páginas especiales, módulos de ResourceLoader, derechos, grants, mensajes,
-  config, autoload PSR-4 y el dominio virtual de BBDD. En `LocalSettings.php`
-  solo va `wfLoadExtension` y los overrides de config.
+  páginas especiales, módulos de ResourceLoader, jobs, registro, derechos,
+  grants, preferencias por defecto, mensajes, config, autoload PSR-4 y el
+  dominio virtual de BBDD. En `LocalSettings.php` solo va `wfLoadExtension` y
+  los overrides de config.
 - **Servicios inyectados.** La lógica vive en servicios
-  (`ServiceWiringFiles`). Los hooks y los módulos de la API los reciben por
-  constructor (`HookHandlers` y `services` en el manifest). Nada de
+  (`ServiceWiringFiles`). Los hooks, la API, los jobs y las páginas especiales
+  los reciben por constructor (`services` en el manifest). Nada de
   `MediaWikiServices::getInstance()` fuera del wiring.
 - **El servidor es la autoridad.** El cliente propone; la API valida
-  identidad, derechos, bloqueos, largos y revisión vigente.
+  identidad, derechos, bloqueos, largos, pertenencia y revisión vigente, y
+  vuelve a medir el pasaje por su cuenta.
 - **No tocar el contenido.** Anotar no crea revisiones ni invalida la
-  ParserCache. Los §§ se pintan en el cliente sobre el DOM ya renderizado.
-- **Agnóstica de skin; diseñada para Stella Nova.** Ver § Diseño.
-
-## Estructura
-
-```
-extension.json          manifest
-i18n/                   en.json · es.json · qqq.json (+ i18n/api/ para la API)
-sql/                    tables.json (esquema abstracto) + SQL generado por motor
-src/
-  ServiceWiring.php
-  Hooks/                handlers por interfaz de hook
-  Store/                acceso a BBDD (un Store por agregado)
-  Domain/               valores y reglas puras: ConceptNormalizer, TextAnchor…
-  Api/                  módulos de la Action API
-  Specials/             SpecialConstelacion, SpecialMiConstel
-  Jobs/                 ReanchorJob
-resources/              módulos RL (ext.constel.*)
-tests/phpunit/          unit/ (sin BBDD) e integration/ (con BBDD)
-tests/qunit/            JS
-docs/                   este archivo
-specs/                  el spec Allium
-```
+  ParserCache. Los §§ se pintan en el cliente sobre el DOM ya renderizado, y
+  desinstalar la extensión no rompe ninguna página.
+- **Agnóstica de skin; diseñada para Stella Nova.** Ver [Diseño](#diseño).
 
 **Nombre y slug.** El nombre es `Casiopea-Con§tel` (`name` en
 `extension.json`, lo que muestra `Special:Version`). El slug es
@@ -52,50 +55,438 @@ specs/                  el spec Allium
 `MediaWiki\Extension\CasiopeaConstel\`, y los servicios usan el prefijo
 `CasiopeaConstel.`, porque un identificador PHP no admite `-` ni `§`.
 
-## Datos
+## Visión general
 
-Las tablas viven en el **dominio virtual** `virtual-constel`
+Tres superficies de uso (la página que se lee, el mapa y la lista propia)
+sobre una misma API. La API delega en servicios de dominio y en stores, que
+son los únicos que tocan el dominio de BBDD `virtual-constel`. Los hooks
+enganchan la extensión al ciclo de vida de MediaWiki sin tocar el contenido.
+
+```mermaid
+flowchart LR
+    subgraph Navegador
+        R["ext.constel.reader<br/>§ · marcas · detalle"]
+        M["ext.constel.map<br/>grafo 3D/2D · temas"]
+        Mi["ext.constel.mine<br/>lista propia"]
+        UI["ext.constel.ui<br/>api · panel · autocompletado<br/>variantes · detalle del §"]
+        R --> UI
+        M --> UI
+        Mi --> UI
+    end
+
+    subgraph MediaWiki
+        H["Hooks<br/>PageHooks · RevisionHooks<br/>SchemaHooks · ResourceLoaderHooks"]
+        SP["Páginas especiales<br/>Constelación · MiConstel"]
+        API["Action API<br/>8 escritura · 4 lectura"]
+        J["ReanchorJob<br/>(cola de jobs)"]
+        subgraph Servicios
+            D["Dominio<br/>ConceptNormalizer · TextAnchor<br/>AnchorLocator · CanonicalText"]
+            P["RenderedTextProvider"]
+            G["GraphBuilder"]
+            X["ExportBuilder"]
+            L["ModerationLog"]
+            S["Stores<br/>Concept · Excerpt · Theme"]
+        end
+    end
+
+    DB[("virtual-constel<br/>6 tablas")]
+    CORE[("core: page · revision<br/>actor · logging<br/>user_properties")]
+
+    UI -- "fetch + token CSRF" --> API
+    H -- "wgConstel · módulos · menú" --> R
+    SP --> M
+    SP --> Mi
+    API --> D
+    API --> P
+    API --> G
+    API --> L
+    API --> S
+    SP --> G
+    SP --> X
+    H -- "encola" --> J
+    J --> P
+    J --> D
+    J --> S
+    X --> S
+    X --> P
+    S --> DB
+    P -. "ParserOutputAccess" .-> CORE
+    L -. "ManualLogEntry" .-> CORE
+    S -. "ids de actor y página" .-> CORE
+```
+
+## Modelo de entidades
+
+Las entidades del spec y cómo se relacionan. `User`, `WikiPage` y `Revision`
+son de MediaWiki; el resto es de con§tel. El modelo es **fiel a constel**: el
+§ se relaciona N:M con conceptos a través de la codificación, los conceptos
+son globales, y los temas y sus notas son de cada lector.
+
+```mermaid
+classDiagram
+    direction LR
+
+    class User {
+        <<MediaWiki>>
+        identity: anonymous · temporary · registered
+        is_blocked
+        rights
+        constel_enabled
+    }
+    class WikiPage {
+        <<MediaWiki>>
+        is_annotatable
+        latest_revision
+    }
+    class Revision {
+        <<MediaWiki>>
+    }
+
+    class Excerpt {
+        §
+        anchor: TextAnchor
+        gloss?
+        anchor_status: anchored · lost
+        created_at
+        lost_at?
+    }
+    class TextAnchor {
+        <<value>>
+        exact
+        prefix
+        suffix
+        start
+        end
+    }
+    class Coding {
+        coded_at
+    }
+    class Concept {
+        key: forma canónica = rótulo
+        fold: clave tolerante
+    }
+    class Theme {
+        label
+        created_at
+    }
+    class ThemeMembership
+    class ThemeNote {
+        text
+        updated_at
+    }
+
+    User "1" --> "0..*" Excerpt : author
+    WikiPage "1" --> "0..*" Excerpt : page
+    Revision "1" --> "0..*" Excerpt : revisión válida
+    Excerpt *-- TextAnchor
+    Excerpt "1" *-- "1..*" Coding : codings
+    Concept "1" --> "0..*" Coding : codings
+    User "1" --> "0..*" Theme : owner
+    Theme "1" *-- "0..*" ThemeMembership
+    Concept "1" --> "0..*" ThemeMembership
+    Theme "1" *-- "0..*" ThemeNote : notes
+```
+
+Reglas que el diagrama no alcanza a mostrar:
+
+- **Un § nace codificado y muere al perder su último concepto**
+  (`ExcerptsAreCoded`, `UncodedExcerptVanishes`).
+- **Un concepto existe mientras algún § lo use** (`UnusedConceptVanishes`);
+  al desaparecer se llevan sus pertenencias a temas.
+- **Un concepto está en a lo sumo un tema de cada lector**
+  (`OneThemePerConceptPerReader`); lectores distintos lo agrupan distinto.
+- **Un § anclado apunta a la revisión vigente** (`AnchoredMeansCurrent`),
+  de forma eventual: se cumple cuando corre el re-anclaje.
+
+El mapa deriva sus aristas de estas entidades, sin guardarlas:
+
+```mermaid
+flowchart LR
+    subgraph "Mismo § (co_excerpt)"
+        E1["§ «la primera pasión del oro»"] --- A1((Pasión))
+        E1 --- B1((Oro))
+    end
+    subgraph "§§ solapados de lectores distintos (overlap)"
+        E2["§ de lectora A"] --- A2((Travesía))
+        E3["§ de lector B"] --- B2((Espacio))
+        E2 -. "comparten texto" .- E3
+    end
+    subgraph "Misma página (co_page)"
+        P3["página Amereida"] --- A3((Dibujo))
+        P3 --- B3((Chamanismo))
+    end
+    A1 == "co_excerpt" === B1
+    A2 -. "overlap" .- B2
+    A3 -. "co_page (la más tenue)" .- B3
+```
+
+## Modelo de datos
+
+Las seis tablas viven en el **dominio virtual** `virtual-constel`
 (`DatabaseVirtualDomains`). Por defecto usan la BBDD de la wiki, y
 `$wgVirtualDomainsMapping` permite moverlas a otra sin tocar código. El
 acceso pasa por `IConnectionProvider::getPrimaryDatabase( 'virtual-constel' )`
 y `getReplicaDatabase( 'virtual-constel' )`.
 
-El esquema se escribe en formato abstracto (`sql/tables.json`); el SQL de
-MySQL, SQLite y Postgres se genera con `generateSchemaSql.php`. Se instala con
-`LoadExtensionSchemaUpdates`. Los autores se guardan como **actor id** (sobrevive
-a renombres de usuario) y las páginas como **page id** (sobrevive a traslados).
-Los timestamps se guardan en formato `binary(14)` de MediaWiki.
+Las referencias al core son **ids** (`actor_id`, `page_id`, `rev_id`), sin
+claves foráneas SQL: así las tablas pueden vivir en otra BBDD. Los autores se
+guardan como actor (sobrevive a renombres de usuario) y las páginas por id
+(sobrevive a traslados). Los timestamps son `binary(14)` de MediaWiki.
 
-Esquema (D1, [`sql/tables.json`](../sql/tables.json)):
+```mermaid
+erDiagram
+    constel_concept {
+        int cc_id PK
+        varbinary cc_key UK "forma canónica = rótulo visible"
+        varbinary cc_fold "clave tolerante, indexada"
+        mwtimestamp cc_created
+    }
+    constel_excerpt {
+        int ce_id PK
+        bigint ce_actor "actor.actor_id"
+        int ce_page "page.page_id"
+        int ce_rev "revision.rev_id válida"
+        blob ce_exact
+        varbinary ce_prefix
+        varbinary ce_suffix
+        int ce_start "code points"
+        int ce_end "code points, exclusivo"
+        blob ce_gloss "nullable"
+        tinyint ce_status "0 anchored, 1 lost"
+        mwtimestamp ce_created
+        mwtimestamp ce_lost "nullable"
+    }
+    constel_coding {
+        int ccd_excerpt PK
+        int ccd_concept PK
+        mwtimestamp ccd_timestamp
+    }
+    constel_theme {
+        int ct_id PK
+        bigint ct_actor "dueño"
+        varbinary ct_label
+        mwtimestamp ct_created
+    }
+    constel_membership {
+        bigint cm_actor PK "= dueño del tema"
+        int cm_concept PK
+        int cm_theme
+    }
+    constel_note {
+        int cn_id PK
+        int cn_theme
+        mediumblob cn_text
+        mwtimestamp cn_updated
+    }
 
-| Tabla | Entidad del spec | Columnas clave |
+    constel_excerpt ||--|{ constel_coding : "se codifica con"
+    constel_concept ||--o{ constel_coding : "codifica"
+    constel_theme ||--o{ constel_membership : "agrupa"
+    constel_concept ||--o{ constel_membership : "pertenece"
+    constel_theme ||--o{ constel_note : "tiene"
+```
+
+| Tabla | Entidad | Índices |
 |---|---|---|
-| `constel_concept` | Concept | `cc_id`, `cc_key` (único, forma canónica), `cc_fold` (índice, clave tolerante para variantes) |
-| `constel_excerpt` | Excerpt | `ce_id`, `ce_actor`, `ce_page`, `ce_rev`, `ce_exact`, `ce_prefix`, `ce_suffix`, `ce_start`, `ce_end`, `ce_gloss`, `ce_status`, `ce_created`, `ce_lost` |
-| `constel_coding` | Coding | PK (`ccd_excerpt`, `ccd_concept`), `ccd_timestamp` |
-| `constel_theme` | Theme | `ct_id`, `ct_actor`, `ct_label`, `ct_created` |
-| `constel_membership` | ThemeMembership | `cm_theme`, `cm_concept`, `cm_actor`; único (`cm_actor`, `cm_concept`) |
-| `constel_note` | ThemeNote | `cn_id`, `cn_theme`, `cn_text`, `cn_updated` |
+| `constel_concept` | Concept | único `cc_key`; `cc_fold` |
+| `constel_excerpt` | Excerpt | (`ce_page`, `ce_status`); (`ce_actor`, `ce_created`) |
+| `constel_coding` | Coding | PK (`ccd_excerpt`, `ccd_concept`); `ccd_concept` |
+| `constel_theme` | Theme | `ct_actor` |
+| `constel_membership` | ThemeMembership | PK (`cm_actor`, `cm_concept`); `cm_theme`; `cm_concept` |
+| `constel_note` | ThemeNote | `cn_theme` |
 
 `cm_actor` repite el dueño del tema para que la unicidad «un tema por concepto
-y por lector» (`OneThemePerConceptPerReader`) la garantice un índice.
+y por lector» la garantice la clave primaria.
 
-**Cambios de esquema.** Cada cambio posterior a la creación se escribe como
-cambio abstracto en `sql/abstractSchemaChanges/`, y el SQL por motor se genera
-con `generateSchemaChangeSql.php`. `SchemaHooks` lo aplica con `addField` y
-similares, en el mismo dominio virtual. El primero es `ce_gloss`, la glosa
-del §.
+**Cascadas.** Las reglas del spec se aplican en la misma transacción que la
+escritura que las provoca, dentro de los stores, no con triggers SQL:
+descodificar el último concepto borra el §, y un concepto sin codificaciones
+se borra con sus pertenencias. Las escrituras evitan `UPDATE IGNORE` (no es
+portable a Postgres): primero borran lo que chocaría, después actualizan.
 
-Reglas en cascada del spec: un § sin codificaciones se borra
-(`UncodedExcerptVanishes`) y un concepto sin codificaciones se borra junto con
-sus pertenencias (`UnusedConceptVanishes`). Se aplican en la misma transacción
-que la escritura que las provoca, no con triggers SQL.
+**Esquema y cambios.** El esquema se escribe en formato abstracto
+(`sql/tables.json`); el SQL de MySQL, SQLite y Postgres se genera con
+`generateSchemaSql.php`. Cada cambio posterior va como cambio abstracto en
+`sql/abstractSchemaChanges/` (SQL por motor con `generateSchemaChangeSql.php`),
+y `SchemaHooks` lo aplica en el dominio virtual con `update.php`. El primero es
+`ce_gloss`.
+
+**Fuera de estas tablas:** las preferencias `constel-enabled` y
+`constel-public-ack` (en `user_properties` del core) y el registro de
+moderación (en `logging`, tipo `constel`).
+
+## Modelo de interacción
+
+### Crear un §
+
+El cliente mide sobre su DOM y propone. El servidor comprueba la revisión,
+vuelve a medir sobre su propio texto canónico y guarda **su** medición.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor L as Lector
+    participant T as trigger.js
+    participant F as form.js
+    participant A as API constel-createexcerpt
+    participant P as RenderedTextProvider
+    participant Loc as AnchorLocator
+    participant S as ExcerptStore
+    participant C as ConceptStore
+
+    L->>T: termina una selección (ratón, táctil o teclado)
+    T->>T: mide en el texto canónico del DOM<br/>(exact, prefix, suffix, start)
+    T-->>L: afordancia «§»
+    L->>F: activa § (clic o Alt+Mayús+Intro)
+    F-->>L: formulario: concepto + glosa
+    L->>F: escribe concepto (autocompletado ccsearch)
+    L->>F: Crear §
+    F->>A: POST + token CSRF
+    A->>A: cuenta registrada · derecho · bloqueos
+    alt revid no es el vigente
+        A-->>F: staleview (se conserva lo escrito)
+    end
+    A->>C: ¿concepto nuevo con variantes?
+    alt hay variantes y falta allowvariant
+        A-->>F: variants [lista]
+        F-->>L: elegir una o «crear de todos modos»
+    end
+    A->>P: texto canónico de la revisión (caché por revid)
+    A->>Loc: ubicar el pasaje propuesto
+    alt no se ubica
+        A-->>F: anchornotfound
+    end
+    A->>S: create(ancla medida por el servidor, concepto, glosa)
+    S->>C: acquire(forma canónica)
+    S-->>A: § + primera codificación
+    A-->>F: § creado
+    F->>F: recarga §§ de la página y dibuja marcas
+```
+
+### Editar un § propio (un solo «Guardar»)
+
+El panel acumula los cambios y los aplica en orden, para que quitar todos los
+conceptos y agregar uno nuevo no borre el §.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor L as Lector
+    participant D as detail.js
+    participant API as API
+
+    L->>D: activa una marca propia
+    D-->>L: conceptos (×) · agregar concepto · glosa · Guardar
+    L->>D: marca conceptos con × (en espera)
+    Note over D: si se marcan todos y no se agrega ninguno,<br/>el botón pasa a «Guardar y borrar el §»
+    L->>D: Guardar
+    opt concepto nuevo
+        D->>API: constel-codeexcerpt
+    end
+    opt glosa cambiada
+        D->>API: constel-glossexcerpt
+    end
+    loop cada concepto marcado
+        D->>API: constel-uncodeexcerpt
+        Note right of API: si era el último,<br/>el § desaparece
+    end
+    D->>D: cierra y redibuja
+```
+
+### Re-anclaje cuando la página cambia
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor E as Editor
+    participant MW as MediaWiki
+    participant H as RevisionHooks
+    participant Q as Cola de jobs
+    participant J as ReanchorJob
+    participant P as RenderedTextProvider
+    participant Loc as AnchorLocator
+    participant S as ExcerptStore
+
+    E->>MW: guarda una revisión
+    MW->>H: PageSaveComplete
+    alt edición nula o página sin §§ anclados
+        H-->>MW: nada
+    else
+        H->>Q: lazyPush(ReanchorJob, deduplicado por página)
+    end
+    Note over Q,J: más tarde, fuera de la request
+    Q->>J: run()
+    J->>MW: revisión vigente AL CORRER
+    J->>P: su texto canónico
+    loop cada § anclado a una revisión anterior
+        J->>Loc: locate(ancla, texto)
+        alt se ubica sin ambigüedad
+            J->>S: relocate(nueva revisión, ancla recalculada)
+        else no se ubica o es ambiguo
+            J->>S: markLost (terminal)
+        end
+    end
+
+    E->>MW: borra la página
+    MW->>H: PageDeleteComplete
+    H->>S: markLostForPage (en el acto)
+```
+
+### Ciclo de vida de un §
+
+```mermaid
+stateDiagram-v2
+    [*] --> Anclado : ReaderCreatesExcerpt<br/>(con su primer concepto)
+    Anclado --> Anclado : revisión nueva y el pasaje se ubica<br/>(relocate)
+    Anclado --> Perdido : revisión nueva y no se ubica,<br/>o la página se borra
+    Anclado --> [*] : su autor lo borra,<br/>o quita su último concepto,<br/>o un moderador lo borra
+    Perdido --> [*] : su autor lo borra,<br/>o quita su último concepto
+    note right of Perdido
+        Terminal: no vuelve a anclarse.
+        Sigue en el mapa y en MiConstel;
+        no se dibuja ni se exporta.
+    end note
+```
+
+### Leer el mapa
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor V as Visitante
+    participant SP as SpecialConstellation
+    participant M as map.js
+    participant API as API
+    participant G as GraphBuilder
+
+    V->>SP: Especial:Constelación
+    SP->>G: grafo de todos
+    SP-->>V: lista de conceptos (respaldo sin JS)<br/>+ body.constel-wide
+    SP-->>M: ext.constel.map
+    M->>API: list=constelgraph (alcance, página)
+    API->>G: build(alcance, página, quien mira)
+    G-->>API: nodos + aristas co_excerpt · overlap · co_page
+    M->>API: list=constelthemes (lente)
+    M-->>V: grafo 3D + lista accesible + panel de temas
+    V->>M: elige un concepto
+    M->>API: list=constelexcerpts&ceconcept · list=constelconcepts&ccthemes
+    M-->>V: detalle: §§ por página, glosas, temas
+    opt cuenta registrada
+        V->>M: agrupar, crear tema, notas
+        M->>API: constel-groupconcept · constel-theme · constel-themenote
+    end
+    opt moderador
+        V->>M: renombrar o fusionar
+        M->>API: constel-moderate → Special:Log/constel
+    end
+```
 
 ## Conceptos
 
 La identidad de un concepto es **estricta, como la de un título de
 MediaWiki** (decisión del 2026-09-22): «Diseño» y «Diseno» son conceptos
-distintos. `normalize_concept` produce la forma canónica, que es la clave:
+distintos. `ConceptNormalizer::canonical` produce la forma canónica, que es la
+clave y el rótulo visible:
 
 1. Normalización Unicode NFC.
 2. `_` pasa a espacio; se hace trim y los espacios internos se colapsan a uno.
@@ -104,148 +495,201 @@ distintos. `normalize_concept` produce la forma canónica, que es la clave:
    mayúsculas, tildes, diéresis y ñ se respetan.
 
 Es la misma equivalencia que `Title` aplica a la parte textual de un título,
-sin las restricciones de caracteres de los títulos (un concepto puede llevar
-`#`, `[`, `|`…, porque es un rótulo, no un enlace).
+sin las restricciones de caracteres de los títulos: un concepto es un rótulo,
+no un enlace.
 
 **La convergencia a la forma bien escrita se hace al escribir, no en la
-identidad.** El popup busca **variantes**, es decir, conceptos que difieren
-solo en tildes, diéresis, mayúsculas o espacios. Para eso usa una clave de
-comparación tolerante que **solo sirve para sugerir**, nunca para
-identificar. Si hay variantes, las ofrece antes de crear un concepto nuevo
-(`VariantsSteered`). Crear la variante igual es posible, con un gesto
-explícito. Si una variante se cuela, un administrador la renombra o la
-fusiona, igual que en la wiki se unifican títulos con traslados y
-redirecciones.
+identidad.** `ConceptNormalizer::fold` es una clave tolerante que **solo sirve
+para sugerir**: NFD, sin marcas combinantes **salvo la tilde de la ñ** (la ñ es
+una letra: «año» y «ano» no son variantes), minúsculas y espacios colapsados.
+Se guarda indexada (`cc_fold`). La usan el autocompletado (`ccsearch`, los más
+usados primero) y la guía de variantes: si el concepto escrito no existe pero
+hay variantes, la API responde `variants` y la interfaz las ofrece antes de
+crear una nueva (`VariantsSteered`); crearla igual requiere un gesto
+explícito (`allowvariant`). Las variantes que se cuelan las unifica un
+administrador ([Moderación](#moderación)).
 
-La clave tolerante es: NFD, se quitan las marcas combinantes **salvo la tilde
-de la ñ** (la ñ es una letra: «año» y «ano» no son variantes), minúsculas y
-espacios colapsados. Se guarda indexada (`cc_fold`) para que la búsqueda de
-variantes no recorra la tabla.
-
-Las dos funciones tienen una implementación de referencia en PHP. El cliente
-porta la clave tolerante a JS y la valida contra una tabla de casos
-compartida.
+Ambas funciones viven solo en el servidor (PHP); el cliente no las porta.
 
 ## Anclaje
 
-Un § guarda un `TextAnchor` al estilo W3C Web Annotation: `exact`, `prefix`,
-`suffix` (`$wgConstelAnchorContextLength` caracteres) y `start`/`end`.
+Un § guarda un `TextAnchor` al estilo W3C Web Annotation: `exact`, `prefix` y
+`suffix` (`$wgConstelAnchorContextLength` caracteres, 32 por defecto) y
+`start`/`end`.
 
 **Texto canónico.** Todas las medidas se hacen sobre el *texto plano
-renderizado* del cuerpo: el `textContent` de `.mw-parser-output`, sin los nodos
-excluidos (`script`, `style`, `.mw-editsection`, `.mw-cite-backlink`,
-`.mw-empty-elt` y lo que se sume en D3). El cliente (DOM) y el servidor (HTML
-de `ParserOutput` recorrido con el DOM de PHP) usan **la misma lista de
-exclusión**. PHP la define y la exporta al cliente en un `packageFiles` con
-callback de config, así no hay dos copias.
+renderizado* del cuerpo: la concatenación de los nodos de texto de
+`.mw-parser-output`, en orden de documento, saltando los subárboles excluidos:
+etiquetas `script`, `style`, `noscript` y `template`, y clases
+`mw-editsection`, `mw-cite-backlink`, `mw-empty-elt`, `mw-collapsible-toggle`,
+`mw-collapsible-toggle-placeholder`, `toc` y `constel-ui`. El servidor
+(`CanonicalText`, HTML de `ParserOutput` recorrido con RemexHtml) y el cliente
+(`canonical.js`, sobre el DOM) usan **la misma lista**: PHP la define y la
+exporta al cliente en un `packageFiles` con callback de config.
 
-**Unidades.** Los offsets están en *code points* Unicode, no en unidades UTF-16.
-El cliente convierte con `Array.from` y el servidor usa funciones `mb_*`.
+`RenderedTextProvider` renderiza con opciones canónicas (no las del lector),
+sin índice ni enlaces de sección, y cachea el texto por revid en
+`WANObjectCache`: una revisión no cambia.
 
-**Creación.** El cliente envía el revid que está mostrando. Si no es el último,
-la API responde `constel-stale-revision` y el popup conserva lo escrito.
+**Unidades.** Los offsets son *code points* Unicode, no unidades UTF-16. El
+servidor usa funciones `mb_*`; el cliente, `TextIndex`, que convierte entre
+ambas.
 
-**Reanclaje** (`anchor_resolves` / `relocate`), en `ReanchorJob`:
+**Localizar** (`AnchorLocator`, espejo en `locate.js`), por niveles:
 
-1. Se buscan todas las ocurrencias de `exact` en el texto canónico de la
-   revisión nueva.
-2. Se filtran las que coinciden con `prefix` y `suffix`; con empate, gana la
-   más cercana a `start`.
-3. Si queda exactamente una, el ancla se traslada (se recalculan
-   `start`/`end`, `prefix` y `suffix`) y `ce_rev` apunta a la revisión nueva.
-4. Si no queda ninguna, o sigue habiendo ambigüedad, el § pasa a `lost`.
+1. ocurrencias de `exact` con `prefix` **y** `suffix` intactos;
+2. ocurrencias con `prefix` **o** `suffix` intacto;
+3. `exact` a secas, solo si aparece exactamente una vez.
 
-El job se encola desde `PageSaveComplete` (solo si la revisión cambió el
-contenido) y desde `PageDeleteComplete`. Es idempotente: si llega tarde y ya
-hay una revisión más nueva, trabaja contra la más nueva.
+En los niveles 1 y 2, con varias candidatas gana la más cercana al `start`
+original; un empate de distancia es ambigüedad. El primer nivel con candidatas
+decide: si es ambiguo, el ancla no se resuelve y no se baja al siguiente.
 
-## Re-anclaje (D4)
+**Re-anclaje** (`RevisionHooks` + `ReanchorJob`; secuencia en
+[Modelo de interacción](#re-anclaje-cuando-la-página-cambia)):
 
-`RevisionHooks`:
+- `PageSaveComplete` encola el job solo si la revisión cambió el contenido y
+  la página tiene §§ anclados (una consulta con `LIMIT 1`). Usa `lazyPush` y
+  `removeDuplicates` por página: el guardado nunca espera.
+- `ReanchorJob` trabaja contra la revisión **vigente al correr**, así que es
+  idempotente y tolera llegar tarde. Si el render falla, devuelve `false` y la
+  cola lo reintenta.
+- `PageDeleteComplete` marca los §§ como perdidos en el acto. Restaurar la
+  página no los revive: `lost` es terminal.
 
-- **`PageSaveComplete`:** si la revisión cambió el contenido (no es una edición
-  nula) y la página tiene §§ anclados (`hasAnchored`, una consulta con
-  `LIMIT 1`), encola `ReanchorJob` con `lazyPush` y `removeDuplicates`, por
-  página. El guardado nunca espera el re-anclaje.
-- **`PageDeleteComplete`:** marca como perdidos los §§ anclados de la página, en
-  el acto (es un solo `UPDATE`). Restaurar la página no los revive.
-
-`ReanchorJob` (`JobClasses`, `needsPage`, servicios inyectados): lee la
-revisión **vigente al correr**, no la que lo encoló, así que es idempotente y
-tolera llegar tarde. Obtiene su texto canónico (`RenderedTextProvider`) y, para
-cada § anclado a una revisión anterior, lo traslada (`relocate`) o lo pierde
-(`markLost`). Si el render falla, devuelve `false` y la cola lo reintenta.
-
-Mientras el job no corre, el cliente recibe §§ con un `revid` anterior; `marks.js`
-los ubica por la cita. Por eso el invariante `AnchoredMeansCurrent` se cumple de
+Mientras el job no corre, el cliente recibe §§ con un `revid` anterior, y
+`marks.js` los ubica por la cita. Por eso `AnchoredMeansCurrent` se cumple de
 forma eventual.
 
-## Mapa y páginas especiales (D5)
+## Lectura en la página
 
-**`GraphBuilder`** (servicio; `list=constelgraph`) arma el grafo en una sola
-consulta sobre codificaciones y §§:
+`PageHooks::isReaderView` decide si una vista lleva con§tel; tienen que
+cumplirse todas estas condiciones:
+
+- la cuenta es registrada (los anónimos no ven nada sobre las páginas; su
+  acceso es el mapa);
+- el lector no lo desactivó en sus preferencias (`constel-enabled`);
+- la acción es `view`, sin `diff`;
+- la página es de contenido, existe y no es redirección;
+- se está viendo la **revisión vigente**.
+
+`onBeforePageDisplay` pasa al cliente `wgConstel` (`pageId`, `revId`,
+`canAnnotate` con `RIGOR_FULL`, que incluye bloqueos parciales, y
+`canModerate`) y carga los módulos. Nada de esto entra al parseo, así que el
+HTML cacheado no cambia.
+
+Módulos:
+
+- `ext.constel.reader.styles`: alias de tokens, `ui.css` y `reader.css`; se
+  carga con `addModuleStyles`, sin esperar al JS.
+- `ext.constel.ui` (compartido con el mapa y la lista propia).
+- `ext.constel.reader` (`packageFiles`):
+
+| Archivo | Módulo | Rol |
+|---|---|---|
+| `canonical.js` | reader | Texto canónico en el DOM, espejo de `CanonicalText`; `TextIndex` |
+| `locate.js` | reader | Espejo de `AnchorLocator` |
+| `marks.js` | reader | Dibuja §§ como `<mark>` (solo en el cliente); si el DOM difiere, re-ubica por la cita |
+| `trigger.js` | reader | La afordancia «§»: aparece al terminar una selección válida; con teclado, Alt+Mayús+Intro |
+| `form.js` | reader | Crear un §: concepto (autocompletado) y glosa, un solo botón; aviso de datos públicos la primera vez; vista vieja |
+| `menu.js` | reader | Comportamiento de las entradas del menú de usuario (solo mis §§ / los de todos / ocultar marcas); se recuerda por navegador |
+| `config.json` | reader | Callback PHP: la lista de exclusión y los límites, los mismos del servidor |
+| `api.js` | ui | Llamadas a la API; errores localizados (`errorformat=html`) |
+| `panel.js` | ui | Panel emergente: Escape, clic fuera, foco retenido y devuelto, dentro del viewport |
+| `autocomplete.js` | ui | Combobox ARIA sobre `list=constelconcepts&ccsearch` |
+| `variants.js` | ui | Respuesta común al error `variants` |
+| `detail.js` | ui | Detalle de los §§ bajo un punto. Sobre el propio: conceptos (× en espera), agregar concepto, glosa y **un solo «Guardar»** (avisa si borra el §). Quien modera ve «Borrar» en §§ ajenos |
+
+La UI de con§tel lleva la clase `constel-ui`, que está en la lista de
+exclusión: nunca contamina el texto canónico. Las marcas **no** la llevan,
+porque su texto es el de la página.
+
+**Menú de usuario** (`onSkinTemplateNavigation__Universal`): con con§tel
+activado, agrega entradas al portlet `user-menu`, antes de «Salir». En vistas
+de lectura van los tres controles (sin JS se ocultan con `.client-nojs`); en
+todas partes, los enlaces a Constelación y Mi con§tel. Con la preferencia
+apagada, el menú no menciona con§tel. Es el mecanismo estándar de portlets, así
+que funciona igual en Stella Nova y en Vector, y queda al alcance en páginas
+largas porque la cabecera es fija.
+
+**Preferencias:**
+
+- `constel-enabled` (interruptor en Apariencia › con§tel, activado por
+  defecto): apagado, las páginas se ven como sin la extensión
+  (`DisabledByPreference`). Constelación y Mi con§tel siguen en Páginas
+  especiales.
+- `constel-public-ack` (tipo `api`, oculta): el lector ya vio el aviso de que
+  sus anotaciones son públicas.
+
+**Glosa:** cada § puede llevar una glosa opcional, un comentario o una
+aclaración (`ce_gloss`, hasta `$wgConstelGlossMaxLength` caracteres). Se
+escribe al crear el § (Ctrl+Intro envía) y su autor la edita o la vacía desde
+el detalle. Se muestra en el detalle, en el mapa y en MiConstel, y se exporta
+como campo extra `gloss` de cada excerpt.
+
+## Mapa y páginas especiales
+
+**`GraphBuilder`** (servicio; `list=constelgraph` y la lista de respaldo de la
+página especial) arma el grafo en una sola consulta sobre codificaciones y
+§§:
 
 - **co_excerpt:** por cada §, cada par de sus conceptos. Peso = número de §§.
-- **co_page:** por cada página, cada par de conceptos anotados en ella (por
-  cualquier lector). Peso = número de páginas compartidas. Es la arista más
-  tenue y la que menos atrae en el layout.
+  Es la doctrina de constel: una decisión explícita del lector.
 - **overlap:** por página, ordenando los §§ **anclados** por inicio y
   recorriéndolos en barrido, cada par de §§ de lectores **distintos** cuyos
   rangos comparten al menos un carácter une cada concepto de uno con cada
   concepto del otro. Peso = número de pares. Nunca fusiona conceptos
-  (`OverlapNeverConverges`). *Pendiente: confirmar si esta arista se
-  mantiene (open question del spec).*
+  (`OverlapNeverConverges`). Sigue abierta en el spec la pregunta de si se
+  mantiene.
+- **co_page:** por cada página, cada par de conceptos anotados en ella (por
+  cualquier lector). Peso = número de páginas compartidas. Es la arista más
+  tenue y la que menos atrae en el layout (decisión 2026-09-22).
 - **Nodos:** número de §§, número de páginas y `mine` (si quien mira aportó).
   Alcance `mine` y filtro por página.
 
 Hoy se calcula al vuelo. Si el volumen crece, se cachea en `WANObjectCache` con
 una *check key* que tocan las escrituras.
 
-**Especial:Constelación** (`SpecialConstellation`, pública). El servidor emite
-la lista de conceptos por frecuencia, que sirve de respaldo sin JS. El módulo
-`ext.constel.map` dibuja encima:
+**Especial:Constelación** (`SpecialConstellation`, pública; los anónimos ven y
+navegan, pero no operan). El servidor emite la lista de conceptos por
+frecuencia (respaldo sin JS). `ext.constel.map` dibuja encima:
 
-- `graph.js`: layout de fuerzas propio en **3D** (default) o 2D, sin
-  dependencias: repulsión, resortes con fuerza según el peso, gravedad y
+- `graph.js`: layout de fuerzas propio en **3D** (por defecto) o 2D, sin
+  dependencias: repulsión, resortes según peso y clase de arista, gravedad y
   atracción al centroide del tema. Se normaliza a una esfera y se proyecta en
-  perspectiva sobre SVG. Lo lejano se atenúa y lo cercano se pinta encima. Se
+  perspectiva sobre SVG; lo lejano se atenúa y lo cercano se pinta encima. Se
   orbita arrastrando o con las flechas (en 2D se panea). «Girar solo» es
-  opcional y viene **apagado** (WCAG 2.2.2: el movimiento automático debe poder
-  detenerse); se recuerda por navegador y nunca actúa con
-  `prefers-reduced-motion`. Con el puntero encima se detiene para poder apuntar. Los rótulos miden entre 11 y 31 px (0.6·§§ + 0.4·páginas, como
-  constel) y escalan con la perspectiva. Las aristas tienen grosor constante en
-  pantalla (`vector-effect: non-scaling-stroke`), y las `overlap` van punteadas.
+  opcional y viene **apagado** (WCAG 2.2.2); se recuerda por navegador y nunca
+  actúa con `prefers-reduced-motion`. Los rótulos miden entre 11 y 31 px
+  (0.6·§§ + 0.4·páginas, como constel) y escalan con la perspectiva. Aristas
+  con grosor constante en pantalla (`vector-effect: non-scaling-stroke`):
+  continuas (co_excerpt), rayadas (overlap) y punteadas tenues (co_page).
   Zoom con botones o Ctrl+rueda. Cada nodo es texto SVG enfocable (Enter lo
   abre).
-- `sidepanel.js`: el detalle de un concepto (sus §§ por página, en qué temas
-  está, agruparlo) y el panel de temas (crear, renombrar, borrar, desagrupar,
-  notas). Los temas de otro lector (la **lente**) se muestran en solo lectura.
-- `map.js`: controles (alcance, página, umbral, aristas, lente, zoom) y la
-  lista navegable (`AccessibleAlternative`).
+- `sidepanel.js`: el detalle de un concepto (§§ por página con sus glosas,
+  temas que lo contienen, agruparlo, moderarlo) y el panel de temas (crear,
+  renombrar, borrar, desagrupar, notas). Los temas de otro lector (la
+  **lente**) se muestran en solo lectura.
+- `map.js`: controles (vista 3D/2D, alcance, página, umbral, aristas, girar
+  solo, lente, zoom) y la lista navegable (`AccessibleAlternative`).
 
-**Página ancha.** Las dos páginas especiales agregan `<body class="constel-wide">`.
-Qué significa lo decide el skin: Stella Nova la absorbe en
-`skinStyles/constel.css` (`ResourceModuleSkinStyles` sobre
+**Especial:MiConstel** (`SpecialMyConstel`, cuentas registradas): tabla de
+§§ propios, anclados y perdidos, con sus glosas. Cada § perdido enlaza al
+`oldid` donde era válido. `ext.constel.mine` agrega «Editar», que reutiliza el
+detalle del §.
+
+**Páginas anchas.** Las dos páginas especiales agregan
+`<body class="constel-wide">`. Qué significa lo decide el skin: Stella Nova la
+absorbe en `skinStyles/constel.css` (`ResourceModuleSkinStyles` sobre
 `ext.constel.map.styles`) y ensancha la hoja a `--sn-shell`. En otros skins no
 tiene efecto.
 
-**Especial:MiConstel** (`SpecialMyConstel`, cuentas registradas): tabla de
-§§ propios, anclados y perdidos. Cada § perdido enlaza al `oldid` donde era
-válido. `ext.constel.mine` agrega «Editar», que reutiliza el detalle del §.
-
-**Exportación** (`Especial:MiConstel/export`, `ExportBuilder`): genera un ZIP
-con `constel-db.json` y `corpus/<página>.txt`, que el «Importar» de constel
-v0.2.x abre. Convierte los offsets de code points a unidades UTF-16 sobre el
-cuerpo sin frontmatter y con `trim()`, que es como mide constel. Los §§
-perdidos no se exportan. Cada tema propio se exporta con su color de la paleta
-de constel, y cada concepto con el `themeId` que le dio el lector.
-
-**Módulos RL:** `ext.constel.ui` reúne lo compartido (API, panel,
-autocompletado, variantes, detalle del §). Encima van `ext.constel.reader`,
-`ext.constel.map` y `ext.constel.mine`. Los estilos comunes están en
-`ext.constel.ui/ui.css`. La escala categórica `--constel-cat-0…7` apunta a
-`--sn-cat-*`, que Stella Nova aún no tiene. Mientras tanto, el respaldo es la
-paleta de constel mezclada con la tinta, para que el contraste siga al tema.
+**Exportación** (`Especial:MiConstel/export`, `ExportBuilder`): un ZIP con
+`constel-db.json` y `corpus/<página>.txt`, que el «Importar» de constel v0.2.x
+abre. Convierte los offsets de code points a unidades UTF-16 sobre el cuerpo
+sin frontmatter y con `trim()`, que es como mide constel. Los §§ perdidos no
+se exportan. Cada tema propio sale con su color de la paleta de constel, y
+cada concepto con el `themeId` que le dio el lector.
 
 ## API
 
@@ -254,53 +698,43 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 
 - que sea una cuenta registrada (`isNamed()`): ni anónimos ni cuentas
   temporales;
-- el derecho `constel-annotate`;
-- que no haya un bloqueo sitewide;
-- en los módulos que tocan una página, también los bloqueos parciales
-  (`checkTitleUserPermissions`);
-- que el pasaje, tema o nota pertenezca a quien lo modifica. Borrar pasajes
-  ajenos requiere `constel-moderate`.
+- el derecho `constel-annotate` (o `constel-moderate` para moderar);
+- que no haya un bloqueo sitewide y, en los módulos que tocan una página,
+  tampoco uno parcial (`checkTitleUserPermissions`);
+- que el pasaje, tema o nota pertenezca a quien lo modifica.
 
 | Módulo | Spec |
 |---|---|
-| `constel-createexcerpt` | ReaderCreatesExcerpt |
+| `constel-createexcerpt` | ReaderCreatesExcerpt (ancla medida por el servidor; `staleview`, `variants`, `anchornotfound`) |
 | `constel-codeexcerpt` | ReaderCodesExcerpt |
 | `constel-uncodeexcerpt` | ReaderUncodesExcerpt (+ UncodedExcerptVanishes) |
-| `constel-deleteexcerpt` | ReaderDeletesExcerpt |
+| `constel-glossexcerpt` | ReaderGlossesExcerpt (vacía = sin glosa) |
+| `constel-deleteexcerpt` | ReaderDeletesExcerpt (el ajeno, solo moderadores, con registro) |
 | `constel-theme` (`op=create\|rename\|delete`) | ReaderCreates/Renames/DeletesTheme |
 | `constel-groupconcept` (`op=group\|ungroup`) | ReaderGroups/UngroupsConcept |
 | `constel-themenote` (`op=create\|edit\|delete`) | ReaderWrites/Edits/DeletesThemeNote |
+| `constel-moderate` (`op=rename\|merge`) | ModeratorRenamesConcept, ModeratorMergesConcepts |
 
-`constel-createexcerpt` recibe el pasaje tal como lo midió el cliente, pero
-**no confía en esa medición**. Primero verifica que el `revid` sea la última
-revisión (si no, `staleview`). Después obtiene el texto canónico de esa
-revisión (`RenderedTextProvider`: opciones de parser canónicas, sin TOC ni
-enlaces de sección, cacheado por revid) y ubica el pasaje con
-`AnchorLocator`. Lo que se guarda es la medición del servidor. Si hace falta
-crear un concepto nuevo y existen variantes, responde `variants` con la lista,
-salvo que venga `allowvariant=1` (`VariantsSteered`).
+**Lectura** (públicas; los anónimos las usan para el mapa):
 
-**Lectura** (públicas; también las usan los anónimos para el mapa):
-
-- `list=constelexcerpts`: con `cepageid`, los §§ anclados de una página; con
-  `ceuser`, todos los de un lector, incluidos los perdidos.
-- `list=constelconcepts`: `ccsearch` es el autocompletado, que ignora tildes y
-  mayúsculas y ordena por uso; `ccvariantsof` y `ccids` completan el set.
-- `list=constelthemes`: los temas de un lector (`ctuser`) o por id, con sus
-  conceptos y notas.
+| Módulo | Parámetros |
+|---|---|
+| `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto) |
+| `list=constelconcepts` | `ccsearch` (autocompletado tolerante, por uso), `ccvariantsof`, `ccids`, `ccthemes` (temas que lo contienen) |
+| `list=constelthemes` | `ctuser`, `ctids` (con conceptos y notas) |
+| `list=constelgraph` | `cgscope` (`everyone`\|`mine`), `cgpageid` |
 
 El nombre de un autor oculto (`hideuser`) solo se muestra a quien tiene
-`hideuser`; por eso esas respuestas son `anon-public-user-private`.
+`hideuser`; por eso esas respuestas son `anon-public-user-private`. Los
+mensajes de ayuda y de error viven en `i18n/api/`.
 
-Los mensajes de ayuda y de error viven en `i18n/api/`.
+## Moderación
 
-## Moderación (D6)
-
-`constel-moderate` (`op=rename|merge`) exige una cuenta registrada con
-`constel-moderate` (por defecto, `sysop`) y sin bloqueo sitewide:
+`constel-moderate` exige una cuenta registrada con `constel-moderate` (por
+defecto, `sysop`) y sin bloqueo sitewide:
 
 - **rename:** cambia la forma canónica. Si el rótulo nuevo ya es de otro
-  concepto, responde `labeltaken`, porque eso es una fusión y no un renombre.
+  concepto, responde `labeltaken`: eso es una fusión, no un renombre.
 - **merge:** `concept` se absorbe en `into`. Sus codificaciones y
   pertenencias pasan al concepto que queda, sin duplicar; en los temas de cada
   lector gana la pertenencia que ya tenía `into`.
@@ -308,78 +742,14 @@ Los mensajes de ayuda y de error viven en `i18n/api/`.
 `ModerationLog` publica en **Special:Log/constel** (`LogTypes`, formateador
 estándar `LogFormatter`, mensajes `logentry-constel-*`):
 
-- `rename`: rótulo anterior → nuevo; destino, Especial:Constelación.
-- `merge`: concepto absorbido → el que queda; destino, Especial:Constelación.
-- `delete`: un moderador borró el § de otro lector; destino, la página del §,
-  con el autor y el pasaje citado (recortado a 200 caracteres).
+| Acción | Destino | Parámetros |
+|---|---|---|
+| `rename` | Especial:Constelación | rótulo anterior → nuevo |
+| `merge` | Especial:Constelación | concepto absorbido → el que queda |
+| `delete` | la página del § | autor y pasaje citado (hasta 200 caracteres) |
 
-Borrar un § propio no se registra.
-
-En el mapa, el detalle de un concepto muestra estas herramientas solo a
-quien modera: renombrar, y fusionar en otro concepto elegido con
-autocompletado, con confirmación en línea.
-
-## Lectura en la página (D3)
-
-`PageHooks::onBeforePageDisplay` carga `ext.constel.reader` solo si se cumplen
-todas estas condiciones:
-
-- la cuenta es registrada (los anónimos no ven nada sobre las páginas; su
-  acceso es el mapa);
-- la acción es `view`, sin `diff`;
-- la página es de contenido, existe y no es redirección;
-- se está viendo la **revisión vigente**.
-
-Pasa al cliente `wgConstel` con `pageId`, `revId`, `canAnnotate` (derecho y
-bloqueos, con `RIGOR_FULL`) y `canModerate`. Nada de esto entra al parseo, así
-que el HTML cacheado no cambia.
-
-Módulos:
-
-- `ext.constel.reader.styles`: los alias de tokens y `reader.css`. Se carga con
-  `addModuleStyles`, sin esperar al JS.
-- `ext.constel.reader` (`packageFiles`):
-
-| Archivo | Rol |
-|---|---|
-| `canonical.js` | Texto canónico en el DOM, espejo de `CanonicalText`; `TextIndex` convierte entre code points y UTF-16 |
-| `locate.js` | Espejo de `AnchorLocator` |
-| `marks.js` | Dibuja §§ como `<mark>` (solo en el cliente); si el DOM difiere, re-ubica por la cita |
-| `trigger.js` | La afordancia «§»: aparece al terminar una selección válida; con teclado, Alt+Mayús+Intro |
-| `form.js` | Formulario del §: autocompletado, variantes, aviso de datos públicos, vista vieja |
-| `detail.js` | Detalle de los §§ bajo un punto. Sobre el propio es un formulario con los cambios en espera (conceptos, agregar concepto, glosa) y **un solo botón «Guardar»**; si se quitan todos los conceptos, el botón advierte que borra el §. Quien modera ve «Borrar» en §§ ajenos |
-| `variants.js` | Respuesta común al error `variants` |
-| `panel.js` | Panel emergente: Escape, clic fuera, foco retenido y devuelto, dentro del viewport |
-| `autocomplete.js` | Combobox ARIA sobre `list=constelconcepts&ccsearch` |
-| `menu.js` | Da comportamiento a las entradas del menú de usuario (solo mis §§ / los de todos / ocultar marcas) y refleja el estado; se recuerda por navegador (`mw.storage`) |
-| `config.json` | Callback PHP: la lista de exclusión y los límites, los mismos del servidor |
-
-La UI de con§tel lleva la clase `constel-ui`, que está en la lista de
-exclusión: nunca contamina el texto canónico. Las marcas **no** la llevan,
-porque su texto es el de la página.
-
-**Menú de usuario** (`onSkinTemplateNavigation__Universal`): para cuentas
-registradas agrega entradas al portlet `user-menu`, antes de «Salir». En
-vistas de lectura van los tres controles (sin JS se ocultan con
-`.client-nojs`); en todas partes, los enlaces a Constelación y Mi con§tel. Es
-el mecanismo estándar de portlets, así que funciona igual en Stella Nova y en
-Vector, y queda al alcance en páginas largas porque la cabecera es fija.
-
-**Preferencias:**
-
-- `constel-enabled` (interruptor en Apariencia › con§tel, default sí):
-  apagado, la vista no carga nada de con§tel y el menú de usuario no lo
-  menciona: ni controles ni enlaces (`DisabledByPreference`). Constelación y
-  Mi con§tel siguen en Páginas especiales.
-- `constel-public-ack` (tipo `api`, oculta): el lector ya vio el aviso de que
-  sus anotaciones son públicas.
-
-**Glosa:** cada § puede llevar una glosa opcional, que es un comentario o una
-aclaración (`ce_gloss`, hasta `$wgConstelGlossMaxLength` caracteres). Se
-escribe al crear el §, en el mismo formulario (Ctrl+Intro envía), y su autor la
-edita o la vacía desde el detalle (`constel-glossexcerpt`). Se muestra en el
-detalle, en el mapa y en MiConstel, y se exporta como campo extra `gloss` de
-cada excerpt.
+Borrar un § propio no se registra. En el mapa, el detalle de un concepto
+muestra estas herramientas solo a quien modera.
 
 ## Diseño
 
@@ -393,60 +763,94 @@ tokens. Al mismo tiempo, la extensión tiene que funcionar con cualquier skin
 - Cada alias apunta a un token **semántico o de componente** de Stella Nova
   (`--sn-paper-raised`, `--sn-ink`, `--sn-nova`, `--sn-btn-*`,
   `--sn-field-*`, `--sn-focus-*`…), **nunca a primitivas** (`--sn-papel-*`,
-  `--sn-tinta-*`). Las primitivas son internas del skin; los tokens
-  semánticos y de componente son su contrato público.
-- Cada alias tiene un respaldo en cadena: primero el token Codex/WikimediaUI
+  `--sn-tinta-*`).
+- Cada alias tiene un respaldo en cadena: el token Codex/WikimediaUI
   equivalente y al final un literal. En Vector o Minerva la extensión se ve
   como una extensión Codex estándar.
-- Los componentes (`ext.constel.*.css`) consumen **solo** `--constel-*`. No hay
-  hex, px sueltos ni fuentes propias: la tipografía es la del skin.
-- El claro/oscuro se hereda: Stella Nova usa `light-dark()` y `color-scheme`, y
-  un `var()` guardado en una custom property conserva el `light-dark()` sin
-  evaluar hasta donde se usa.
+- Los componentes consumen **solo** `--constel-*`: sin hex, sin px sueltos, sin
+  fuentes propias.
+- El claro/oscuro se hereda: un `var()` guardado en una custom property
+  conserva el `light-dark()` de Stella Nova sin evaluar hasta donde se usa.
 - La nova (`--sn-nova`) es el único acento: el signo §, el foco y las marcas
   propias. Las marcas ajenas usan tinta tenue.
-- **Falta en Stella Nova:** una escala categórica semántica para colorear los
-  temas en el mapa (constel usa 12 hex fijos). Se propondrá agregar
-  `--sn-cat-1…n` al skin en D5, en lugar de consumir primitivas desde aquí.
+- **Escala categórica de temas:** `--constel-cat-0…7` apunta a
+  `--sn-cat-1…8`, que Stella Nova aún no define (propuesta pendiente). Mientras
+  tanto, el respaldo es la paleta de constel mezclada con la tinta
+  (`color-mix`), para que el contraste siga al tema claro/oscuro.
+- Dentro del contenido de las páginas especiales, los componentes fijan su
+  propia forma (listas de chips, citas) porque el skin estiliza listas y
+  citas del cuerpo.
 
 ## Calidad y tests
 
 - `composer test`: parallel-lint, phpcs (mediawiki-codesniffer 45, la
-  generación de 1.43) y minus-x.
+  generación de 1.43), minus-x y los tests unitarios.
 - `npm test`: eslint-config-wikimedia, stylelint-config-wikimedia y
-  banana-checker.
-- PHPUnit, unitarios: `tests/phpunit/unit` (dominio puro: normalización,
-  variantes, ancla, localizador, texto canónico). Corren con el PHPUnit
-  **propio** de la extensión (`composer phpunit`, 9.6.19, la versión que fija
-  el core 1.43) y sin levantar MediaWiki. Solo toman del core las librerías de
-  `vendor/` que usa el dominio (RemexHtml); `MW_INSTALL_PATH` indica dónde está
-  el core.
-- PHPUnit, integración: `tests/phpunit/integration` (stores y API), con
-  `MediaWikiIntegrationTestCase` / `ApiTestCase` y tablas temporales. Se corren
-  desde el core: `cd w && php vendor/bin/phpunit extensions/casiopea-constel/tests/phpunit`.
+  banana-checker (`i18n/` e `i18n/api/`).
+- **PHPUnit unitario** (`tests/phpunit/unit`): dominio puro (normalización,
+  variantes, ancla, localizador, texto canónico), con el PHPUnit propio de la
+  extensión (`composer phpunit`, 9.6.19), sin levantar MediaWiki.
+- **PHPUnit de integración** (`tests/phpunit/integration`): stores, API,
+  moderación y registro, hooks de página y menú, re-anclaje, grafo y
+  exportación, con `MediaWikiIntegrationTestCase` / `ApiTestCase` sobre tablas
+  temporales. Se corren desde el core:
+  `cd w && php vendor/bin/phpunit extensions/casiopea-constel/tests/phpunit`.
   En la réplica local, las dependencias de desarrollo del core se reponen con
-  `scripts/install-core-dev.sh`, porque los scripts de fase usan `--no-dev`.
-  Estos tests fijan `wgLanguageCode = es`: el entorno de tests fuerza `en`, y
-  SemanticMediaWiki aborta si cambia el idioma.
-- QUnit: `tests/qunit` (TextIndex, localizador, texto canónico del DOM). Se
-  corre en `Especial:JavaScriptTest/qunit?module=ext.constel.reader`, que exige
-  `$wgEnableJavaScriptTest` (activado solo en la réplica local).
+  `scripts/install-core-dev.sh`. Fijan `wgLanguageCode = es`: el entorno de
+  tests fuerza `en`, y SemanticMediaWiki aborta si cambia el idioma.
+- **QUnit** (`tests/qunit`): TextIndex, localizador y texto canónico del DOM,
+  en `Especial:JavaScriptTest/qunit?module=ext.constel.reader`
+  (`$wgEnableJavaScriptTest`, solo en la réplica local).
 
 ## Privacidad
 
-Pasajes, codificaciones, temas y notas son **públicos** en la wiki
+Pasajes, glosas, codificaciones, temas y notas son **públicos** en la wiki
 (`ReadingIsPublicData`). La primera vez que el lector anota, la interfaz se lo
 advierte. Los autores se muestran por nombre, salvo que el core los tenga
-suprimidos (`hideuser`). En ese caso se muestra como en el resto de MediaWiki.
+suprimidos (`hideuser`); en ese caso se muestra como en el resto de MediaWiki.
+
+## Estructura del repo
+
+```
+extension.json                manifest
+casiopea-constel.alias.php    alias de páginas especiales (en, es)
+i18n/                         en · es · qqq (+ i18n/api/ para la API)
+sql/
+  tables.json                 esquema abstracto
+  abstractSchemaChanges/      cambios posteriores (ce_gloss)
+  mysql/ sqlite/ postgres/    SQL generado por motor
+src/
+  ServiceWiring.php · ConstelServices.php
+  Domain/                     ConceptNormalizer · TextAnchor · AnchorLocator · CanonicalText
+  Store/                      ConceptStore · ExcerptStore · ThemeStore (+ registros)
+  Page/                       RenderedTextProvider
+  Map/                        GraphBuilder
+  Export/                     ExportBuilder
+  Moderation/                 ModerationLog
+  Api/                        12 módulos + bases (ConstelWrite, ExcerptWrite, ThemeWrite)
+  Hooks/                      PageHooks · RevisionHooks · SchemaHooks · ResourceLoaderHooks
+  Jobs/                       ReanchorJob
+  Specials/                   SpecialConstellation · SpecialMyConstel
+resources/
+  ext.constel.tokens.css      la capa de alias sobre Stella Nova
+  ext.constel.ui/             compartido
+  ext.constel.reader/         la página que se lee
+  ext.constel.map/            Especial:Constelación
+  ext.constel.mine/           Especial:MiConstel
+tests/phpunit/{unit,integration}/ · tests/qunit/
+specs/casiopea-constel.allium
+docs/ARCHITECTURE.md          este archivo
+```
 
 ## Hitos
 
-| | Hito | Contenido |
+| Versión | Hito | Contenido |
 |---|---|---|
-| D0 | Esqueleto | manifest, i18n, derechos/grant, tokens, tooling, este doc |
-| D1 | Datos | `tables.json`, stores, dominio (normalizer, anchor), PHPUnit |
-| D2 | API | escritura y consulta |
-| D3 | § en la página | popup, autocompletado, resaltado, toggles |
-| D4 | Reanclaje | `ReanchorJob` + hooks de página |
-| D5 | Especiales | Constelación (mapa), MiConstel, exportación ZIP |
-| D6 | Moderación | renombrar/fusionar, `Special:Log/constel` |
+| 0.1.0 | D0 | Esqueleto: manifest, i18n, derechos/grant, tokens, tooling |
+| | D1 | Datos: `tables.json`, stores, dominio (normalizador, ancla), PHPUnit |
+| | D2 | API de escritura y lectura |
+| | D3 | § en la página: popup, autocompletado, marcas |
+| | D4 | Re-anclaje: `ReanchorJob` + hooks de página |
+| | D5 | Constelación (mapa), MiConstel, exportación ZIP |
+| | D6 | Moderación: renombrar/fusionar, `Special:Log/constel` |
+| 0.2.0 | Ajustes | Glosa, preferencia, menú de usuario, un solo «Guardar», páginas anchas, mapa 3D, arista de misma página |
