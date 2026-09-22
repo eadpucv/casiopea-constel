@@ -1,0 +1,490 @@
+{
+	"name": "Casiopea-Con§tel",
+	"version": "0.2.0",
+	"author": [
+		"[https://herbertspencer.net Herbert Spencer González]",
+		".:TIG:. Taller de Investigaciones Gráficas, e[ad] Escuela de Arquitectura y Diseño, Pontificia Universidad Católica de Valparaíso"
+	],
+	"url": "https://github.com/hspencer/casiopea-constel",
+	"descriptionmsg": "casiopea-constel-desc",
+	"license-name": "Artistic-2.0",
+	"type": "other",
+	"requires": {
+		"MediaWiki": ">= 1.43.0"
+	},
+	"AutoloadNamespaces": {
+		"MediaWiki\\Extension\\CasiopeaConstel\\": "src/"
+	},
+	"TestAutoloadNamespaces": {
+		"MediaWiki\\Extension\\CasiopeaConstel\\Tests\\Integration\\": "tests/phpunit/integration/",
+		"MediaWiki\\Extension\\CasiopeaConstel\\Tests\\Unit\\": "tests/phpunit/unit/"
+	},
+	"MessagesDirs": {
+		"casiopea-constel": [
+			"i18n",
+			"i18n/api"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"CasiopeaConstelAlias": "casiopea-constel.alias.php"
+	},
+	"ServiceWiringFiles": [
+		"src/ServiceWiring.php"
+	],
+	"Hooks": {
+		"LoadExtensionSchemaUpdates": "schema",
+		"BeforePageDisplay": "page",
+		"GetPreferences": "page",
+		"PageSaveComplete": "revision",
+		"PageDeleteComplete": "revision",
+		"SkinTemplateNavigation::Universal": "page"
+	},
+	"HookHandlers": {
+		"schema": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Hooks\\SchemaHooks"
+		},
+		"page": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Hooks\\PageHooks",
+			"services": [
+				"NamespaceInfo",
+				"PermissionManager",
+				"UserOptionsLookup"
+			]
+		},
+		"revision": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Hooks\\RevisionHooks",
+			"services": [
+				"CasiopeaConstel.ExcerptStore",
+				"JobQueueGroup"
+			]
+		}
+	},
+	"JobClasses": {
+		"constelReanchor": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Jobs\\ReanchorJob",
+			"needsPage": true,
+			"services": [
+				"CasiopeaConstel.ExcerptStore",
+				"PageStore",
+				"RevisionLookup",
+				"CasiopeaConstel.RenderedTextProvider",
+				"CasiopeaConstel.AnchorLocator"
+			]
+		}
+	},
+	"APIModules": {
+		"constel-createexcerpt": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiCreateExcerpt",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ExcerptStore",
+				"CasiopeaConstel.ConceptNormalizer",
+				"RevisionLookup",
+				"NamespaceInfo",
+				"CasiopeaConstel.RenderedTextProvider",
+				"CasiopeaConstel.AnchorLocator"
+			]
+		},
+		"constel-codeexcerpt": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiCodeExcerpt",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ExcerptStore",
+				"CasiopeaConstel.ConceptNormalizer"
+			]
+		},
+		"constel-uncodeexcerpt": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiUncodeExcerpt",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ExcerptStore",
+				"CasiopeaConstel.ConceptNormalizer"
+			]
+		},
+		"constel-deleteexcerpt": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiDeleteExcerpt",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ExcerptStore",
+				"CasiopeaConstel.ConceptNormalizer",
+				"CasiopeaConstel.ModerationLog"
+			]
+		},
+		"constel-theme": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiTheme",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ThemeStore"
+			]
+		},
+		"constel-groupconcept": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiGroupConcept",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ThemeStore"
+			]
+		},
+		"constel-themenote": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiThemeNote",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ThemeStore"
+			]
+		},
+		"constel-moderate": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiModerateConcept",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ConceptNormalizer",
+				"CasiopeaConstel.ModerationLog"
+			]
+		},
+		"constel-glossexcerpt": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiGlossExcerpt",
+			"services": [
+				"ActorNormalization",
+				"ConnectionProvider",
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ExcerptStore",
+				"CasiopeaConstel.ConceptNormalizer"
+			]
+		}
+	},
+	"APIListModules": {
+		"constelexcerpts": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiQueryConstelExcerpts",
+			"services": [
+				"CasiopeaConstel.ExcerptStore",
+				"CasiopeaConstel.ConceptStore",
+				"ActorStore",
+				"UserFactory",
+				"ConnectionProvider",
+				"PageStore",
+				"TitleFormatter"
+			]
+		},
+		"constelconcepts": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiQueryConstelConcepts",
+			"services": [
+				"CasiopeaConstel.ConceptStore",
+				"CasiopeaConstel.ThemeStore",
+				"ActorStore",
+				"UserFactory",
+				"ConnectionProvider"
+			]
+		},
+		"constelthemes": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiQueryConstelThemes",
+			"services": [
+				"CasiopeaConstel.ThemeStore",
+				"CasiopeaConstel.ConceptStore",
+				"ActorStore",
+				"UserFactory",
+				"ConnectionProvider"
+			]
+		},
+		"constelgraph": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiQueryConstelGraph",
+			"services": [
+				"CasiopeaConstel.GraphBuilder",
+				"ActorNormalization",
+				"ConnectionProvider"
+			]
+		}
+	},
+	"SpecialPages": {
+		"Constellation": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Specials\\SpecialConstellation",
+			"services": [
+				"CasiopeaConstel.GraphBuilder",
+				"ActorNormalization",
+				"ConnectionProvider"
+			]
+		},
+		"MyConstel": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Specials\\SpecialMyConstel",
+			"services": [
+				"CasiopeaConstel.ExcerptStore",
+				"CasiopeaConstel.ConceptStore",
+				"PageStore",
+				"CasiopeaConstel.ExportBuilder",
+				"ActorNormalization",
+				"ConnectionProvider"
+			]
+		}
+	},
+	"AvailableRights": [
+		"constel-annotate",
+		"constel-moderate"
+	],
+	"GroupPermissions": {
+		"user": {
+			"constel-annotate": true
+		},
+		"sysop": {
+			"constel-moderate": true
+		}
+	},
+	"GrantPermissions": {
+		"constel": {
+			"constel-annotate": true
+		}
+	},
+	"GrantPermissionGroups": {
+		"constel": "editpage"
+	},
+	"LogTypes": [
+		"constel"
+	],
+	"LogNames": {
+		"constel": "log-name-constel"
+	},
+	"LogHeaders": {
+		"constel": "log-description-constel"
+	},
+	"LogActionsHandlers": {
+		"constel/*": "LogFormatter"
+	},
+	"DefaultUserOptions": {
+		"constel-enabled": 1,
+		"constel-public-ack": 0
+	},
+	"DatabaseVirtualDomains": [
+		"virtual-constel"
+	],
+	"ResourceFileModulePaths": {
+		"localBasePath": "resources",
+		"remoteExtPath": "casiopea-constel/resources"
+	},
+	"ResourceModules": {
+		"ext.constel.tokens": {
+			"styles": [
+				"ext.constel.tokens.css"
+			]
+		},
+		"ext.constel.ui": {
+			"packageFiles": [
+				"ext.constel.ui/index.js",
+				"ext.constel.ui/api.js",
+				"ext.constel.ui/panel.js",
+				"ext.constel.ui/autocomplete.js",
+				"ext.constel.ui/variants.js",
+				"ext.constel.ui/detail.js"
+			],
+			"messages": [
+				"constel-panel-close",
+				"constel-suggestion-uses",
+				"constel-form-variant-create",
+				"constel-error-generic",
+				"constel-detail-title",
+				"constel-detail-mine",
+				"constel-detail-by",
+				"constel-detail-hidden-user",
+				"constel-detail-remove",
+				"constel-detail-add",
+				"constel-detail-delete",
+				"constel-detail-delete-confirm",
+				"constel-detail-delete-yes",
+				"constel-detail-delete-no",
+				"constel-form-gloss-label",
+				"constel-form-gloss-placeholder",
+				"constel-detail-save",
+				"constel-detail-save-delete",
+				"constel-form-concept-placeholder"
+			],
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.user",
+				"mediawiki.jqueryMsg",
+				"mediawiki.language"
+			]
+		},
+		"ext.constel.reader.styles": {
+			"styles": [
+				"ext.constel.tokens.css",
+				"ext.constel.ui/ui.css",
+				"ext.constel.reader/reader.css"
+			]
+		},
+		"ext.constel.reader": {
+			"packageFiles": [
+				"ext.constel.reader/init.js",
+				"ext.constel.reader/canonical.js",
+				"ext.constel.reader/locate.js",
+				"ext.constel.reader/marks.js",
+				"ext.constel.reader/form.js",
+				"ext.constel.reader/menu.js",
+				"ext.constel.reader/trigger.js",
+				{
+					"name": "ext.constel.reader/config.json",
+					"callback": "MediaWiki\\Extension\\CasiopeaConstel\\Hooks\\ResourceLoaderHooks::getReaderConfig"
+				}
+			],
+			"messages": [
+				"constel-mark-label",
+				"constel-form-title",
+				"constel-form-concept-label",
+				"constel-form-concept-placeholder",
+				"constel-form-submit",
+				"constel-form-public-notice",
+				"constel-form-saving",
+				"constel-form-reload",
+				"constel-trigger-label",
+				"constel-mine-menu",
+				"constel-everyone-menu",
+				"constel-marks-menu",
+				"constel-marks-show-menu",
+				"constel-form-gloss-label",
+				"constel-form-gloss-placeholder"
+			],
+			"dependencies": [
+				"ext.constel.ui",
+				"mediawiki.storage"
+			]
+		},
+		"ext.constel.map.styles": {
+			"styles": [
+				"ext.constel.tokens.css",
+				"ext.constel.ui/ui.css",
+				"ext.constel.map/map.css"
+			]
+		},
+		"ext.constel.map": {
+			"packageFiles": [
+				"ext.constel.map/map.js",
+				"ext.constel.map/graph.js",
+				"ext.constel.map/sidepanel.js"
+			],
+			"messages": [
+				"constellation-graph-label",
+				"constellation-node-label",
+				"constellation-counts",
+				"constellation-loading",
+				"constellation-empty",
+				"constellation-as-list",
+				"constellation-scope",
+				"constellation-page",
+				"constellation-page-placeholder",
+				"constellation-threshold",
+				"constellation-edges",
+				"constellation-lens",
+				"constellation-lens-placeholder",
+				"constellation-zoom-in",
+				"constellation-zoom-out",
+				"constellation-zoom-reset",
+				"constellation-link-overlap",
+				"constellation-link-coexcerpt",
+				"constellation-back-to-themes",
+				"constellation-my-themes",
+				"constellation-themes-of",
+				"constellation-no-lens",
+				"constellation-no-themes",
+				"constellation-in-themes",
+				"constellation-in-no-theme",
+				"constellation-theme-of",
+				"constellation-group-into",
+				"constellation-group",
+				"constellation-ungroup",
+				"constellation-theme-empty",
+				"constellation-note-label",
+				"constellation-note-new",
+				"constellation-note-add",
+				"constellation-save",
+				"constellation-theme-rename",
+				"constellation-theme-delete",
+				"constellation-theme-delete-confirm",
+				"constellation-theme-new",
+				"constellation-theme-create",
+				"myconstel-status-lost",
+				"constellation-moderate",
+				"constellation-rename-concept",
+				"constellation-merge-into",
+				"constellation-merge",
+				"constellation-merge-confirm",
+				"constellation-merge-unknown",
+				"constel-detail-delete-no",
+				"constellation-scope-everyone",
+				"constellation-scope-mine",
+				"constellation-mode",
+				"constellation-mode-3d",
+				"constellation-mode-2d",
+				"constellation-graph-label-3d",
+				"constellation-link-copage",
+				"constellation-autorotate"
+			],
+			"dependencies": [
+				"ext.constel.ui",
+				"mediawiki.util",
+				"mediawiki.storage"
+			]
+		},
+		"ext.constel.mine": {
+			"packageFiles": [
+				"ext.constel.mine/mine.js"
+			],
+			"messages": [
+				"myconstel-edit"
+			],
+			"dependencies": [
+				"ext.constel.ui"
+			]
+		}
+	},
+	"QUnitTestModule": {
+		"localBasePath": "",
+		"remoteExtPath": "casiopea-constel",
+		"packageFiles": [
+			"tests/qunit/reader.test.js"
+		],
+		"dependencies": [
+			"ext.constel.reader"
+		]
+	},
+	"config": {
+		"ConstelConceptMaxLength": {
+			"value": 80,
+			"description": "Largo máximo (caracteres) del rótulo de un concepto."
+		},
+		"ConstelThemeLabelMaxLength": {
+			"value": 80,
+			"description": "Largo máximo (caracteres) del rótulo de un tema."
+		},
+		"ConstelNoteMaxLength": {
+			"value": 20000,
+			"description": "Largo máximo (caracteres) de una nota de desarrollo de un tema."
+		},
+		"ConstelGlossMaxLength": {
+			"value": 5000,
+			"description": "Largo máximo (caracteres) de la glosa de un §."
+		},
+		"ConstelSelectionMinLength": {
+			"value": 3,
+			"description": "Largo mínimo (caracteres, sin espacios extremos) de un pasaje seleccionado."
+		},
+		"ConstelSelectionMaxLength": {
+			"value": 2000,
+			"description": "Largo máximo (caracteres) de un pasaje seleccionado."
+		},
+		"ConstelAnchorContextLength": {
+			"value": 32,
+			"description": "Caracteres de contexto (prefix/suffix) que se guardan a cada lado del pasaje para reanclarlo."
+		}
+	},
+	"manifest_version": 2
+}

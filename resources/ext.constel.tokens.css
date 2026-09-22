@@ -1,0 +1,101 @@
+/* casiopea-constel — capa de alias de tokens.
+ *
+ * La GUI de con§tel se diseña con el sistema de tokens de Stella Nova
+ * (skins/stella-nova/resources/tokens.css). Esta hoja es el ÚNICO lugar
+ * donde la extensión nombra tokens del skin. Los componentes consumen
+ * solo los alias --constel-*.
+ *
+ * Reglas (docs/ARCHITECTURE.md § Diseño):
+ *   1. Cada alias apunta a un token SEMÁNTICO o de COMPONENTE de Stella
+ *      Nova (--sn-paper, --sn-ink, --sn-btn-*, --sn-field-*…). Nunca a
+ *      primitivas (--sn-papel-*, --sn-tinta-*…): son internas del skin.
+ *   2. Cada alias lleva un respaldo en cadena: token Codex/WikimediaUI y,
+ *      al final, un valor literal equivalente a Vector 2022 claro. Así la
+ *      extensión funciona con cualquier skin (contrato SkinAgnostic del
+ *      spec), y con Stella Nova hereda el cambio claro/oscuro sin esfuerzo.
+ *   3. Se definen en :root. Stella Nova resuelve el tema con light-dark()
+ *      y color-scheme; un var() guardado en una custom property conserva
+ *      light-dark() sin evaluar, así que el flip ocurre donde se usa.
+ */
+
+:root {
+	/* Superficies */
+	--constel-surface: var( --sn-paper-raised, var( --background-color-base, #fff ) );
+	--constel-surface-sunk: var( --sn-sunk, var( --background-color-interactive-subtle, #f8f9fa ) );
+	--constel-scrim: var( --sn-scrim, rgba( 32, 33, 34, 0.45 ) );
+
+	/* Tinta */
+	--constel-ink: var( --sn-ink, var( --color-base, #202122 ) );
+	--constel-ink-soft: var( --sn-ink-soft, var( --color-subtle, #54595d ) );
+	--constel-ink-faint: var( --sn-ink-faint, var( --color-placeholder, #72777d ) );
+
+	/* Líneas */
+	--constel-hairline: var( --sn-hairline, var( --border-color-base, #a2a9b1 ) );
+	--constel-hairline-soft: var( --sn-hairline-soft, var( --border-color-subtle, #c8ccd1 ) );
+
+	/* Acento: la nova. El § y el foco son nova; nada más la usa. */
+	--constel-accent: var( --sn-nova, var( --color-progressive, #36c ) );
+	--constel-accent-ink: var( --sn-nova-ink, var( --color-inverted, #fff ) );
+	--constel-accent-wash: var( --sn-nova-wash, var( --background-color-progressive-subtle, #eaf3ff ) );
+	--constel-link: var( --sn-link, var( --color-progressive, #36c ) );
+
+	/* Marcas de pasajes: propios (nova) y ajenos (tinta tenue) */
+	--constel-mark-mine: var( --sn-nova, var( --color-progressive, #36c ) );
+	--constel-mark-mine-wash: var( --sn-nova-wash, var( --background-color-progressive-subtle, #eaf3ff ) );
+	--constel-mark-others: var( --sn-ink-faint, var( --color-placeholder, #72777d ) );
+	--constel-mark-others-wash: var( --sn-sunk, var( --background-color-interactive-subtle, #f8f9fa ) );
+
+	/* Estados */
+	--constel-danger: var( --sn-danger, var( --color-destructive, #d73333 ) );
+	--constel-warn-wash: var( --sn-warn-wash, var( --background-color-warning-subtle, #fdf2d5 ) );
+
+	/* Controles (tokens de componente del skin) */
+	--constel-field-bg: var( --sn-field-bg, var( --background-color-base, #fff ) );
+	--constel-field-fg: var( --sn-field-fg, var( --color-base, #202122 ) );
+	--constel-field-border: var( --sn-field-border, var( --border-color-base, #a2a9b1 ) );
+	--constel-field-placeholder: var( --sn-field-placeholder, var( --color-placeholder, #72777d ) );
+	--constel-btn-bg: var( --sn-btn-bg, var( --background-color-interactive-subtle, #f8f9fa ) );
+	--constel-btn-fg: var( --sn-btn-fg, var( --color-base, #202122 ) );
+	--constel-btn-border: var( --sn-btn-border, var( --border-color-base, #a2a9b1 ) );
+	--constel-btn-primary-bg: var( --sn-btn-primary-bg, var( --background-color-progressive, #36c ) );
+	--constel-btn-primary-fg: var( --sn-btn-primary-fg, var( --color-inverted, #fff ) );
+	--constel-opt-hover-bg: var( --sn-opt-hover-bg, var( --background-color-interactive, #eaecf0 ) );
+	--constel-opt-sel-bg: var( --sn-opt-sel-bg, var( --background-color-progressive-subtle, #eaf3ff ) );
+	--constel-focus-border: var( --sn-focus-border, var( --border-color-progressive--focus, #36c ) );
+	--constel-focus-ring: var( --sn-focus-ring, 0 0 0 2px var( --border-color-progressive--focus, #36c ) );
+
+	/* Tipografía: la del skin; sin fuentes propias */
+	--constel-font-ui: var( --sn-font-sans, sans-serif );
+	--constel-font-quote: var( --sn-font-quote, serif );
+	--constel-fs-xs: var( --sn-fs-xs, 0.75rem );
+	--constel-fs-sm: var( --sn-fs-sm, 0.875rem );
+	--constel-fs-base: var( --sn-fs-base, 1rem );
+
+	/* Escala categórica para los temas del mapa.
+	 * Stella Nova aún no la tiene: se propone --sn-cat-1…8 en el skin. Mientras
+	 * tanto, el respaldo es la paleta de temas de constel (state.js) mezclada
+	 * con la tinta, para que el contraste siga al tema claro/oscuro. */
+	--constel-cat-0: var( --sn-cat-1, color-mix( in oklab, #2d6a5a 60%, var( --constel-ink ) ) );
+	--constel-cat-1: var( --sn-cat-2, color-mix( in oklab, #6366f1 60%, var( --constel-ink ) ) );
+	--constel-cat-2: var( --sn-cat-3, color-mix( in oklab, #d97706 60%, var( --constel-ink ) ) );
+	--constel-cat-3: var( --sn-cat-4, color-mix( in oklab, #dc2626 60%, var( --constel-ink ) ) );
+	--constel-cat-4: var( --sn-cat-5, color-mix( in oklab, #7c3aed 60%, var( --constel-ink ) ) );
+	--constel-cat-5: var( --sn-cat-6, color-mix( in oklab, #0891b2 60%, var( --constel-ink ) ) );
+	--constel-cat-6: var( --sn-cat-7, color-mix( in oklab, #65a30d 60%, var( --constel-ink ) ) );
+	--constel-cat-7: var( --sn-cat-8, color-mix( in oklab, #be185d 60%, var( --constel-ink ) ) );
+
+	/* Espacio, forma, profundidad, movimiento */
+	--constel-s-1: var( --sn-s-1, 0.25rem );
+	--constel-s-2: var( --sn-s-2, 0.5rem );
+	--constel-s-3: var( --sn-s-3, 0.75rem );
+	--constel-s-4: var( --sn-s-4, 1rem );
+	--constel-radius-s: var( --sn-radius-s, 2px );
+	--constel-radius: var( --sn-radius, 2px );
+	--constel-radius-l: var( --sn-radius-l, 4px );
+	--constel-radius-pill: var( --sn-radius-pill, 999px );
+	--constel-lift: var( --sn-lift, 0 4px 12px rgba( 0, 0, 0, 0.15 ) );
+	--constel-lift-soft: var( --sn-lift-soft, 0 2px 8px rgba( 0, 0, 0, 0.08 ) );
+	--constel-dur: var( --sn-dur-1, 120ms );
+	--constel-ease: var( --sn-ease, ease-out );
+	--constel-z-popup: var( --sn-z-panel, 920 );
+}

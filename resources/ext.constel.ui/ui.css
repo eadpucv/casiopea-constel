@@ -1,0 +1,320 @@
+/* Casiopea-Con§tel — piezas de interfaz compartidas: el signo, el panel
+ * emergente, campos, botones, chips y autocompletado.
+ *
+ * Solo consume alias --constel-* (ext.constel.tokens.css).
+ */
+
+/* ── El signo ─────────────────────────────────────────────────────────── */
+
+.constel-sign {
+	font-family: var( --constel-font-quote );
+	color: var( --constel-accent );
+}
+
+/* ── Panel emergente ──────────────────────────────────────────────────── */
+
+.constel-panel {
+	position: absolute;
+	z-index: var( --constel-z-popup );
+	box-sizing: border-box;
+	width: min( 22rem, calc( 100vw - 2 * var( --constel-s-4 ) ) );
+	max-height: min( 32rem, calc( 100vh - 2 * var( --constel-s-4 ) ) );
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: var( --constel-s-3 ) var( --constel-s-4 ) var( --constel-s-4 );
+	border: 1px solid var( --constel-hairline-soft );
+	border-radius: var( --constel-radius-l );
+	background: var( --constel-surface );
+	color: var( --constel-ink );
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+	line-height: 1.45;
+	box-shadow: var( --constel-lift );
+}
+
+.constel-panel__close {
+	position: absolute;
+	top: var( --constel-s-1 );
+	right: var( --constel-s-1 );
+	width: 2rem;
+	height: 2rem;
+	border: 0;
+	border-radius: var( --constel-radius-pill );
+	background: transparent;
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-base );
+	cursor: pointer;
+}
+
+.constel-panel__close:hover {
+	background: var( --constel-opt-hover-bg );
+}
+
+.constel-panel__title {
+	margin: 0 0 var( --constel-s-2 );
+	padding-right: 2rem;
+	font-weight: 600;
+}
+
+.constel-quote {
+	margin: 0 0 var( --constel-s-3 );
+	padding: var( --constel-s-1 ) 0 var( --constel-s-1 ) var( --constel-s-3 );
+	border-left: 2px solid var( --constel-accent );
+	color: var( --constel-ink-soft );
+	font-family: var( --constel-font-quote );
+}
+
+.constel-label {
+	display: block;
+	margin-bottom: var( --constel-s-1 );
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect( 0, 0, 0, 0 );
+	white-space: nowrap;
+}
+
+.constel-field {
+	position: relative;
+	flex: 1;
+}
+
+.constel-input {
+	box-sizing: border-box;
+	width: 100%;
+	padding: var( --constel-s-2 );
+	border: 1px solid var( --constel-field-border );
+	border-radius: var( --constel-radius );
+	background: var( --constel-field-bg );
+	color: var( --constel-field-fg );
+	font: inherit;
+}
+
+.constel-input::placeholder {
+	color: var( --constel-field-placeholder );
+}
+
+.constel-input:focus {
+	outline: 0;
+	border-color: var( --constel-focus-border );
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-notice {
+	margin: var( --constel-s-3 ) 0 0;
+	padding: var( --constel-s-2 );
+	border-radius: var( --constel-radius );
+	background: var( --constel-warn-wash );
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-feedback:not( :empty ) {
+	margin-top: var( --constel-s-2 );
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-actions,
+.constel-confirm,
+.constel-add {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-2 );
+	align-items: center;
+	margin-top: var( --constel-s-3 );
+}
+
+.constel-actions {
+	justify-content: flex-end;
+}
+
+/* ── Botones (tokens de componente del skin) ─────────────────────────── */
+
+.constel-button {
+	padding: var( --constel-s-1 ) var( --constel-s-3 );
+	border: 1px solid var( --constel-btn-border );
+	border-radius: var( --constel-radius );
+	background: var( --constel-btn-bg );
+	color: var( --constel-btn-fg );
+	font: inherit;
+	cursor: pointer;
+}
+
+a.constel-button,
+a.constel-button:visited {
+	display: inline-block;
+	color: var( --constel-btn-fg );
+	text-decoration: none;
+}
+
+.constel-button--primary,
+a.constel-button--primary,
+a.constel-button--primary:visited {
+	border-color: transparent;
+	background: var( --constel-btn-primary-bg );
+	color: var( --constel-btn-primary-fg );
+}
+
+.constel-button--danger {
+	border-color: var( --constel-danger );
+	color: var( --constel-danger );
+}
+
+.constel-button:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.constel-link {
+	color: var( --constel-link );
+}
+
+/* ── Conceptos como chips ─────────────────────────────────────────────── */
+
+.constel-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-1 );
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.constel-chip {
+	display: inline-flex;
+	gap: var( --constel-s-1 );
+	align-items: center;
+	margin: 0;
+	padding: 0 var( --constel-s-2 );
+	border: 1px solid var( --constel-hairline-soft );
+	border-radius: var( --constel-radius-pill );
+	background: var( --constel-surface-sunk );
+	color: var( --constel-ink );
+	font: inherit;
+}
+
+.constel-chip--choice {
+	margin: var( --constel-s-1 ) var( --constel-s-1 ) 0 0;
+	cursor: pointer;
+}
+
+.constel-chip__remove {
+	padding: 0 var( --constel-s-1 );
+	border: 0;
+	border-radius: var( --constel-radius-pill );
+	background: transparent;
+	color: var( --constel-ink-soft );
+	cursor: pointer;
+}
+
+.constel-chip--removing .constel-chip__label {
+	color: var( --constel-ink-faint );
+	text-decoration: line-through;
+}
+
+.constel-chip__remove[ aria-pressed='true' ] {
+	color: var( --constel-danger );
+}
+
+.constel-edit .constel-chips {
+	margin-bottom: var( --constel-s-3 );
+}
+
+.constel-variants {
+	margin-top: var( --constel-s-2 );
+}
+
+/* ── Detalle de §§ ────────────────────────────────────────────────────── */
+
+.constel-excerpt + .constel-excerpt {
+	margin-top: var( --constel-s-3 );
+	padding-top: var( --constel-s-3 );
+	border-top: 1px solid var( --constel-hairline-soft );
+}
+
+.constel-excerpt__by {
+	margin: 0 0 var( --constel-s-2 );
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-excerpt .constel-button--danger {
+	margin-top: var( --constel-s-3 );
+}
+
+/* ── Autocompletado ───────────────────────────────────────────────────── */
+
+.constel-ac {
+	position: absolute;
+	z-index: 1;
+	right: 0;
+	left: 0;
+	margin: var( --constel-s-1 ) 0 0;
+	padding: var( --constel-s-1 ) 0;
+	border: 1px solid var( --constel-hairline-soft );
+	border-radius: var( --constel-radius );
+	background: var( --constel-surface );
+	list-style: none;
+	box-shadow: var( --constel-lift-soft );
+}
+
+.constel-ac[ hidden ] {
+	display: none;
+}
+
+.constel-ac__option {
+	display: flex;
+	gap: var( --constel-s-2 );
+	justify-content: space-between;
+	margin: 0;
+	padding: var( --constel-s-1 ) var( --constel-s-2 );
+	cursor: pointer;
+}
+
+.constel-ac__option:hover,
+.constel-ac__option[ aria-selected='true' ] {
+	background: var( --constel-opt-sel-bg );
+}
+
+.constel-ac__uses {
+	color: var( --constel-ink-faint );
+	font-size: var( --constel-fs-xs );
+}
+
+/* ── Glosa ───────────────────────────────────────────────────────────── */
+
+.constel-gloss-block {
+	margin-top: var( --constel-s-3 );
+}
+
+.constel-gloss {
+	margin-top: var( --constel-s-1 );
+	resize: vertical;
+}
+
+.constel-gloss-text {
+	margin: var( --constel-s-1 ) 0 var( --constel-s-2 );
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-sm );
+	font-style: italic;
+	white-space: pre-wrap;
+}
+
+.constel-panel .constel-label + .constel-gloss,
+.constel-field + .constel-label {
+	margin-top: var( --constel-s-2 );
+}
+
+/* ── Foco visible (al final: gana sobre los estados de cada control) ── */
+
+.constel-button:focus-visible,
+.constel-chip__remove:focus-visible,
+.constel-panel__close:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}

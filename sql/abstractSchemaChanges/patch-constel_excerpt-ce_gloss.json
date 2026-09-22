@@ -1,0 +1,282 @@
+{
+	"comment": "Agrega la glosa del lector a cada § (constel_excerpt.ce_gloss).",
+	"before": {
+		"name": "constel_excerpt",
+		"comment": "§ — pasaje seleccionado por un lector (spec: Excerpt).",
+		"columns": [
+			{
+				"name": "ce_id",
+				"comment": "Clave primaria.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true,
+					"autoincrement": true
+				}
+			},
+			{
+				"name": "ce_actor",
+				"comment": "Autor/dueño: actor.actor_id (sobrevive a renombres).",
+				"type": "bigint",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_page",
+				"comment": "page.page_id (sobrevive a traslados).",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_rev",
+				"comment": "revision.rev_id donde el ancla es válida (la vigente si ce_status = 0).",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_exact",
+				"comment": "TextAnchor.exact: el pasaje, en texto plano renderizado.",
+				"type": "blob",
+				"options": {
+					"notnull": true,
+					"length": 65530
+				}
+			},
+			{
+				"name": "ce_prefix",
+				"comment": "TextAnchor.prefix: contexto previo.",
+				"type": "binary",
+				"options": {
+					"length": 255,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_suffix",
+				"comment": "TextAnchor.suffix: contexto posterior.",
+				"type": "binary",
+				"options": {
+					"length": 255,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_start",
+				"comment": "TextAnchor.start, en code points sobre el texto canónico.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_end",
+				"comment": "TextAnchor.end (exclusivo), en code points.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_status",
+				"comment": "anchor_status: 0 = anchored, 1 = lost.",
+				"type": "mwtinyint",
+				"options": {
+					"unsigned": true,
+					"notnull": true,
+					"default": 0
+				}
+			},
+			{
+				"name": "ce_created",
+				"comment": "Creación del §.",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_lost",
+				"comment": "Momento en que el § se perdió; NULL mientras esté anclado.",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": false
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "ce_page_status",
+				"columns": [
+					"ce_page",
+					"ce_status"
+				],
+				"unique": false
+			},
+			{
+				"name": "ce_actor_created",
+				"columns": [
+					"ce_actor",
+					"ce_created"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"ce_id"
+		]
+	},
+	"after": {
+		"name": "constel_excerpt",
+		"comment": "§ — pasaje seleccionado por un lector (spec: Excerpt).",
+		"columns": [
+			{
+				"name": "ce_id",
+				"comment": "Clave primaria.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true,
+					"autoincrement": true
+				}
+			},
+			{
+				"name": "ce_actor",
+				"comment": "Autor/dueño: actor.actor_id (sobrevive a renombres).",
+				"type": "bigint",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_page",
+				"comment": "page.page_id (sobrevive a traslados).",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_rev",
+				"comment": "revision.rev_id donde el ancla es válida (la vigente si ce_status = 0).",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_exact",
+				"comment": "TextAnchor.exact: el pasaje, en texto plano renderizado.",
+				"type": "blob",
+				"options": {
+					"notnull": true,
+					"length": 65530
+				}
+			},
+			{
+				"name": "ce_prefix",
+				"comment": "TextAnchor.prefix: contexto previo.",
+				"type": "binary",
+				"options": {
+					"length": 255,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_suffix",
+				"comment": "TextAnchor.suffix: contexto posterior.",
+				"type": "binary",
+				"options": {
+					"length": 255,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_start",
+				"comment": "TextAnchor.start, en code points sobre el texto canónico.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_end",
+				"comment": "TextAnchor.end (exclusivo), en code points.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_gloss",
+				"comment": "Glosa del lector sobre el pasaje (comentario o aclaración). NULL = sin glosa.",
+				"type": "blob",
+				"options": {
+					"notnull": false,
+					"length": 65530
+				}
+			},
+			{
+				"name": "ce_status",
+				"comment": "anchor_status: 0 = anchored, 1 = lost.",
+				"type": "mwtinyint",
+				"options": {
+					"unsigned": true,
+					"notnull": true,
+					"default": 0
+				}
+			},
+			{
+				"name": "ce_created",
+				"comment": "Creación del §.",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": true
+				}
+			},
+			{
+				"name": "ce_lost",
+				"comment": "Momento en que el § se perdió; NULL mientras esté anclado.",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": false
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "ce_page_status",
+				"columns": [
+					"ce_page",
+					"ce_status"
+				],
+				"unique": false
+			},
+			{
+				"name": "ce_actor_created",
+				"columns": [
+					"ce_actor",
+					"ce_created"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"ce_id"
+		]
+	}
+}

@@ -1,0 +1,79 @@
+/* Casiopea-Con§tel — lectura sobre la página.
+ *
+ * Solo consume alias --constel-* (ext.constel.tokens.css), que apuntan a los
+ * tokens de Stella Nova con respaldo Codex. Sin hex, sin fuentes propias.
+ */
+
+/* ── Marcas de §§ ─────────────────────────────────────────────────────── */
+
+.constel-mark {
+	color: inherit;
+	background: var( --constel-mark-others-wash );
+	border-bottom: 2px solid var( --constel-mark-others );
+	border-radius: var( --constel-radius-s );
+	cursor: pointer;
+	transition: background-color var( --constel-dur ) var( --constel-ease );
+}
+
+.constel-mark--mine {
+	background: var( --constel-mark-mine-wash );
+	border-bottom-color: var( --constel-mark-mine );
+}
+
+/* §§ solapados: la marca interior se lee más intensa. */
+.constel-mark .constel-mark {
+	border-bottom-width: 3px;
+}
+
+.constel-mark:hover,
+.constel-mark:focus-visible {
+	background: var( --constel-accent-wash );
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-marks-hidden .constel-mark {
+	background: transparent;
+	border-bottom-color: transparent;
+	cursor: text;
+}
+
+/* ── Afordancia "§" ───────────────────────────────────────────────────── */
+
+.constel-trigger {
+	position: absolute;
+	z-index: var( --constel-z-popup );
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border: 0;
+	border-radius: var( --constel-radius-pill );
+	background: var( --constel-accent );
+	color: var( --constel-accent-ink );
+	font-family: var( --constel-font-quote );
+	font-size: var( --constel-fs-base );
+	line-height: 1;
+	box-shadow: var( --constel-lift );
+	cursor: pointer;
+}
+
+.constel-trigger[ hidden ] {
+	display: none;
+}
+
+.constel-trigger:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-lift ), var( --constel-focus-ring );
+}
+
+/* ── Controles en el menú de usuario: sin JS no hacen nada ─────────── */
+
+.client-nojs .constel-menu-toggle {
+	display: none;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.constel-mark {
+		transition: none;
+	}
+}

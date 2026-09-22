@@ -1,6 +1,6 @@
 -- allium: 3
 --
--- casiopea-constel — especificación de comportamiento.
+-- Casiopea-Con§tel (slug: casiopea-constel) — especificación de comportamiento.
 --
 -- Aplicación a MediaWiki 1.43 de con§tel (github.com/hspencer/constel):
 -- lectura activa y análisis temático (Braun & Clarke) sobre las páginas de
@@ -48,6 +48,7 @@ external entity User {
     identity: UserIdentity
     is_blocked: Boolean             -- bloqueo sitewide o parcial sobre la página
     rights: Set<String>             -- derechos efectivos ($wgGroupPermissions)
+    constel_enabled: Boolean        -- preferencia del lector (default: sí); ver PageReading
 }
 
 -- Identidad = page_id de MediaWiki: sobrevive a traslados (renombrar la
@@ -100,6 +101,14 @@ contract MediaWikiExtensionConformance {
         -- .mw-parser-output), nunca a markup de un skin. El skin puede
         -- ABSORBER sus estilos (ResourceModuleSkinStyles), no al revés.
 
+    @invariant DesignedOnStellaNovaTokens
+        -- La GUI es plenamente compatible con Stella Nova y usa sus
+        -- tokens (decisión 2026-09-22): consume sólo tokens SEMÁNTICOS y
+        -- de COMPONENTE --sn-* (nunca primitivas), vía una única capa de
+        -- alias --constel-* con respaldo Codex/literal para otros skins.
+        -- Hereda el flip claro/oscuro y la tipografía del skin; ningún
+        -- componente trae colores, fuentes ni medidas propias.
+
     @invariant ContentUntouched
         -- Anotar no modifica el wikitexto, no crea revisiones ni
         -- invalida la ParserCache: los §§ se pintan en el cliente sobre
@@ -144,9 +153,11 @@ value TextAnchor {
 -- Entities
 ------------------------------------------------------------
 
--- Vocabulario GLOBAL. Identidad = forma normalizada del rótulo.
+-- Vocabulario GLOBAL. Identidad ESTRICTA, con la semántica de un título
+-- de MediaWiki (decisión 2026-09-22): "Diseño" ≠ "Diseno". Ver
+-- normalize_concept.
 entity Concept {
-    key: String                     -- normalize_concept(label)
+    key: String                     -- normalize_concept(label): forma canónica de título
     label: String                   -- rótulo visible (primera aportación o renombre)
 
     codings: Coding with concept = this
@@ -164,6 +175,7 @@ entity Excerpt {
     page: WikiPage
     anchor: TextAnchor
     revision: Revision              -- última revisión donde el ancla es válida
+    gloss: String?                  -- glosa: comentario o aclaración del lector sobre el pasaje
     created_at: Timestamp
 
     codings: Coding with excerpt = this
@@ -228,12 +240,13 @@ entity ReadingExport {
 ------------------------------------------------------------
 
 config {
-    extension_version: String = "0.1.0"          -- debe coincidir con extension.json
+    extension_version: String = "0.2.0"          -- debe coincidir con extension.json
     concept_max_length: Integer = 80             -- caracteres
     theme_label_max_length: Integer = 80
     note_max_length: Integer = 20000             -- nota de desarrollo de un tema
     selection_min_length: Integer = 3            -- como constel (popup.js)
     selection_max_length: Integer = 2000
+    gloss_max_length: Integer = 5000             -- caracteres de la glosa de un §
     anchor_context_length: Integer = 32          -- prefix/suffix
     annotate_right: String = "constel-annotate"  -- default: grupo user
     moderate_right: String = "constel-moderate"  -- default: grupo sysop (administradores)
@@ -244,7 +257,7 @@ config {
 ------------------------------------------------------------
 
 rule ReaderCreatesExcerpt {
-    when: ReaderCreatesExcerpt(author, page, revision, anchor, concept_label)
+    when: ReaderCreatesExcerpt(author, page, revision, anchor, concept_label, gloss)
     requires: author.identity = registered
     requires: config.annotate_right in author.rights
     requires: not author.is_blocked
@@ -255,6 +268,7 @@ rule ReaderCreatesExcerpt {
     requires: anchor_resolves(anchor, revision)
     requires: not is_blank(concept_label)
     requires: length(trim(concept_label)) <= config.concept_max_length
+    requires: gloss = null or length(gloss) <= config.gloss_max_length
     let existing = Concept{key: normalize_concept(concept_label)}
     ensures:
         let excerpt = Excerpt.created(
@@ -262,6 +276,7 @@ rule ReaderCreatesExcerpt {
             page: page,
             anchor: anchor,
             revision: revision,
+            gloss: gloss,
             created_at: now,
             anchor_status: anchored
         )
@@ -271,8 +286,6 @@ rule ReaderCreatesExcerpt {
                 key: normalize_concept(concept_label),
                 label: trim(concept_label)
             )
-        if exists existing and better_spelled(trim(concept_label), existing.label):
-            existing.label = trim(concept_label)
         Coding.created(excerpt: excerpt, concept: concept, coded_at: now)
     @guidance
         -- Como en constel, un § nace con su primer concepto: el popup no
@@ -282,13 +295,12 @@ rule ReaderCreatesExcerpt {
         -- recuperable ("la página cambió; recarga") sin perder lo escrito.
         -- Los §§ del mismo autor pueden solaparse entre sí (constel los
         -- aplana al pintar; aquí sólo es presentación).
-        -- Ortografía canónica (decisión 2026-09-22): "diseno", "Diseño" y
-        -- "diseño" son el MISMO concepto (normalize_concept pliega
-        -- mayúsculas y tildes), pero el rótulo visible converge a la forma
-        -- bien escrita, con sus tildes: si el rótulo entrante está mejor
-        -- escrito que el vigente (better_spelled), lo reemplaza; si no, se
-        -- descarta y el § queda codificado con la forma canónica. Nunca
-        -- converge hacia la forma peor escrita.
+        -- Ortografía canónica (decisión 2026-09-22): la identidad es
+        -- estricta como un título de MediaWiki, así que "Diseno" y "Diseño"
+        -- serían conceptos distintos. La convergencia a la forma bien
+        -- escrita NO la hace la identidad: la hace el popup al escribir
+        -- (SelectionPopup.VariantsSteered) y, si una variante se cuela, un
+        -- administrador la fusiona (ModeratorMergesConcepts).
 }
 
 rule ReaderCodesExcerpt {
@@ -306,13 +318,23 @@ rule ReaderCodesExcerpt {
                 key: normalize_concept(concept_label),
                 label: trim(concept_label)
             )
-        if exists existing and better_spelled(trim(concept_label), existing.label):
-            existing.label = trim(concept_label)
         Coding.created(excerpt: excerpt, concept: concept, coded_at: now)
     @guidance
         -- Aplica también a §§ perdidos: siguen siendo codificables (su
-        -- pasaje citado se conserva), aunque no se dibujen. La
-        -- convergencia ortográfica es la misma que en ReaderCreatesExcerpt.
+        -- pasaje citado se conserva), aunque no se dibujen.
+}
+
+-- La glosa: un comentario o aclaración propia sobre el pasaje, además de
+-- sus conceptos (decisión 2026-09-22). Opcional; vacía = sin glosa.
+rule ReaderGlossesExcerpt {
+    when: ReaderGlossesExcerpt(actor, excerpt, gloss)
+    requires: actor = excerpt.author
+    requires: not actor.is_blocked
+    requires: gloss = null or length(gloss) <= config.gloss_max_length
+    ensures: excerpt.gloss = gloss
+    @guidance
+        -- Aplica también a §§ perdidos. Como el resto de la lectura, la
+        -- glosa es pública (ReadingIsPublicData).
 }
 
 rule ReaderUncodesExcerpt {
@@ -336,6 +358,9 @@ rule ReaderDeletesExcerpt {
         for c in excerpt.codings:
             not exists c
         not exists excerpt
+    @guidance
+        -- Si quien borra no es el autor (moderación), queda en
+        -- Special:Log/constel con el autor y el pasaje citado.
 }
 
 ------------------------------------------------------------
@@ -390,9 +415,9 @@ rule ModeratorRenamesConcept {
         concept.key = normalize_concept(new_label)
     @guidance
         -- Si el rótulo nuevo ya existe como otro concepto, eso es una
-        -- fusión (ModeratorMergesConcepts), no un renombre. Renombrar
-        -- dentro de la misma clave es la vía manual para fijar la
-        -- ortografía canónica cuando better_spelled no alcanza. Renombres,
+        -- fusión (ModeratorMergesConcepts), no un renombre. Renombrar es
+        -- la vía para corregir la ortografía de un concepto (p. ej.
+        -- "Diseno" → "Diseño" cuando "Diseño" no existe). Renombres,
         -- fusiones y borrados de §§ ajenos quedan en Special:Log (tipo de
         -- registro propio de la extensión).
 }
@@ -543,6 +568,9 @@ invariant ReadersAreRegistered {
 }
 
 -- Un § anclado apunta siempre a la revisión vigente de su página.
+-- Realización eventual: entre el guardado y la corrida del re-anclaje
+-- diferido (ReanchorJob) un § puede apuntar a la revisión anterior; el
+-- cliente lo ubica igual por la cita. Se cumple en cuanto corre el job.
 invariant AnchoredMeansCurrent {
     for e in Excerpts where anchor_status = anchored:
         e.revision = e.page.latest_revision
@@ -583,16 +611,18 @@ surface SelectionPopup {
         page.latest_revision
 
     provides:
-        ReaderCreatesExcerpt(viewer, page, page.latest_revision, anchor, concept_label)
+        ReaderCreatesExcerpt(viewer, page, page.latest_revision, anchor, concept_label, gloss)
             when viewer.identity = registered
                 and config.annotate_right in viewer.rights
                 and not viewer.is_blocked
+                and viewer.constel_enabled
 
     @guarantee AppearsOnSelection
         -- Al terminar una selección (ratón, táctil o teclado) de al menos
         -- config.selection_min_length caracteres, contenida por completo
         -- en el cuerpo de contenido, aparece junto a ella la afordancia
-        -- "§". Activarla abre el campo de concepto con el foco puesto.
+        -- "§". Activarla abre el campo de concepto con el foco puesto y un
+        -- segundo campo, opcional, para la glosa.
 
     @guarantee SharedVocabularyAutocomplete
         -- El campo de concepto sugiere, con coincidencia difusa, el
@@ -600,14 +630,23 @@ surface SelectionPopup {
         -- ordenado por uso. Elegir una sugerencia reutiliza el concepto;
         -- un rótulo nuevo lo crea.
 
+    @guarantee VariantsSteered
+        -- Si el rótulo escrito no existe pero hay conceptos que difieren
+        -- de él sólo en tildes, diéresis, mayúsculas o espacios, el popup
+        -- los ofrece ANTES de crear uno nuevo ("¿Diseño?"). Crear la
+        -- variante sigue siendo posible, pero requiere un gesto explícito:
+        -- nunca se sustituye ni se une en silencio. La comparación
+        -- tolerante sólo sugiere; la identidad sigue siendo estricta.
+
     @guarantee OnlyContentSelections
         -- Selecciones que tocan chrome del skin, el propio popup, campos
         -- editables o cruzan fuera del cuerpo de contenido no muestran
         -- la afordancia.
 
     @guarantee HiddenFromIneligible
-        -- Anónimos, cuentas temporales, bloqueados y usuarios sin
-        -- config.annotate_right no ven la afordancia.
+        -- Anónimos, cuentas temporales, bloqueados, usuarios sin
+        -- config.annotate_right y quienes desactivaron con§tel en sus
+        -- preferencias no ven la afordancia.
 
     @guarantee KeyboardOperable
         -- Afordancia alcanzable por teclado, nombre accesible ("con§tel");
@@ -631,10 +670,12 @@ surface PageReading {
             e.anchor
             e.author
             e.concepts
+            e.gloss
             e.author = viewer
 
     provides:
         ReaderCodesExcerpt(viewer, excerpt, concept_label)
+        ReaderGlossesExcerpt(viewer, excerpt, gloss)
         ReaderUncodesExcerpt(viewer, coding)
         ReaderDeletesExcerpt(viewer, excerpt)
 
@@ -645,6 +686,20 @@ surface PageReading {
         -- Por defecto se resaltan sólo los §§ del viewer (alcance
         -- mine); un control muestra también los de todos (everyone),
         -- distinguiendo propios de ajenos.
+
+    @guarantee DisabledByPreference
+        -- Si el lector desactivó con§tel en sus preferencias
+        -- (constel_enabled = false), la página se ve como sin la extensión:
+        -- ni marcas, ni afordancia "§", ni controles de lectura, y el menú de
+        -- usuario no menciona con§tel (decisión 2026-09-22). El mapa y la
+        -- lista propia siguen existiendo (se llega por Páginas especiales o
+        -- su URL). Se reactiva desde las preferencias.
+
+    @guarantee ReadingControlsReachable
+        -- Los controles de lectura (alcance mine/everyone, ocultar marcas)
+        -- y los accesos al mapa y a la lista propia se ofrecen en el menú
+        -- de usuario del skin, alcanzable desde cualquier punto de una
+        -- página larga (decisión 2026-09-22).
 
     @guarantee NothingForAnonymous
         -- Anónimos y cuentas temporales no ven marcas ni controles de
@@ -673,6 +728,7 @@ surface ConceptDetail {
         concept.label
         for e in concept.excerpts:
             e.anchor.exact
+            e.gloss
             e.page
             e.author
             e.anchor_status
@@ -726,15 +782,21 @@ surface ConceptMap {
     @guarantee PageFilter
         -- Puede restringirse a una página (constel: grafo por source).
 
-    @guarantee TopologyCoExcerptAndOverlap
+    @guarantee TopologyCoExcerptOverlapAndPage
         -- Dos conceptos se unen (arista con clase y peso) si:
         --   co_excerpt: están codificados en el MISMO §; peso = nº de §§
         --     compartidos (doctrina constel: decisiones del lector).
         --   overlap: codifican §§ ANCLADOS de lectores DISTINTOS sobre la
         --     misma página cuyos rangos comparten al menos un carácter;
         --     peso = nº de pares.
-        -- Los §§ perdidos aportan co_excerpt pero no overlap (no tienen
-        -- posición vigente). Las dos clases de arista se distinguen.
+        --   co_page: fueron anotados en la MISMA página (por cualquier
+        --     lector, en cualquier §); peso = nº de páginas compartidas
+        --     (decisión 2026-09-22: un mapa de §§ de un solo concepto
+        --     también debe mostrar su constelación).
+        -- Los §§ perdidos aportan co_excerpt y co_page, pero no overlap (no
+        -- tienen posición vigente). Las tres clases de arista se
+        -- distinguen visualmente; co_page es la más tenue, porque no es
+        -- una decisión explícita del lector.
 
     @guarantee OverlapNeverConverges
         -- Que dos §§ solapados tengan conceptos distintos es criterio de
@@ -805,6 +867,7 @@ surface MyReading {
 
     exposes:
         excerpt.anchor.exact
+        excerpt.gloss
         excerpt.page
         excerpt.concepts
         excerpt.anchor_status
@@ -812,6 +875,7 @@ surface MyReading {
 
     provides:
         ReaderCodesExcerpt(viewer, excerpt, concept_label)
+        ReaderGlossesExcerpt(viewer, excerpt, gloss)
         ReaderDeletesExcerpt(viewer, excerpt)
         ReaderExportsReading(viewer)
 
@@ -845,11 +909,10 @@ surface MediaWikiIntegration {
 -- Deferred
 ------------------------------------------------------------
 
-deferred Concept.normalize_concept    -- see: docs/ARCHITECTURE.md#conceptos — casefold + pliegue de tildes/diacríticos + trim + colapso de espacios
-deferred Concept.better_spelled       -- see: docs/ARCHITECTURE.md#conceptos — ¿la forma nueva está mejor escrita (tildes necesarias) que la vigente?
+deferred Concept.normalize_concept    -- see: docs/ARCHITECTURE.md#conceptos — forma canónica de título MW: NFC, trim, '_' y espacios colapsados a uno, primera letra según $wgCapitalLinks; el resto exacto
 deferred Excerpt.anchor_resolves      -- see: docs/ARCHITECTURE.md#anclaje — ¿el TextAnchor se ubica sin ambigüedad en el texto renderizado?
 deferred Excerpt.relocate             -- see: docs/ARCHITECTURE.md#anclaje — el TextAnchor recalculado en la nueva revisión
-deferred Concept.concept_links        -- see: docs/ARCHITECTURE.md#mapa — aristas co_excerpt + overlap (ver TopologyCoExcerptAndOverlap)
+deferred Concept.concept_links        -- see: docs/ARCHITECTURE.md#mapa — aristas co_excerpt + overlap + co_page (ver TopologyCoExcerptOverlapAndPage)
 
 ------------------------------------------------------------
 -- Open questions

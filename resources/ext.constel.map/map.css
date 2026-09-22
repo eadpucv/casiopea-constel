@@ -1,0 +1,350 @@
+/* Casiopea-Con§tel — Especial:Constelación y Especial:MiConstel.
+ *
+ * Solo consume alias --constel-* (ext.constel.tokens.css).
+ */
+
+/* ── Controles ────────────────────────────────────────────────────────── */
+
+.constel-map__controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-3 );
+	align-items: flex-end;
+	margin: var( --constel-s-3 ) 0;
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+}
+
+.constel-map__field .constel-input {
+	width: auto;
+	min-width: 9rem;
+}
+
+.constel-map__field--inline {
+	display: inline-flex;
+	gap: var( --constel-s-1 );
+	align-items: center;
+	padding-bottom: var( --constel-s-2 );
+}
+
+.constel-map__threshold {
+	width: 5rem;
+}
+
+.constel-map__zoom {
+	display: inline-flex;
+	gap: var( --constel-s-1 );
+	margin-left: auto;
+}
+
+/* ── Lienzo y panel ───────────────────────────────────────────────────── */
+
+.constel-map__layout {
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) minmax( 16rem, 22rem );
+	gap: var( --constel-s-4 );
+}
+
+@media ( max-width: 50rem ) {
+	.constel-map__layout {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+}
+
+.constel-map__canvas {
+	align-self: start;
+	border: 1px solid var( --constel-hairline-soft );
+	border-radius: var( --constel-radius-l );
+	background: var( --constel-surface-sunk );
+	color: var( --constel-ink-soft );
+	font-family: var( --constel-font-ui );
+	overflow: hidden;
+}
+
+.constel-map__side {
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+	color: var( --constel-ink );
+}
+
+.constel-map__empty {
+	margin: var( --constel-s-4 );
+}
+
+/* ── Grafo ────────────────────────────────────────────────────────────── */
+
+.constel-graph {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 8 / 5;
+	cursor: grab;
+	touch-action: none;
+}
+
+.constel-graph:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-graph__link {
+	stroke: var( --constel-ink-faint );
+	stroke-opacity: 0.8;
+}
+
+.constel-graph__link--near {
+	stroke: var( --constel-accent );
+	stroke-opacity: 1;
+}
+
+.constel-graph__link--overlap {
+	stroke-dasharray: 4 3;
+}
+
+/* Misma página: la relación más tenue (no es una decisión del lector). */
+.constel-graph__link--co_page {
+	stroke: var( --constel-ink-faint );
+	stroke-opacity: 0.55;
+	stroke-dasharray: 2 3;
+}
+
+.constel-graph__node {
+	fill: var( --constel-ink-soft );
+	font-family: var( --constel-font-ui );
+	cursor: pointer;
+	paint-order: stroke;
+	stroke: var( --constel-surface-sunk );
+	stroke-width: 3px;
+}
+
+.constel-graph__node--mine {
+	fill: var( --constel-ink );
+}
+
+.constel-graph__node--cat-0 {
+	fill: var( --constel-cat-0 );
+}
+
+.constel-graph__node--cat-1 {
+	fill: var( --constel-cat-1 );
+}
+
+.constel-graph__node--cat-2 {
+	fill: var( --constel-cat-2 );
+}
+
+.constel-graph__node--cat-3 {
+	fill: var( --constel-cat-3 );
+}
+
+.constel-graph__node--cat-4 {
+	fill: var( --constel-cat-4 );
+}
+
+.constel-graph__node--cat-5 {
+	fill: var( --constel-cat-5 );
+}
+
+.constel-graph__node--cat-6 {
+	fill: var( --constel-cat-6 );
+}
+
+.constel-graph__node--cat-7 {
+	fill: var( --constel-cat-7 );
+}
+
+.constel-graph__node:focus-visible {
+	outline: 0;
+	text-decoration: underline;
+}
+
+.constel-graph--focus .constel-graph__node:not( .constel-graph__node--near ),
+.constel-graph--focus .constel-graph__link:not( .constel-graph__link--near ) {
+	opacity: 0.25;
+}
+
+.constel-graph__node--selected {
+	text-decoration: underline;
+	text-decoration-color: var( --constel-accent );
+}
+
+/* ── Panel lateral ────────────────────────────────────────────────────── */
+
+.constel-side__title {
+	margin: var( --constel-s-2 ) 0 var( --constel-s-1 );
+	font-size: var( --constel-fs-base );
+}
+
+.constel-side__meta {
+	margin: 0 0 var( --constel-s-3 );
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-side__page h3,
+.constel-side__themes h3 {
+	margin: var( --constel-s-3 ) 0 var( --constel-s-1 );
+	font-size: var( --constel-fs-sm );
+}
+
+.constel-side__excerpt {
+	margin: 0 0 var( --constel-s-2 );
+}
+
+.constel-side__excerpt .constel-quote {
+	margin-bottom: var( --constel-s-1 );
+}
+
+.constel-side__excerpt--lost .constel-quote {
+	border-left-style: dashed;
+	opacity: 0.75;
+}
+
+.constel-side__by {
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-status--lost {
+	color: var( --constel-danger );
+}
+
+.constel-map__back {
+	margin-bottom: var( --constel-s-2 );
+}
+
+.constel-theme {
+	margin-top: var( --constel-s-3 );
+	padding-top: var( --constel-s-3 );
+	border-top: 1px solid var( --constel-hairline-soft );
+}
+
+.constel-map .constel-theme__title {
+	display: flex;
+	gap: var( --constel-s-2 );
+	align-items: center;
+	margin: 0 0 var( --constel-s-2 );
+	font-size: var( --constel-fs-sm );
+}
+
+.constel-theme__swatch {
+	display: inline-block;
+	flex: none;
+	width: 0.75rem;
+	height: 0.75rem;
+	border-radius: var( --constel-radius-pill );
+	background: var( --constel-ink-faint );
+}
+
+.constel-theme--cat-0 .constel-theme__swatch {
+	background: var( --constel-cat-0 );
+}
+
+.constel-theme--cat-1 .constel-theme__swatch {
+	background: var( --constel-cat-1 );
+}
+
+.constel-theme--cat-2 .constel-theme__swatch {
+	background: var( --constel-cat-2 );
+}
+
+.constel-theme--cat-3 .constel-theme__swatch {
+	background: var( --constel-cat-3 );
+}
+
+.constel-theme--cat-4 .constel-theme__swatch {
+	background: var( --constel-cat-4 );
+}
+
+.constel-theme--cat-5 .constel-theme__swatch {
+	background: var( --constel-cat-5 );
+}
+
+.constel-theme--cat-6 .constel-theme__swatch {
+	background: var( --constel-cat-6 );
+}
+
+.constel-theme--cat-7 .constel-theme__swatch {
+	background: var( --constel-cat-7 );
+}
+
+.constel-chip__open {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.constel-note {
+	margin: var( --constel-s-2 ) 0;
+	white-space: pre-wrap;
+}
+
+.constel-theme textarea {
+	margin-top: var( --constel-s-2 );
+	resize: vertical;
+}
+
+.constel-theme-new {
+	margin-top: var( --constel-s-4 );
+}
+
+/* ── Lista (alternativa textual) ──────────────────────────────────────── */
+
+.constel-map__alt {
+	margin-top: var( --constel-s-4 );
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+}
+
+.constel-map__alt summary {
+	cursor: pointer;
+}
+
+.constel-map__count,
+.constel-map__near {
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-map__open {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	font: inherit;
+	cursor: pointer;
+}
+
+/* ── Dentro del contenido de la página ───────────────────────────────────
+ * Las páginas especiales viven en el cuerpo de contenido, donde el skin
+ * estiliza listas y citas. Los componentes de con§tel conservan su forma. */
+
+.constel-map .constel-chips,
+.constel-mine .constel-chips {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.constel-map .constel-quote,
+.constel-mine .constel-quote {
+	font-size: var( --constel-fs-sm );
+	line-height: 1.45;
+}
+
+/* ── Especial:MiConstel ───────────────────────────────────────────────── */
+
+.constel-mine__actions {
+	display: flex;
+	gap: var( --constel-s-2 );
+}
+
+.constel-mine .constel-quote {
+	margin: 0;
+}
+
+.constel-mine__row--lost .constel-quote {
+	border-left-style: dashed;
+}
