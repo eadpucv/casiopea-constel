@@ -1,0 +1,858 @@
+-- allium: 3
+--
+-- casiopea-constel — especificación de comportamiento.
+--
+-- Aplicación a MediaWiki 1.43 de con§tel (github.com/hspencer/constel):
+-- lectura activa y análisis temático (Braun & Clarke) sobre las páginas de
+-- Casiopea, ahora con MUCHOS lectores. La hipótesis de origen (e[ad] PUCV,
+-- 2004–2006) se mantiene: la interacción produce un espacio semántico —
+-- aquí, un espacio semántico COLECTIVO.
+--
+-- MODELO (fiel a constel, decisión 2026-09-22):
+--
+--   página wiki (source) ──1:N──▸ § excerpt   (pasaje de un lector)
+--   excerpt ◂──N:M──▸ concept                   (vía Coding)
+--   concept ──N:1──▸ theme    POR LECTOR        (vía ThemeMembership)
+--   theme   ──1:N──▸ note
+--
+-- Diferencias con el constel standalone, todas por pasar a multiusuario:
+--   · Un excerpt pertenece a su autor; sólo él lo codifica.
+--   · Los conceptos son GLOBALES: vocabulario compartido, un rótulo
+--     normalizado = una estrella. Renombrar/fusionar es de moderación.
+--   · Los temas son PERSONALES (cada lector sintetiza a su modo, y el
+--     mismo concepto puede caer en temas distintos para lectores
+--     distintos) pero VISIBLES para todos; sólo su dueño los edita.
+--   · Las páginas cambian. El ancla se re-ubica tras cada revisión; si
+--     no se puede, el excerpt queda PERDIDO (desanclado): deja de verse
+--     sobre el texto, pero conserva sus conceptos y sigue en el mapa.
+--   · El mapa une conceptos por co-excerpt (mismo §) Y por solapamiento
+--     de §§ de lectores distintos sobre el mismo pasaje.
+--
+-- ALCANCE. Allium describe comportamiento observable. NO modela (va a
+-- docs/ y al código): esquema SQL, Action API, módulos ResourceLoader,
+-- clases PHP; la presentación del popup, resaltado y grafo (2D/3D,
+-- fuerzas, colores de tema, tipografía); el algoritmo de anclaje, de
+-- fuzzy match y de ortografía canónica (cajas negras).
+--
+-- FUERA DE ALCANCE, también en la versión final (decisión 2026-09-22):
+-- la glosa cronológica y el minimap del Lector de constel, y las
+-- colecciones de corpus (p. ej. filtrar el mapa por "Amereida").
+
+------------------------------------------------------------
+-- External Entities
+------------------------------------------------------------
+
+-- Gobernadas por MediaWiki, no por este spec.
+
+external entity User {
+    identity: UserIdentity
+    is_blocked: Boolean             -- bloqueo sitewide o parcial sobre la página
+    rights: Set<String>             -- derechos efectivos ($wgGroupPermissions)
+}
+
+-- Identidad = page_id de MediaWiki: sobrevive a traslados (renombrar la
+-- página no pierde excerpts).
+--
+-- is_annotatable = existe, está en un namespace de contenido
+-- ($wgContentNamespaces), no es redirección y tiene revisión. Todas las
+-- páginas de contenido son anotables (decisión 2026-09-22), sin opt-in.
+external entity WikiPage {
+    is_annotatable: Boolean
+    latest_revision: Revision?
+}
+
+external entity Revision {
+    page: WikiPage
+}
+
+------------------------------------------------------------
+-- Contracts
+------------------------------------------------------------
+
+-- Buena ciudadanía como extensión MediaWiki 1.43. Direccionalidad: la
+-- extensión las CUMPLE. Realización en docs/ARCHITECTURE.md.
+contract MediaWikiExtensionConformance {
+    register: (page: WikiPage, viewer: User) -> Boolean
+
+    @invariant DeclarativeManifest
+        -- Todo el registro (hooks, API, páginas especiales, módulos RL,
+        -- derechos, mensajes, config, autoload PSR-4, esquema) vive en
+        -- extension.json (manifest_version 2). En LocalSettings sólo
+        -- wfLoadExtension y overrides de config.
+
+    @invariant WritesAreTokenProtected
+        -- Toda operación mutante viaja por la Action API como POST con
+        -- token CSRF y re-comprueba identidad, derechos y bloqueos en el
+        -- servidor. El cliente nunca es la autoridad.
+
+    @invariant RightsDeclared
+        -- Los permisos son derechos MediaWiki declarados
+        -- (config.annotate_right, config.moderate_right), asignables por
+        -- grupo; nunca comprobaciones de grupo cableadas.
+
+    @invariant FullyLocalised
+        -- Todo texto de interfaz es mensaje i18n (es + en + qqq). El
+        -- signo "§" es contenido; su nombre accesible es mensaje.
+
+    @invariant SkinAgnostic
+        -- Funciona igual en Stella Nova, Vector 2022 y MinervaNeue: se
+        -- ancla sólo a puntos canónicos del core (#mw-content-text,
+        -- .mw-parser-output), nunca a markup de un skin. El skin puede
+        -- ABSORBER sus estilos (ResourceModuleSkinStyles), no al revés.
+
+    @invariant ContentUntouched
+        -- Anotar no modifica el wikitexto, no crea revisiones ni
+        -- invalida la ParserCache: los §§ se pintan en el cliente sobre
+        -- el DOM ya renderizado.
+
+    @invariant OutputEscaped
+        -- Rótulos de concepto y tema, pasajes y notas son texto plano
+        -- del usuario: se escapan siempre (nunca wikitexto ni HTML).
+
+    @invariant ReadingIsPublicData
+        -- Excerpts, codificaciones, temas y notas son públicos dentro de
+        -- la wiki (decisión 2026-09-22). La interfaz lo advierte al
+        -- anotar por primera vez. Se atribuyen al nombre de usuario;
+        -- respetan la supresión de nombres (hideuser) del core.
+}
+
+------------------------------------------------------------
+-- Enumerations
+------------------------------------------------------------
+
+-- MediaWiki 1.43: anónimo-IP, cuenta temporal (IP-masking) o registrado.
+enum UserIdentity { anonymous | temporary | registered }
+
+
+------------------------------------------------------------
+-- Value Types
+------------------------------------------------------------
+
+-- Ancla textual estilo W3C Web Annotation: TextQuoteSelector (exact +
+-- prefix + suffix) + TextPositionSelector (start/end). Se mide sobre el
+-- TEXTO PLANO RENDERIZADO del cuerpo de la revisión, no sobre el
+-- wikitexto (en constel: offsets sobre el .txt).
+value TextAnchor {
+    exact: String
+    prefix: String                  -- config.anchor_context_length caracteres
+    suffix: String
+    start: Integer
+    end: Integer
+}
+
+------------------------------------------------------------
+-- Entities
+------------------------------------------------------------
+
+-- Vocabulario GLOBAL. Identidad = forma normalizada del rótulo.
+entity Concept {
+    key: String                     -- normalize_concept(label)
+    label: String                   -- rótulo visible (primera aportación o renombre)
+
+    codings: Coding with concept = this
+    memberships: ThemeMembership with concept = this
+
+    excerpts: codings.excerpt
+    pages: excerpts.page
+    readers: excerpts.author
+    is_unused: codings.count = 0
+}
+
+-- § — un pasaje seleccionado por un lector en una página.
+entity Excerpt {
+    author: User
+    page: WikiPage
+    anchor: TextAnchor
+    revision: Revision              -- última revisión donde el ancla es válida
+    created_at: Timestamp
+
+    codings: Coding with excerpt = this
+    concepts: codings.concept
+
+    anchor_status: anchored | lost
+    lost_at: Timestamp when anchor_status = lost
+
+    transitions anchor_status {
+        anchored -> lost
+        terminal: lost
+    }
+
+    is_drawn_on_page: anchor_status = anchored
+    is_uncoded: codings.count = 0
+}
+
+-- La codificación: el acto de asignar un concepto a un §.
+entity Coding {
+    excerpt: Excerpt
+    concept: Concept
+    coded_at: Timestamp
+}
+
+-- Tema: metacategoría PERSONAL de su dueño, visible para todos.
+entity Theme {
+    owner: User
+    label: String
+    created_at: Timestamp
+
+    memberships: ThemeMembership with theme = this
+    notes: ThemeNote with theme = this
+
+    concepts: memberships.concept
+}
+
+-- Pertenencia concepto→tema, POR LECTOR (constel: concept.themeId).
+entity ThemeMembership {
+    theme: Theme
+    concept: Concept
+
+    owner: theme.owner
+}
+
+-- Nota de desarrollo: la destilación, el texto propio del lector.
+entity ThemeNote {
+    theme: Theme
+    text: String
+    updated_at: Timestamp
+
+    author: theme.owner
+}
+
+-- Una exportación de la lectura de un usuario.
+entity ReadingExport {
+    owner: User
+    requested_at: Timestamp
+}
+
+------------------------------------------------------------
+-- Config
+------------------------------------------------------------
+
+config {
+    extension_version: String = "0.1.0"          -- debe coincidir con extension.json
+    concept_max_length: Integer = 80             -- caracteres
+    theme_label_max_length: Integer = 80
+    note_max_length: Integer = 20000             -- nota de desarrollo de un tema
+    selection_min_length: Integer = 3            -- como constel (popup.js)
+    selection_max_length: Integer = 2000
+    anchor_context_length: Integer = 32          -- prefix/suffix
+    annotate_right: String = "constel-annotate"  -- default: grupo user
+    moderate_right: String = "constel-moderate"  -- default: grupo sysop (administradores)
+}
+
+------------------------------------------------------------
+-- Rules — excerpts y codificación
+------------------------------------------------------------
+
+rule ReaderCreatesExcerpt {
+    when: ReaderCreatesExcerpt(author, page, revision, anchor, concept_label)
+    requires: author.identity = registered
+    requires: config.annotate_right in author.rights
+    requires: not author.is_blocked
+    requires: page.is_annotatable
+    requires: revision = page.latest_revision
+    requires: length(trim(anchor.exact)) >= config.selection_min_length
+    requires: length(anchor.exact) <= config.selection_max_length
+    requires: anchor_resolves(anchor, revision)
+    requires: not is_blank(concept_label)
+    requires: length(trim(concept_label)) <= config.concept_max_length
+    let existing = Concept{key: normalize_concept(concept_label)}
+    ensures:
+        let excerpt = Excerpt.created(
+            author: author,
+            page: page,
+            anchor: anchor,
+            revision: revision,
+            created_at: now,
+            anchor_status: anchored
+        )
+        let concept =
+            if exists existing: existing
+            else: Concept.created(
+                key: normalize_concept(concept_label),
+                label: trim(concept_label)
+            )
+        if exists existing and better_spelled(trim(concept_label), existing.label):
+            existing.label = trim(concept_label)
+        Coding.created(excerpt: excerpt, concept: concept, coded_at: now)
+    @guidance
+        -- Como en constel, un § nace con su primer concepto: el popup no
+        -- crea pasajes sin codificar. `revision = page.latest_revision`
+        -- rechaza selecciones hechas sobre una vista vieja: el cliente
+        -- envía el revid que muestra; si no es el último, error
+        -- recuperable ("la página cambió; recarga") sin perder lo escrito.
+        -- Los §§ del mismo autor pueden solaparse entre sí (constel los
+        -- aplana al pintar; aquí sólo es presentación).
+        -- Ortografía canónica (decisión 2026-09-22): "diseno", "Diseño" y
+        -- "diseño" son el MISMO concepto (normalize_concept pliega
+        -- mayúsculas y tildes), pero el rótulo visible converge a la forma
+        -- bien escrita, con sus tildes: si el rótulo entrante está mejor
+        -- escrito que el vigente (better_spelled), lo reemplaza; si no, se
+        -- descarta y el § queda codificado con la forma canónica. Nunca
+        -- converge hacia la forma peor escrita.
+}
+
+rule ReaderCodesExcerpt {
+    when: ReaderCodesExcerpt(actor, excerpt, concept_label)
+    requires: actor = excerpt.author
+    requires: not actor.is_blocked
+    requires: not is_blank(concept_label)
+    requires: length(trim(concept_label)) <= config.concept_max_length
+    let existing = Concept{key: normalize_concept(concept_label)}
+    requires: not (exists existing and existing in excerpt.concepts)
+    ensures:
+        let concept =
+            if exists existing: existing
+            else: Concept.created(
+                key: normalize_concept(concept_label),
+                label: trim(concept_label)
+            )
+        if exists existing and better_spelled(trim(concept_label), existing.label):
+            existing.label = trim(concept_label)
+        Coding.created(excerpt: excerpt, concept: concept, coded_at: now)
+    @guidance
+        -- Aplica también a §§ perdidos: siguen siendo codificables (su
+        -- pasaje citado se conserva), aunque no se dibujen. La
+        -- convergencia ortográfica es la misma que en ReaderCreatesExcerpt.
+}
+
+rule ReaderUncodesExcerpt {
+    when: ReaderUncodesExcerpt(actor, coding)
+    requires: actor = coding.excerpt.author
+    requires: not actor.is_blocked
+    ensures: not exists coding
+}
+
+-- Un § sin conceptos no existe (nace codificado; muere al perder el último).
+rule UncodedExcerptVanishes {
+    when: excerpt: Excerpt.is_uncoded
+    ensures: not exists excerpt
+}
+
+rule ReaderDeletesExcerpt {
+    when: ReaderDeletesExcerpt(actor, excerpt)
+    requires: actor = excerpt.author or config.moderate_right in actor.rights
+    requires: not actor.is_blocked
+    ensures:
+        for c in excerpt.codings:
+            not exists c
+        not exists excerpt
+}
+
+------------------------------------------------------------
+-- Rules — anclaje frente a cambios de la página
+------------------------------------------------------------
+
+-- Nueva revisión guardada (edición, revert, restauración).
+rule PageRevisedReanchorsExcerpts {
+    when: PageRevised(page, revision)
+    requires: revision = page.latest_revision
+    for excerpt in page_excerpts(page) where anchor_status = anchored:
+        ensures:
+            if anchor_resolves(excerpt.anchor, revision):
+                excerpt.anchor = relocate(excerpt.anchor, revision)
+                excerpt.revision = revision
+            else:
+                excerpt.anchor_status = lost
+                excerpt.lost_at = now
+    @guidance
+        -- Best effort, en un job diferido (JobQueue) tras
+        -- PageSaveComplete, nunca en la request del guardado. Se busca
+        -- `exact` con prefix/suffix en el texto renderizado de la nueva
+        -- revisión; start/end sólo desempatan. Una ocurrencia única (o
+        -- desempatada) traslada el ancla; ninguna o ambigua = perdido.
+        -- Mientras el job no corre, el cliente puede ver §§ cuyo revid no
+        -- es el actual: los intenta ubicar igual y omite los que fallen.
+}
+
+-- Borrar la página pierde sus §§. Restaurarla NO los re-ancla.
+rule PageDeletedLosesExcerpts {
+    when: PageDeleted(page)
+    for excerpt in page_excerpts(page) where anchor_status = anchored:
+        ensures:
+            excerpt.anchor_status = lost
+            excerpt.lost_at = now
+}
+
+------------------------------------------------------------
+-- Rules — vocabulario compartido (moderación)
+------------------------------------------------------------
+
+rule ModeratorRenamesConcept {
+    when: ModeratorRenamesConcept(actor, concept, new_label)
+    requires: config.moderate_right in actor.rights
+    requires: not actor.is_blocked
+    requires: not is_blank(new_label)
+    requires: length(trim(new_label)) <= config.concept_max_length
+    requires: not exists Concept{key: normalize_concept(new_label)}
+        or normalize_concept(new_label) = concept.key
+    ensures:
+        concept.label = trim(new_label)
+        concept.key = normalize_concept(new_label)
+    @guidance
+        -- Si el rótulo nuevo ya existe como otro concepto, eso es una
+        -- fusión (ModeratorMergesConcepts), no un renombre. Renombrar
+        -- dentro de la misma clave es la vía manual para fijar la
+        -- ortografía canónica cuando better_spelled no alcanza. Renombres,
+        -- fusiones y borrados de §§ ajenos quedan en Special:Log (tipo de
+        -- registro propio de la extensión).
+}
+
+rule ModeratorMergesConcepts {
+    when: ModeratorMergesConcepts(actor, keep, absorbed)
+    requires: config.moderate_right in actor.rights
+    requires: not actor.is_blocked
+    requires: keep != absorbed
+    ensures:
+        for c in absorbed.codings:
+            if keep in c.excerpt.concepts:
+                not exists c
+            else:
+                c.concept = keep
+        for m in absorbed.memberships:
+            if exists ThemeMembership{concept: keep, owner: m.owner}:
+                not exists m
+            else:
+                m.concept = keep
+        not exists absorbed
+    @guidance
+        -- Como mergeConcepts de constel, deduplicando. En los temas de
+        -- cada lector gana la pertenencia que ya tenía `keep`.
+}
+
+-- Un concepto que ningún § usa desaparece, y con él sus pertenencias.
+rule UnusedConceptVanishes {
+    when: concept: Concept.is_unused
+    ensures:
+        for m in concept.memberships:
+            not exists m
+        not exists concept
+}
+
+------------------------------------------------------------
+-- Rules — temas y notas (personales)
+------------------------------------------------------------
+
+rule ReaderCreatesTheme {
+    when: ReaderCreatesTheme(owner, label)
+    requires: owner.identity = registered
+    requires: config.annotate_right in owner.rights
+    requires: not owner.is_blocked
+    requires: not is_blank(label)
+    requires: length(trim(label)) <= config.theme_label_max_length
+    ensures: Theme.created(owner: owner, label: trim(label), created_at: now)
+}
+
+rule ReaderRenamesTheme {
+    when: ReaderRenamesTheme(actor, theme, label)
+    requires: actor = theme.owner
+    requires: not actor.is_blocked
+    requires: not is_blank(label)
+    requires: length(trim(label)) <= config.theme_label_max_length
+    ensures: theme.label = trim(label)
+}
+
+-- Borrar un tema desagrupa sus conceptos y borra sus notas (constel).
+rule ReaderDeletesTheme {
+    when: ReaderDeletesTheme(actor, theme)
+    requires: actor = theme.owner
+    requires: not actor.is_blocked
+    ensures:
+        for m in theme.memberships:
+            not exists m
+        for n in theme.notes:
+            not exists n
+        not exists theme
+}
+
+-- Agrupar: cualquier concepto del vocabulario, no sólo los propios — el
+-- tema es la lente del lector sobre el mapa colectivo. Un concepto está
+-- en a lo sumo un tema de cada lector: agrupar lo MUEVE.
+rule ReaderGroupsConcept {
+    when: ReaderGroupsConcept(actor, concept, theme)
+    requires: actor = theme.owner
+    requires: not actor.is_blocked
+    let previous = ThemeMembership{concept: concept, owner: actor}
+    requires: not (exists previous and previous.theme = theme)
+    ensures:
+        if exists previous:
+            not exists previous
+        ThemeMembership.created(theme: theme, concept: concept)
+}
+
+rule ReaderUngroupsConcept {
+    when: ReaderUngroupsConcept(actor, membership)
+    requires: actor = membership.owner
+    requires: not actor.is_blocked
+    ensures: not exists membership
+}
+
+rule ReaderWritesThemeNote {
+    when: ReaderWritesThemeNote(actor, theme, text)
+    requires: actor = theme.owner
+    requires: not actor.is_blocked
+    requires: not is_blank(text)
+    requires: length(text) <= config.note_max_length
+    ensures: ThemeNote.created(theme: theme, text: text, updated_at: now)
+}
+
+rule ReaderEditsThemeNote {
+    when: ReaderEditsThemeNote(actor, note, text)
+    requires: actor = note.author
+    requires: not actor.is_blocked
+    requires: not is_blank(text)
+    requires: length(text) <= config.note_max_length
+    ensures:
+        note.text = text
+        note.updated_at = now
+}
+
+rule ReaderDeletesThemeNote {
+    when: ReaderDeletesThemeNote(actor, note)
+    requires: actor = note.author
+    requires: not actor.is_blocked
+    ensures: not exists note
+}
+
+------------------------------------------------------------
+-- Rules — exportación a constel standalone
+------------------------------------------------------------
+
+rule ReaderExportsReading {
+    when: ReaderExportsReading(owner)
+    requires: owner.identity = registered
+    ensures: ReadingExport.created(owner: owner, requested_at: now)
+    @guidance
+        -- Sólo exportación (decisión 2026-09-22; importar queda fuera).
+        -- Produce un ZIP compatible con el Importar de constel v0.2.x:
+        -- constel-db.json (version 1) + un .txt por página fuente con el
+        -- texto plano renderizado de su revisión vigente. Los §§ perdidos
+        -- NO se exportan (decisión 2026-09-22): no tienen texto vigente
+        -- donde ubicarse; tampoco los conceptos que sólo ellos usaban.
+        -- Mapeo: página→source, §→excerpt (start/end del ancla),
+        -- conceptos usados por el owner→concepts, temas propios→themes
+        -- (concept.themeId desde su ThemeMembership), notas→notes.
+}
+
+------------------------------------------------------------
+-- Invariants
+------------------------------------------------------------
+
+invariant ReadersAreRegistered {
+    for e in Excerpts:
+        e.author.identity = registered
+}
+
+-- Un § anclado apunta siempre a la revisión vigente de su página.
+invariant AnchoredMeansCurrent {
+    for e in Excerpts where anchor_status = anchored:
+        e.revision = e.page.latest_revision
+}
+
+invariant ExcerptsAreCoded {
+    for e in Excerpts:
+        e.codings.count >= 1
+}
+
+invariant NoDuplicateCoding {
+    for e in Excerpts:
+        e.codings.count = e.concepts.unique.count
+}
+
+invariant ConceptKeysAreNormalised {
+    for c in Concepts:
+        c.key = normalize_concept(c.label)
+}
+
+-- constel: cada concepto pertenece a 1 tema o a ninguno — aquí, por lector.
+invariant OneThemePerConceptPerReader {
+    for m in ThemeMemberships:
+        ThemeMemberships where concept = m.concept and owner = m.owner
+            .count = 1
+}
+
+------------------------------------------------------------
+-- Surfaces
+------------------------------------------------------------
+
+-- El popup "§" que aparece al seleccionar texto (popup.js de constel).
+surface SelectionPopup {
+    facing viewer: User
+    context page: WikiPage where is_annotatable
+
+    exposes:
+        page.latest_revision
+
+    provides:
+        ReaderCreatesExcerpt(viewer, page, page.latest_revision, anchor, concept_label)
+            when viewer.identity = registered
+                and config.annotate_right in viewer.rights
+                and not viewer.is_blocked
+
+    @guarantee AppearsOnSelection
+        -- Al terminar una selección (ratón, táctil o teclado) de al menos
+        -- config.selection_min_length caracteres, contenida por completo
+        -- en el cuerpo de contenido, aparece junto a ella la afordancia
+        -- "§". Activarla abre el campo de concepto con el foco puesto.
+
+    @guarantee SharedVocabularyAutocomplete
+        -- El campo de concepto sugiere, con coincidencia difusa, el
+        -- vocabulario COMPARTIDO (conceptos de todos los lectores),
+        -- ordenado por uso. Elegir una sugerencia reutiliza el concepto;
+        -- un rótulo nuevo lo crea.
+
+    @guarantee OnlyContentSelections
+        -- Selecciones que tocan chrome del skin, el propio popup, campos
+        -- editables o cruzan fuera del cuerpo de contenido no muestran
+        -- la afordancia.
+
+    @guarantee HiddenFromIneligible
+        -- Anónimos, cuentas temporales, bloqueados y usuarios sin
+        -- config.annotate_right no ven la afordancia.
+
+    @guarantee KeyboardOperable
+        -- Afordancia alcanzable por teclado, nombre accesible ("con§tel");
+        -- Enter confirma (salvo con el autocomplete abierto); Escape
+        -- descarta sin crear nada.
+
+    @guarantee StaleViewReported
+        -- Si la página cambió desde que se cargó, crear informa el
+        -- cambio y no crea el §; el rótulo escrito no se pierde.
+}
+
+-- La lectura sobre una página: §§ resaltados sobre el texto.
+surface PageReading {
+    facing viewer: User
+    context page: WikiPage where is_annotatable
+
+    let drawn = page_excerpts(page) where is_drawn_on_page
+
+    exposes:
+        for e in drawn:
+            e.anchor
+            e.author
+            e.concepts
+            e.author = viewer
+
+    provides:
+        ReaderCodesExcerpt(viewer, excerpt, concept_label)
+        ReaderUncodesExcerpt(viewer, coding)
+        ReaderDeletesExcerpt(viewer, excerpt)
+
+    related:
+        ConceptDetail(concept)
+
+    @guarantee ScopeToggle
+        -- Por defecto se resaltan sólo los §§ del viewer (alcance
+        -- mine); un control muestra también los de todos (everyone),
+        -- distinguiendo propios de ajenos.
+
+    @guarantee NothingForAnonymous
+        -- Anónimos y cuentas temporales no ven marcas ni controles de
+        -- con§tel sobre las páginas: su acceso es sólo el mapa (ver
+        -- ConceptMap.ReadOnlyForAnonymous).
+
+    @guarantee MarksToggle
+        -- Un control (el "ojo" de constel) oculta/muestra todas las
+        -- marcas para una lectura limpia, sin alterar el scope elegido.
+
+    @guarantee OwnOperationsOnly
+        -- Codificar, descodificar y borrar se ofrecen sólo sobre §§
+        -- propios (borrar, además, a moderadores).
+
+    @guarantee LostNotDrawn
+        -- Los §§ perdidos no se dibujan (no hay dónde); viven en
+        -- ConceptDetail, MyReading y el mapa.
+}
+
+-- Detalle de un concepto (panel de constel: "§ en este texto" / "en otros").
+surface ConceptDetail {
+    facing viewer: User
+    context concept: Concept
+
+    exposes:
+        concept.label
+        for e in concept.excerpts:
+            e.anchor.exact
+            e.page
+            e.author
+            e.anchor_status
+        for m in concept.memberships:
+            m.theme.label
+            m.owner
+
+    provides:
+        ModeratorRenamesConcept(viewer, concept, new_label)
+            when config.moderate_right in viewer.rights
+        ModeratorMergesConcepts(viewer, concept, absorbed)
+            when config.moderate_right in viewer.rights
+        ReaderGroupsConcept(viewer, concept, theme)
+            when viewer.identity = registered
+
+    related:
+        ConceptMap(viewer)
+
+    @guarantee HereAndElsewhere
+        -- Separa los §§ de la página actual ("§ en esta página") de los
+        -- de otras páginas ("en otras páginas"), y los del viewer de los
+        -- de otros lectores. Los perdidos se marcan como tales.
+}
+
+-- Especial:Constelación — el mapa de conceptos.
+surface ConceptMap {
+    facing viewer: User
+    context concept: Concept
+
+    exposes:
+        concept.label
+        concept.excerpts.count
+        concept.pages.count
+        viewer in concept.readers
+        concept_links(concept)
+
+    related:
+        ConceptDetail(concept)
+        ThemesPanel(viewer)
+
+    @guarantee ReadOnlyForAnonymous
+        -- Anónimos y cuentas temporales ven el mapa (alcance everyone) y
+        -- navegan a conceptos, temas y páginas, pero no pueden operar
+        -- nada: ninguna acción de provides les está disponible.
+
+    @guarantee MineVersusEveryone
+        -- Alcance: `everyone` (default) = todos los §§ de todos;
+        -- `mine` = sólo los del viewer. Distingue visualmente los
+        -- conceptos a los que el viewer aportó.
+
+    @guarantee PageFilter
+        -- Puede restringirse a una página (constel: grafo por source).
+
+    @guarantee TopologyCoExcerptAndOverlap
+        -- Dos conceptos se unen (arista con clase y peso) si:
+        --   co_excerpt: están codificados en el MISMO §; peso = nº de §§
+        --     compartidos (doctrina constel: decisiones del lector).
+        --   overlap: codifican §§ ANCLADOS de lectores DISTINTOS sobre la
+        --     misma página cuyos rangos comparten al menos un carácter;
+        --     peso = nº de pares.
+        -- Los §§ perdidos aportan co_excerpt pero no overlap (no tienen
+        -- posición vigente). Las dos clases de arista se distinguen.
+
+    @guarantee OverlapNeverConverges
+        -- Que dos §§ solapados tengan conceptos distintos es criterio de
+        -- sus anotadores (decisión 2026-09-22): el solapamiento NUNCA
+        -- identifica, fusiona ni sugiere fusionar esos conceptos, ni
+        -- altera la codificación de nadie.
+
+    @guarantee FrequencyScaling
+        -- El tamaño del rótulo refleja frecuencia: nº de §§ y nº de
+        -- páginas (constel: 0.6·excerpts + 0.4·sources, normalizados).
+
+    @guarantee ThresholdFilter
+        -- Umbral ≥ N: oculta aristas con peso menor a N.
+
+    @guarantee ThemeLens
+        -- Los conceptos se agrupan/colorean por los temas del VIEWER; el
+        -- viewer puede elegir mirar el mapa con los temas de otro lector.
+
+    @guarantee AccessibleAlternative
+        -- El grafo (2D o 3D) tiene una alternativa textual navegable con
+        -- la misma información (conceptos, frecuencias, aristas, temas).
+}
+
+-- Panel de temas: síntesis del lector (tab "Mapa" de constel, derecha).
+surface ThemesPanel {
+    facing viewer: User
+    context theme: Theme
+
+    exposes:
+        theme.label
+        theme.owner
+        theme.concepts
+        for n in theme.notes:
+            n.text
+            n.updated_at
+        for c in theme.concepts:
+            c.excerpts
+
+    provides:
+        ReaderCreatesTheme(viewer, label)
+            when viewer.identity = registered
+        ReaderRenamesTheme(viewer, theme, label)
+            when theme.owner = viewer
+        ReaderDeletesTheme(viewer, theme)
+            when theme.owner = viewer
+        ReaderUngroupsConcept(viewer, membership)
+            when theme.owner = viewer
+        ReaderWritesThemeNote(viewer, theme, text)
+            when theme.owner = viewer
+        ReaderEditsThemeNote(viewer, note, text)
+            when theme.owner = viewer
+        ReaderDeletesThemeNote(viewer, note)
+            when theme.owner = viewer
+
+    @guarantee OthersReadOnly
+        -- Los temas y notas de otros lectores se pueden leer, nunca
+        -- editar.
+
+    @guarantee ThemeSections
+        -- Cada tema lista los §§ agrupados (cita, concepto, página) de
+        -- todos los lectores cuyos conceptos contiene.
+}
+
+-- Especial:MiConstel — la lectura propia, incluidos los §§ perdidos.
+surface MyReading {
+    facing viewer: User
+    context excerpt: Excerpt where author = viewer
+
+    exposes:
+        excerpt.anchor.exact
+        excerpt.page
+        excerpt.concepts
+        excerpt.anchor_status
+        excerpt.created_at
+
+    provides:
+        ReaderCodesExcerpt(viewer, excerpt, concept_label)
+        ReaderDeletesExcerpt(viewer, excerpt)
+        ReaderExportsReading(viewer)
+
+    related:
+        ConceptMap(viewer)
+
+    @guarantee LostFlagged
+        -- Los §§ perdidos se listan marcados, con su pasaje citado y la
+        -- revisión donde fueron válidos (enlace a ese oldid).
+}
+
+-- Eventos del ciclo de vida de páginas que MediaWiki core entrega a la
+-- extensión (hooks PageSaveComplete / PageDeleteComplete).
+surface PageLifecycle {
+    facing page: WikiPage
+
+    provides:
+        PageRevised(page, page.latest_revision)
+        PageDeleted(page)
+}
+
+surface MediaWikiIntegration {
+    exposes:
+        config.extension_version
+
+    contracts:
+        fulfils MediaWikiExtensionConformance
+}
+
+------------------------------------------------------------
+-- Deferred
+------------------------------------------------------------
+
+deferred Concept.normalize_concept    -- see: docs/ARCHITECTURE.md#conceptos — casefold + pliegue de tildes/diacríticos + trim + colapso de espacios
+deferred Concept.better_spelled       -- see: docs/ARCHITECTURE.md#conceptos — ¿la forma nueva está mejor escrita (tildes necesarias) que la vigente?
+deferred Excerpt.anchor_resolves      -- see: docs/ARCHITECTURE.md#anclaje — ¿el TextAnchor se ubica sin ambigüedad en el texto renderizado?
+deferred Excerpt.relocate             -- see: docs/ARCHITECTURE.md#anclaje — el TextAnchor recalculado en la nueva revisión
+deferred Concept.concept_links        -- see: docs/ARCHITECTURE.md#mapa — aristas co_excerpt + overlap (ver TopologyCoExcerptAndOverlap)
+
+------------------------------------------------------------
+-- Open questions
+------------------------------------------------------------
+
+open question "Solapamiento (decisión 2026-09-22: los conceptos distintos de §§ solapados no convergen): ¿se mantiene la arista `overlap` como mera relación en el mapa, o se elimina y el mapa queda sólo con co_excerpt?"
