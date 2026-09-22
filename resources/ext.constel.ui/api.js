@@ -55,8 +55,8 @@ function conceptThemes( conceptId ) {
 		.then( ( r ) => ( r.query.constelconcepts[ 0 ] || { themes: [] } ).themes );
 }
 
-function themesOf( userName ) {
-	return get().get( { action: 'query', list: 'constelthemes', ctuser: userName } )
+function themesOf( userNames ) {
+	return get().get( { action: 'query', list: 'constelthemes', ctuser: [].concat( userNames ) } )
 		.then( ( r ) => r.query.constelthemes, () => [] );
 }
 
@@ -78,6 +78,49 @@ function conceptByLabel( label ) {
 	return searchConcepts( label ).then( exact );
 }
 
+/**
+ * Usuarios cuyo nombre empieza como el texto (primera letra en mayúscula,
+ * como los títulos).
+ *
+ * @param {string} typed
+ * @return {Promise<string[]>}
+ */
+function searchUsers( typed ) {
+	const prefix = typed.charAt( 0 ).toUpperCase() + typed.slice( 1 );
+	return get().get( { action: 'query', list: 'allusers', auprefix: prefix, aulimit: 8 } )
+		.then( ( r ) => r.query.allusers.map( ( u ) => u.name ), () => [] );
+}
+
+/**
+ * Páginas de contenido cuyo título empieza como el texto.
+ *
+ * @param {string} typed
+ * @return {Promise<string[]>}
+ */
+function searchPages( typed ) {
+	return get().get( {
+		action: 'query',
+		list: 'prefixsearch',
+		pssearch: typed,
+		psnamespace: mw.config.get( 'wgContentNamespaces' ) || [ 0 ],
+		pslimit: 8
+	} ).then( ( r ) => r.query.prefixsearch.map( ( p ) => p.title ), () => [] );
+}
+
+/**
+ * Ids de varias páginas por título (las inexistentes se omiten).
+ *
+ * @param {string[]} titles
+ * @return {Promise<number[]>}
+ */
+function pageIds( titles ) {
+	if ( !titles.length ) {
+		return Promise.resolve( [] );
+	}
+	return get().get( { action: 'query', titles } )
+		.then( ( r ) => r.query.pages.filter( ( p ) => !p.missing ).map( ( p ) => p.pageid ) );
+}
+
 function saveAck() {
 	return get().saveOption( 'constel-public-ack', '1' );
 }
@@ -85,5 +128,5 @@ function saveAck() {
 module.exports = {
 	listExcerpts, searchConcepts, write, describeError, saveAck,
 	graph, excerptsOfConcept, conceptThemes, themesOf, excerptsOf,
-	pageId: pageIdOf, conceptByLabel
+	pageId: pageIdOf, conceptByLabel, searchUsers, searchPages, pageIds
 };

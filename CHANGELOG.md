@@ -1,5 +1,28 @@
 # Changelog — Casiopea-Con§tel
 
+## 0.3.0 — 2026-09-22
+
+- **Desactivada por defecto.** Instalada, la extensión no cambia nada hasta
+  que cada lector la activa en su nueva pestaña **Preferencias › con§tel ›
+  Activación** (antes estaba en Apariencia y venía encendida). El sitio puede
+  cambiar el default con `$wgDefaultUserOptions['constel-enabled'] = 1`.
+  README: pasos de instalación y activación.
+- **Barra de la constelación rediseñada.** Fila 1: vista 2D/3D con «Girar
+  solo» al lado (solo en 3D); «Mostrar aristas» muestra u oculta el peso mínimo
+  (1 a 4); zoom. Fila 2: filtros como píldoras con autocompletado: «Secciones de»
+  (lectores; vacío = todas), «Páginas» (vacío = todas) y «Temas de» (por
+  defecto quien mira; varios lectores; nunca vacía). API: `list=constelgraph`
+  cambia `cgscope`/`cgpageid` por `cgusers`/`cgpageids`; `ctuser` admite
+  varios lectores. El autocompletado acepta cualquier fuente.
+- **Terminología: «sección»** en vez de «pasaje» en toda la interfaz, la
+  ayuda de la API y el registro (inglés: *section*). En el código y el spec
+  se mantiene `excerpt`.
+- **Íconos Feather** en lugar de tipografía en los botones (navegación del
+  mapa, cerrar paneles, quitar conceptos y píldoras), con el trazo y los
+  colores de ícono de Stella Nova.
+- **Exportar el mapa como SVG**: nuevo botón en la navegación del mapa; SVG
+  autónomo con colores `rgb()`, título y descripción de los filtros.
+
 ## 0.2.0 — 2026-09-22
 
 Ajustes tras D6.

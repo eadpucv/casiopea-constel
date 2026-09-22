@@ -5,7 +5,7 @@ Cómo se construye la extensión. El **qué** (comportamiento observable) está 
 fuente de verdad. Este documento cubre el **cómo** y los detalles que el spec
 deja fuera a propósito: esquema, API, módulos, algoritmos y diseño visual.
 
-Versión documentada: **0.2.0**.
+Versión documentada: **0.3.0**.
 
 ## Contenido
 
@@ -46,6 +46,11 @@ Versión documentada: **0.2.0**.
   ParserCache. Los §§ se pintan en el cliente sobre el DOM ya renderizado, y
   desinstalar la extensión no rompe ninguna página.
 - **Agnóstica de skin; diseñada para Stella Nova.** Ver [Diseño](#diseño).
+
+**Terminología.** En la interfaz, un § se llama **sección** (decisión del
+2026-09-22; «pasaje» quedó en desuso). En el código, la API y el spec
+conserva su nombre técnico, `excerpt` / `Excerpt`, como en constel. En este
+documento «§» y «sección» son lo mismo.
 
 **Nombre y slug.** El nombre es `Casiopea-Con§tel` (`name` en
 `extension.json`, lo que muestra `Special:Version`). El slug es
@@ -463,10 +468,10 @@ sequenceDiagram
     SP->>G: grafo de todos
     SP-->>V: lista de conceptos (respaldo sin JS)<br/>+ body.constel-wide
     SP-->>M: ext.constel.map
-    M->>API: list=constelgraph (alcance, página)
-    API->>G: build(alcance, página, quien mira)
+    M->>API: list=constelgraph (lectores, páginas)
+    API->>G: build(lectores, páginas, quien mira)
     G-->>API: nodos + aristas co_excerpt · overlap · co_page
-    M->>API: list=constelthemes (lente)
+    M->>API: list=constelthemes (lectores de la lente)
     M-->>V: grafo 3D + lista accesible + panel de temas
     V->>M: elige un concepto
     M->>API: list=constelexcerpts&ceconcept · list=constelconcepts&ccthemes
@@ -568,7 +573,8 @@ cumplirse todas estas condiciones:
 
 - la cuenta es registrada (los anónimos no ven nada sobre las páginas; su
   acceso es el mapa);
-- el lector no lo desactivó en sus preferencias (`constel-enabled`);
+- el lector lo activó en sus preferencias (`constel-enabled`, apagado por
+  defecto);
 - la acción es `view`, sin `diff`;
 - la página es de contenido, existe y no es redirección;
 - se está viendo la **revisión vigente**.
@@ -614,10 +620,12 @@ largas porque la cabecera es fija.
 
 **Preferencias:**
 
-- `constel-enabled` (interruptor en Apariencia › con§tel, activado por
-  defecto): apagado, las páginas se ven como sin la extensión
+- `constel-enabled` (pestaña propia **Preferencias › con§tel › Activación**;
+  **desactivado por defecto**): cada lector lo enciende. Apagado, las páginas
+  se ven como sin la extensión y el menú de usuario no la menciona
   (`DisabledByPreference`). Constelación y Mi con§tel siguen en Páginas
-  especiales.
+  especiales. Un sitio puede cambiar el default con
+  `$wgDefaultUserOptions['constel-enabled'] = 1`.
 - `constel-public-ack` (tipo `api`, oculta): el lector ya vio el aviso de que
   sus anotaciones son públicas.
 
@@ -645,7 +653,8 @@ página especial) arma el grafo en una sola consulta sobre codificaciones y
   cualquier lector). Peso = número de páginas compartidas. Es la arista más
   tenue y la que menos atrae en el layout (decisión 2026-09-22).
 - **Nodos:** número de §§, número de páginas y `mine` (si quien mira aportó).
-  Alcance `mine` y filtro por página.
+- **Filtros:** lectores (`cgusers`) y páginas (`cgpageids`), cada uno con
+  varios valores; vacío = todos.
 
 Hoy se calcula al vuelo. Si el volumen crece, se cachea en `WANObjectCache` con
 una *check key* que tocan las escrituras.
@@ -670,8 +679,21 @@ frecuencia (respaldo sin JS). `ext.constel.map` dibuja encima:
   temas que lo contienen, agruparlo, moderarlo) y el panel de temas (crear,
   renombrar, borrar, desagrupar, notas). Los temas de otro lector (la
   **lente**) se muestran en solo lectura.
-- `map.js`: controles (vista 3D/2D, alcance, página, umbral, aristas, girar
-  solo, lente, zoom) y la lista navegable (`AccessibleAlternative`).
+- `map.js`: la barra de herramientas en dos filas y la lista navegable
+  (`AccessibleAlternative`). Fila 1: vista 2D/3D con «Girar solo» al lado
+  (solo en 3D); «Mostrar aristas», que muestra u oculta el peso mínimo (1 a 4);
+  navegación con íconos Feather: acercar, alejar, encuadrar y **exportar
+  SVG**. La exportación baja el grafo tal como se ve (vista, filtros y
+  proyección 3D actuales) como SVG autónomo: los colores y tipografías, que
+  en la página vienen de tokens, se copian resueltos y convertidos a
+  `rgb()` (para Inkscape o Illustrator), con fondo, `<title>` y `<desc>`
+  (filtros y fecha).
+  Fila 2: tres campos de píldoras con autocompletado (`pills.js`):
+  **Secciones de** (lectores, `list=allusers`; vacío = todas), **Páginas**
+  (títulos, `list=prefixsearch` en los namespaces de contenido; vacío =
+  todas; también `?page=`) y **Temas de** (la lente; por defecto quien mira,
+  nunca vacía para una cuenta registrada). El panel de temas muestra un
+  bloque por lector de la lente; solo los propios se editan.
 
 **Especial:MiConstel** (`SpecialMyConstel`, cuentas registradas): tabla de
 §§ propios, anclados y perdidos, con sus glosas. Cada § perdido enlaza al
@@ -721,8 +743,8 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 |---|---|
 | `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto) |
 | `list=constelconcepts` | `ccsearch` (autocompletado tolerante, por uso), `ccvariantsof`, `ccids`, `ccthemes` (temas que lo contienen) |
-| `list=constelthemes` | `ctuser`, `ctids` (con conceptos y notas) |
-| `list=constelgraph` | `cgscope` (`everyone`\|`mine`), `cgpageid` |
+| `list=constelthemes` | `ctuser` (uno o varios), `ctids` (con conceptos y notas) |
+| `list=constelgraph` | `cgusers` (lectores), `cgpageids` (páginas); vacío = todos |
 
 El nombre de un autor oculto (`hideuser`) solo se muestra a quien tiene
 `hideuser`; por eso esas respuestas son `anon-public-user-private`. Los
@@ -773,6 +795,12 @@ tokens. Al mismo tiempo, la extensión tiene que funcionar con cualquier skin
   conserva el `light-dark()` de Stella Nova sin evaluar hasta donde se usa.
 - La nova (`--sn-nova`) es el único acento: el signo §, el foco y las marcas
   propias. Las marcas ajenas usan tinta tenue.
+- **Íconos:** Feather (MIT), como en Stella Nova: trazo 1,75, `currentColor`
+  y los colores de `--sn-icon`/`--sn-icon-active` (alias `--constel-icon*`).
+  La extensión trae la geometría de los que usa (`ext.constel.ui/icons.js`:
+  zoom-in, zoom-out, maximize, download, x), porque no puede depender del
+  sprite del skin. Todo botón solo-ícono lleva `aria-label` y `title`. La §
+  es la única marca tipográfica.
 - **Escala categórica de temas:** `--constel-cat-0…7` apunta a
   `--sn-cat-1…8`, que Stella Nova aún no define (propuesta pendiente). Mientras
   tanto, el respaldo es la paleta de constel mezclada con la tinta
@@ -854,3 +882,4 @@ docs/ARCHITECTURE.md          este archivo
 | | D5 | Constelación (mapa), MiConstel, exportación ZIP |
 | | D6 | Moderación: renombrar/fusionar, `Special:Log/constel` |
 | 0.2.0 | Ajustes | Glosa, preferencia, menú de usuario, un solo «Guardar», páginas anchas, mapa 3D, arista de misma página |
+| 0.3.0 | Constelación | Desactivada por defecto (pestaña de preferencias propia), barra del mapa con píldoras (lectores, páginas, lente), íconos Feather, exportar SVG, terminología «sección» |

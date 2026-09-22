@@ -5,14 +5,16 @@ namespace MediaWiki\Extension\CasiopeaConstel\Api;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
-use MediaWiki\User\ActorNormalization;
+use MediaWiki\User\ActorStore;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * list=constelgraph — el mapa de conceptos (spec: ConceptMap): nodos con sus
- * frecuencias y aristas co_excerpt / overlap con su peso. Lectura pública:
- * los anónimos ven el mapa (spec: ReadOnlyForAnonymous).
+ * frecuencias y aristas co_excerpt / overlap / co_page con su peso.
+ * Filtros por lectores y por páginas; vacío = todos (spec:
+ * ReaderAndPageFilters). Lectura pública: los anónimos ven el mapa
+ * (spec: ReadOnlyForAnonymous).
  */
 class ApiQueryConstelGraph extends ApiQueryBase {
 
@@ -20,7 +22,7 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 		ApiQuery $query,
 		string $moduleName,
 		private readonly GraphBuilder $graphBuilder,
-		private readonly ActorNormalization $actorNormalization,
+		private readonly ActorStore $actorStore,
 		private readonly IConnectionProvider $dbProvider
 	) {
 		parent::__construct( $query, $moduleName, 'cg' );
@@ -28,37 +30,45 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 
 	public function execute() {
 		$params = $this->extractRequestParams();
+		$db = $this->dbProvider->getReplicaDatabase();
 		$user = $this->getUser();
-		$viewer = $user->isRegistered()
-			? $this->actorNormalization->findActorId( $user, $this->dbProvider->getReplicaDatabase() )
-			: null;
-		if ( $params['scope'] === 'mine' && !$user->isNamed() ) {
-			$this->dieWithError( 'apierror-constel-notnamed', 'notnamed' );
-		}
-		$onlyActor = $params['scope'] === 'mine' ? ( $viewer ?? -1 ) : null;
+		$viewer = $user->isRegistered() ? $this->actorStore->findActorId( $user, $db ) : null;
 
-		$graph = $this->graphBuilder->build( $onlyActor, $params['pageid'], $viewer );
+		$actors = null;
+		if ( $params['users'] ) {
+			// Lectores sin actor (nunca anotaron nada) no aportan §§.
+			$actors = array_values( array_filter( array_map(
+				fn ( $name ) => $this->actorStore->findActorIdByName( $name, $db ),
+				$params['users']
+			) ) ) ?: [ -1 ];
+		}
+
+		$graph = $this->graphBuilder->build( $actors, $params['pageids'] ?: null, $viewer );
 		$result = $this->getResult();
-		$result->addValue( [ 'query', $this->getModuleName() ], 'nodes', $graph['nodes'] );
-		$result->addValue( [ 'query', $this->getModuleName() ], 'links', $graph['links'] );
-		$result->addIndexedTagName( [ 'query', $this->getModuleName(), 'nodes' ], 'node' );
-		$result->addIndexedTagName( [ 'query', $this->getModuleName(), 'links' ], 'link' );
+		$path = [ 'query', $this->getModuleName() ];
+		$result->addValue( $path, 'nodes', $graph['nodes'] );
+		$result->addValue( $path, 'links', $graph['links'] );
+		$result->addIndexedTagName( [ ...$path, 'nodes' ], 'node' );
+		$result->addIndexedTagName( [ ...$path, 'links' ], 'link' );
 	}
 
 	/** @inheritDoc */
 	public function getCacheMode( $params ) {
-		// "mine" y la marca de aporte dependen de quién mira.
+		// La marca de aporte ("mine") depende de quién mira.
 		return 'anon-public-user-private';
 	}
 
 	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
-			'scope' => [
-				ParamValidator::PARAM_TYPE => [ 'everyone', 'mine' ],
-				ParamValidator::PARAM_DEFAULT => 'everyone',
+			'users' => [
+				ParamValidator::PARAM_TYPE => 'user',
+				ParamValidator::PARAM_ISMULTI => true,
 			],
-			'pageid' => [ ParamValidator::PARAM_TYPE => 'integer' ],
+			'pageids' => [
+				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_ISMULTI => true,
+			],
 		];
 	}
 
@@ -66,7 +76,7 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 	protected function getExamplesMessages() {
 		return [
 			'action=query&list=constelgraph' => 'apihelp-query+constelgraph-example-all',
-			'action=query&list=constelgraph&cgscope=mine' => 'apihelp-query+constelgraph-example-mine',
+			'action=query&list=constelgraph&cgusers=Example' => 'apihelp-query+constelgraph-example-users',
 		];
 	}
 }

@@ -48,7 +48,7 @@ external entity User {
     identity: UserIdentity
     is_blocked: Boolean             -- bloqueo sitewide o parcial sobre la página
     rights: Set<String>             -- derechos efectivos ($wgGroupPermissions)
-    constel_enabled: Boolean        -- preferencia del lector (default: sí); ver PageReading
+    constel_enabled: Boolean        -- preferencia del lector; DESACTIVADA por defecto (ver PageReading)
 }
 
 -- Identidad = page_id de MediaWiki: sobrevive a traslados (renombrar la
@@ -240,7 +240,7 @@ entity ReadingExport {
 ------------------------------------------------------------
 
 config {
-    extension_version: String = "0.2.0"          -- debe coincidir con extension.json
+    extension_version: String = "0.3.0"          -- debe coincidir con extension.json
     concept_max_length: Integer = 80             -- caracteres
     theme_label_max_length: Integer = 80
     note_max_length: Integer = 20000             -- nota de desarrollo de un tema
@@ -688,8 +688,10 @@ surface PageReading {
         -- distinguiendo propios de ajenos.
 
     @guarantee DisabledByPreference
-        -- Si el lector desactivó con§tel en sus preferencias
-        -- (constel_enabled = false), la página se ve como sin la extensión:
+        -- con§tel viene DESACTIVADO por defecto (decisión 2026-09-22): cada
+        -- lector lo activa en su pestaña de preferencias "con§tel". Mientras
+        -- esté desactivado (constel_enabled = false), la página se ve como
+        -- sin la extensión:
         -- ni marcas, ni afordancia "§", ni controles de lectura, y el menú de
         -- usuario no menciona con§tel (decisión 2026-09-22). El mapa y la
         -- lista propia siguen existiendo (se llega por Páginas especiales o
@@ -774,13 +776,11 @@ surface ConceptMap {
         -- navegan a conceptos, temas y páginas, pero no pueden operar
         -- nada: ninguna acción de provides les está disponible.
 
-    @guarantee MineVersusEveryone
-        -- Alcance: `everyone` (default) = todos los §§ de todos;
-        -- `mine` = sólo los del viewer. Distingue visualmente los
-        -- conceptos a los que el viewer aportó.
-
-    @guarantee PageFilter
-        -- Puede restringirse a una página (constel: grafo por source).
+    @guarantee ReaderAndPageFilters
+        -- El mapa se filtra por lectores ("Secciones de") y por páginas,
+        -- cada filtro con uno o varios valores; un filtro vacío significa
+        -- TODOS (decisión 2026-09-22; reemplaza el alcance mine/everyone).
+        -- Distingue visualmente los conceptos a los que el viewer aportó.
 
     @guarantee TopologyCoExcerptOverlapAndPage
         -- Dos conceptos se unen (arista con clase y peso) si:
@@ -809,11 +809,14 @@ surface ConceptMap {
         -- páginas (constel: 0.6·excerpts + 0.4·sources, normalizados).
 
     @guarantee ThresholdFilter
-        -- Umbral ≥ N: oculta aristas con peso menor a N.
+        -- Las aristas pueden ocultarse; mientras se muestran, un peso
+        -- mínimo N (1 a 4) oculta las de peso menor.
 
     @guarantee ThemeLens
-        -- Los conceptos se agrupan/colorean por los temas del VIEWER; el
-        -- viewer puede elegir mirar el mapa con los temas de otro lector.
+        -- Los conceptos se agrupan/colorean por los temas de uno o varios
+        -- lectores (la lente). Por defecto, los del viewer; puede sumar
+        -- otros lectores y quitarlos, pero para una cuenta registrada la
+        -- lente nunca queda vacía. Sólo los temas propios son editables.
 
     @guarantee AccessibleAlternative
         -- El grafo (2D o 3D) tiene una alternativa textual navegable con

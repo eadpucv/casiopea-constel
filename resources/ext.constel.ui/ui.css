@@ -33,6 +33,10 @@
 }
 
 .constel-panel__close {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var( --constel-icon );
 	position: absolute;
 	top: var( --constel-s-1 );
 	right: var( --constel-s-1 );
@@ -41,13 +45,13 @@
 	border: 0;
 	border-radius: var( --constel-radius-pill );
 	background: transparent;
-	color: var( --constel-ink-soft );
 	font-size: var( --constel-fs-base );
 	cursor: pointer;
 }
 
 .constel-panel__close:hover {
 	background: var( --constel-opt-hover-bg );
+	color: var( --constel-icon-active );
 }
 
 .constel-panel__title {
@@ -204,12 +208,19 @@ a.constel-button--primary:visited {
 }
 
 .constel-chip__remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var( --constel-icon );
 	padding: 0 var( --constel-s-1 );
 	border: 0;
 	border-radius: var( --constel-radius-pill );
 	background: transparent;
-	color: var( --constel-ink-soft );
 	cursor: pointer;
+}
+
+.constel-chip__remove:hover {
+	color: var( --constel-icon-active );
 }
 
 .constel-chip--removing .constel-chip__label {
@@ -308,6 +319,39 @@ a.constel-button--primary:visited {
 .constel-panel .constel-label + .constel-gloss,
 .constel-field + .constel-label {
 	margin-top: var( --constel-s-2 );
+}
+
+/* ── Íconos Feather (como los del skin: trazo 1.75, color de token) ──── */
+
+.constel-i {
+	width: 1.1em;
+	height: 1.1em;
+	vertical-align: middle;
+	fill: none;
+	stroke: currentcolor;
+	stroke-width: 1.75;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	pointer-events: none;
+}
+
+.constel-button--icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.25rem;
+	height: 2.25rem;
+	padding: 0;
+	color: var( --constel-icon );
+}
+
+.constel-button--icon:hover {
+	color: var( --constel-icon-active );
+}
+
+.constel-chip__remove .constel-i {
+	width: 0.85em;
+	height: 0.85em;
 }
 
 /* ── Foco visible (al final: gana sobre los estados de cada control) ── */

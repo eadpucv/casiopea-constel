@@ -400,6 +400,7 @@ function draw( container, data, view ) {
 			render();
 		},
 		select: ( id ) => nodeEls.forEach( ( el, nid ) => el.classList.toggle( 'constel-graph__node--selected', nid === id ) ),
+		exportSvg: ( meta ) => serialize( root, container, meta ),
 		setAutorotate: ( on ) => {
 			autorotate = on;
 			resume();
@@ -410,6 +411,80 @@ function draw( container, data, view ) {
 			}
 		}
 	};
+}
+
+/**
+ * Un color CSS cualquiera (oklab(), light-dark() ya resuelto, color-mix…)
+ * a rgb()/rgba(), que entienden también los editores de SVG (Inkscape,
+ * Illustrator): se pinta en un canvas de un píxel y se lee.
+ *
+ * @param {string} color
+ * @return {string}
+ */
+function toRgb( color ) {
+	const ctx = toRgb.ctx || ( toRgb.ctx = document.createElement( 'canvas' ).getContext( '2d', { willReadFrequently: true } ) );
+	ctx.clearRect( 0, 0, 1, 1 );
+	ctx.fillStyle = '#000';
+	ctx.fillStyle = color;
+	ctx.fillRect( 0, 0, 1, 1 );
+	const [ r, g, b, a ] = ctx.getImageData( 0, 0, 1, 1 ).data;
+	return a === 255 ? `rgb(${ r }, ${ g }, ${ b })` : `rgba(${ r }, ${ g }, ${ b }, ${ ( a / 255 ).toFixed( 3 ) })`;
+}
+
+/**
+ * SVG autónomo del grafo: los colores y tipografías vienen de tokens del
+ * skin (custom properties), que fuera de la página no existen; se copian ya
+ * resueltos a atributos de cada elemento.
+ *
+ * @param {SVGElement} root el grafo dibujado
+ * @param {HTMLElement} container para el color de fondo
+ * @param {Object} meta {title, description}
+ * @return {string}
+ */
+function serialize( root, container, meta ) {
+	const clone = root.cloneNode( true );
+	clone.setAttribute( 'xmlns', SVG );
+	clone.removeAttribute( 'tabindex' );
+	clone.removeAttribute( 'class' );
+	const box = root.getBoundingClientRect();
+	clone.setAttribute( 'width', String( Math.round( box.width ) ) );
+	clone.setAttribute( 'height', String( Math.round( box.height ) ) );
+
+	const originals = root.querySelectorAll( 'text, line' );
+	Array.from( clone.querySelectorAll( 'text, line' ) ).forEach( ( node, i ) => {
+		const cs = getComputedStyle( originals[ i ] );
+		if ( node.tagName === 'text' ) {
+			node.setAttribute( 'fill', toRgb( cs.fill ) );
+			node.setAttribute( 'font-family', cs.fontFamily );
+			node.removeAttribute( 'tabindex' );
+			node.removeAttribute( 'role' );
+		} else {
+			node.setAttribute( 'stroke', toRgb( cs.stroke ) );
+			node.setAttribute( 'stroke-opacity', cs.strokeOpacity );
+			if ( cs.strokeDasharray !== 'none' ) {
+				node.setAttribute( 'stroke-dasharray', cs.strokeDasharray );
+			}
+		}
+		node.setAttribute( 'opacity', cs.opacity );
+		node.removeAttribute( 'class' );
+		node.removeAttribute( 'style' );
+	} );
+
+	// Fondo y metadatos (accesibles también fuera de la wiki).
+	const vb = root.viewBox.baseVal;
+	const bg = document.createElementNS( SVG, 'rect' );
+	bg.setAttribute( 'x', vb.x );
+	bg.setAttribute( 'y', vb.y );
+	bg.setAttribute( 'width', vb.width );
+	bg.setAttribute( 'height', vb.height );
+	bg.setAttribute( 'fill', toRgb( getComputedStyle( container ).backgroundColor ) );
+	const title = document.createElementNS( SVG, 'title' );
+	title.textContent = meta.title;
+	const desc = document.createElementNS( SVG, 'desc' );
+	desc.textContent = [ meta.description, new Date().toISOString().slice( 0, 10 ) ]
+		.filter( Boolean ).join( ' · ' );
+	clone.prepend( title, desc, bg );
+	return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString( clone );
 }
 
 module.exports = { draw, CATEGORIES };

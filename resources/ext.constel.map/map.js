@@ -1,17 +1,24 @@
 /**
  * Especial:Constelación — el mapa de conceptos (spec: ConceptMap).
  *
- * Controles: alcance (todos/míos), página, umbral de peso, aristas visibles y
- * la lente de temas (los del viewer, los de otro lector o ninguna). Al elegir
- * un concepto, el panel lateral muestra su detalle; si no, los temas de la
- * lente. Debajo, la misma información como lista (AccessibleAlternative).
+ * Barra de herramientas en dos filas:
+ *  1. Vista 2D/3D (+ «Girar solo» sólo en 3D) · Mostrar aristas (+ peso
+ *     mínimo, 1–4, visible sólo con aristas) · zoom.
+ *  2. Píldoras con autocompletado: «Secciones de» (lectores; vacío = todas),
+ *     «Páginas» (vacío = todas) y «Temas de» (la lente; por defecto quien
+ *     mira, nunca vacía para una cuenta registrada).
+ * Al elegir un concepto, el panel lateral muestra su detalle; si no, los
+ * temas de la lente. Debajo, la misma información como lista
+ * (AccessibleAlternative).
  */
-const { api } = require( 'ext.constel.ui' );
+const { api, icons } = require( 'ext.constel.ui' );
 const graph = require( './graph.js' );
 const side = require( './sidepanel.js' );
+const pills = require( './pills.js' );
 
 const cfg = mw.config.get( 'wgConstelMap' );
 const me = mw.user.isNamed() ? mw.config.get( 'wgUserName' ) : null;
+const THRESHOLD_MAX = 4;
 
 function el( tag, className, text ) {
 	const node = document.createElement( tag );
@@ -25,14 +32,15 @@ function el( tag, className, text ) {
 }
 
 function main( root ) {
+	const pageParam = mw.util.getParamValue( 'page' );
 	const state = {
-		scope: 'everyone',
 		mode: '3d',
 		autorotate: !!( mw.storage.getObject( 'constel-map' ) || {} ).autorotate,
 		threshold: 1,
 		edges: true,
-		lens: me,
-		page: mw.util.getParamValue( 'page' ),
+		readers: [],
+		pages: pageParam ? [ pageParam ] : [],
+		lens: me ? [ me ] : [],
 		data: null,
 		themes: [],
 		myThemes: [],
@@ -43,6 +51,9 @@ function main( root ) {
 	// ── Estructura ────────────────────────────────────────────────────────
 	root.textContent = '';
 	const controls = el( 'div', 'constel-ui constel-map__controls' );
+	const rowView = el( 'div', 'constel-map__row' );
+	const rowFilters = el( 'div', 'constel-map__row constel-map__row--filters' );
+	controls.append( rowView, rowFilters );
 	const layout = el( 'div', 'constel-map__layout' );
 	const canvas = el( 'div', 'constel-map__canvas' );
 	const aside = el( 'aside', 'constel-map__side' );
@@ -53,119 +64,143 @@ function main( root ) {
 	layout.append( canvas, aside );
 	root.append( controls, layout, alt );
 
-	// ── Controles ─────────────────────────────────────────────────────────
 	const field = ( labelMsg, control ) => {
 		const label = el( 'label', 'constel-map__field' );
 		label.append( el( 'span', 'constel-label', mw.msg( labelMsg ) ), control );
 		return label;
 	};
-	const scope = el( 'select', 'constel-input' );
-	[ [ 'everyone', 'constellation-scope-everyone' ], [ 'mine', 'constellation-scope-mine' ] ].forEach( ( [ v, m ] ) => {
-		const o = el( 'option', null, mw.msg( m ) );
-		o.value = v;
-		scope.append( o );
-	} );
-	scope.disabled = !me;
-	scope.addEventListener( 'change', () => {
-		state.scope = scope.value;
-		loadGraph();
-	} );
+	const checkbox = ( msg, checked, onChange ) => {
+		const input = el( 'input' );
+		input.type = 'checkbox';
+		input.checked = checked;
+		input.addEventListener( 'change', () => onChange( input.checked ) );
+		const label = el( 'label', 'constel-map__field constel-map__field--inline' );
+		label.append( input, ' ', mw.msg( msg ) );
+		return { label, input };
+	};
 
-	const threshold = el( 'input', 'constel-input constel-map__threshold' );
-	threshold.type = 'number';
-	threshold.min = '1';
-	threshold.value = '1';
-	threshold.addEventListener( 'change', () => {
-		state.threshold = Math.max( 1, Number( threshold.value ) || 1 );
-		render();
-	} );
-
-	const edges = el( 'input' );
-	edges.type = 'checkbox';
-	edges.checked = true;
-	edges.addEventListener( 'change', () => {
-		state.edges = edges.checked;
-		render();
-	} );
-	const edgesField = el( 'label', 'constel-map__field constel-map__field--inline' );
-	edgesField.append( edges, ' ', mw.msg( 'constellation-edges' ) );
-
-	const lens = el( 'input', 'constel-input' );
-	lens.type = 'text';
-	lens.value = me || '';
-	lens.placeholder = mw.msg( 'constellation-lens-placeholder' );
-	lens.addEventListener( 'change', () => {
-		state.lens = lens.value.trim() || null;
-		state.selected = null;
-		loadThemes();
-	} );
-
-	const page = el( 'input', 'constel-input' );
-	page.type = 'text';
-	page.value = state.page || '';
-	page.placeholder = mw.msg( 'constellation-page-placeholder' );
-	page.addEventListener( 'change', () => {
-		state.page = page.value.trim() || null;
-		loadGraph();
-	} );
-
+	// ── Fila 1: vista ─────────────────────────────────────────────────────
 	const mode = el( 'select', 'constel-input' );
 	[ [ '3d', 'constellation-mode-3d' ], [ '2d', 'constellation-mode-2d' ] ].forEach( ( [ v, m ] ) => {
 		const o = el( 'option', null, mw.msg( m ) );
 		o.value = v;
 		mode.append( o );
 	} );
+	// Girar solo: junto a la vista, sólo en 3D; apagado por defecto.
+	const spin = checkbox( 'constellation-autorotate', state.autorotate, ( on ) => {
+		state.autorotate = on;
+		mw.storage.setObject( 'constel-map', { autorotate: on } );
+		if ( state.view ) {
+			state.view.setAutorotate( on );
+		}
+	} );
 	mode.addEventListener( 'change', () => {
 		state.mode = mode.value;
+		spin.label.hidden = state.mode !== '3d';
 		// Nuevo layout desde cero: 2D y 3D no comparten posiciones.
 		state.data.nodes.forEach( ( n ) => {
 			delete n.x;
 		} );
 		render();
 	} );
+	const viewGroup = el( 'div', 'constel-map__group' );
+	viewGroup.append( field( 'constellation-mode', mode ), spin.label );
 
-	// Girar solo: apagado por defecto; se recuerda por navegador.
-	const spin = el( 'input' );
-	spin.type = 'checkbox';
-	spin.checked = state.autorotate;
-	spin.addEventListener( 'change', () => {
-		state.autorotate = spin.checked;
-		mw.storage.setObject( 'constel-map', { autorotate: state.autorotate } );
-		if ( state.view ) {
-			state.view.setAutorotate( state.autorotate );
-		}
+	// Mostrar aristas condiciona el peso mínimo (1–4).
+	const threshold = el( 'input', 'constel-input constel-map__threshold' );
+	threshold.type = 'number';
+	threshold.min = '1';
+	threshold.max = String( THRESHOLD_MAX );
+	threshold.step = '1';
+	threshold.value = '1';
+	threshold.addEventListener( 'change', () => {
+		const n = Math.round( Number( threshold.value ) ) || 1;
+		state.threshold = Math.min( THRESHOLD_MAX, Math.max( 1, n ) );
+		threshold.value = String( state.threshold );
+		render();
 	} );
-	const spinField = el( 'label', 'constel-map__field constel-map__field--inline' );
-	spinField.append( spin, ' ', mw.msg( 'constellation-autorotate' ) );
-	const syncSpin = () => {
-		spinField.hidden = state.mode !== '3d';
-	};
-	mode.addEventListener( 'change', syncSpin );
-	syncSpin();
+	const thresholdField = field( 'constellation-threshold', threshold );
+	const edges = checkbox( 'constellation-edges', state.edges, ( on ) => {
+		state.edges = on;
+		// Sin aristas, el peso no tiene sentido: desaparece.
+		thresholdField.hidden = !on;
+		render();
+	} );
+	const edgesGroup = el( 'div', 'constel-map__group' );
+	edgesGroup.append( edges.label, thresholdField );
 
+	// Navegación del mapa: íconos Feather con nombre accesible.
 	const zoom = el( 'div', 'constel-map__zoom' );
-	[ [ '+', 'constellation-zoom-in', () => state.view && state.view.zoomIn() ],
-		[ '−', 'constellation-zoom-out', () => state.view && state.view.zoomOut() ],
-		[ '⌂', 'constellation-zoom-reset', () => state.view && state.view.reset() ]
-	].forEach( ( [ text, msg, fn ] ) => {
-		const b = el( 'button', 'constel-button', text );
-		b.type = 'button';
-		b.setAttribute( 'aria-label', mw.msg( msg ) );
-		b.title = mw.msg( msg );
+	zoom.setAttribute( 'role', 'group' );
+	zoom.setAttribute( 'aria-label', mw.msg( 'constellation-navigation' ) );
+	[ [ 'zoom-in', 'constellation-zoom-in', () => state.view && state.view.zoomIn() ],
+		[ 'zoom-out', 'constellation-zoom-out', () => state.view && state.view.zoomOut() ],
+		[ 'maximize', 'constellation-zoom-reset', () => state.view && state.view.reset() ],
+		[ 'download', 'constellation-export-svg', () => state.view && exportSvg() ]
+	].forEach( ( [ name, msg, fn ] ) => {
+		const b = icons.iconButton( name, mw.msg( msg ) );
 		b.addEventListener( 'click', fn );
 		zoom.append( b );
 	} );
 
-	controls.append(
-		field( 'constellation-mode', mode ),
-		field( 'constellation-scope', scope ),
-		field( 'constellation-page', page ),
-		field( 'constellation-threshold', threshold ),
-		edgesField,
-		spinField,
-		field( 'constellation-lens', lens ),
-		zoom
-	);
+	// Descarga el grafo tal como se ve (vista, filtros y proyección actuales).
+	function exportSvg() {
+		const describe = [
+			state.readers.length ? mw.msg( 'constellation-sections' ) + ': ' + state.readers.join( ', ' ) : '',
+			state.pages.length ? mw.msg( 'constellation-pages' ) + ': ' + state.pages.join( ', ' ) : ''
+		].filter( Boolean ).join( ' · ' );
+		const svg = state.view.exportSvg( {
+			title: mw.msg( 'constellation-svg-title', mw.config.get( 'wgSiteName' ) ),
+			description: describe
+		} );
+		const url = URL.createObjectURL( new Blob( [ svg ], { type: 'image/svg+xml' } ) );
+		const a = el( 'a' );
+		a.href = url;
+		a.download = 'constelacion-' + new Date().toISOString().slice( 0, 10 ) + '.svg';
+		document.body.append( a );
+		a.click();
+		a.remove();
+		setTimeout( () => URL.revokeObjectURL( url ), 1000 );
+	}
+	rowView.append( viewGroup, edgesGroup, zoom );
+
+	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
+	const readers = pills.create( {
+		label: mw.msg( 'constellation-sections' ),
+		placeholder: mw.msg( 'constellation-add-reader' ),
+		empty: mw.msg( 'constellation-all-sections' ),
+		search: api.searchUsers,
+		onChange: ( values ) => {
+			state.readers = values;
+			loadGraph();
+		}
+	} );
+	const pages = pills.create( {
+		label: mw.msg( 'constellation-pages' ),
+		placeholder: mw.msg( 'constellation-add-page' ),
+		empty: mw.msg( 'constellation-all-pages' ),
+		values: state.pages,
+		search: api.searchPages,
+		onChange: ( values ) => {
+			state.pages = values;
+			loadGraph();
+		}
+	} );
+	// La lente: por defecto quien mira; nunca vacía para una cuenta registrada.
+	const lens = pills.create( {
+		label: mw.msg( 'constellation-lens' ),
+		placeholder: mw.msg( 'constellation-add-reader' ),
+		empty: mw.msg( 'constellation-no-lens' ),
+		values: state.lens,
+		min: me ? 1 : 0,
+		search: api.searchUsers,
+		onChange: ( values ) => {
+			state.lens = values;
+			state.selected = null;
+			loadThemes();
+		}
+	} );
+	rowFilters.append( readers.el, pages.el, lens.el );
 
 	// ── Datos y dibujo ────────────────────────────────────────────────────
 	const themeIndex = () => {
@@ -273,28 +308,44 @@ function main( root ) {
 	}
 
 	function renderThemes() {
-		side.themesPanel( aside, state.themes, {
-			editable: cfg.canAnnotate && state.lens === me,
-			ownerLabel: state.lens ?
-				( state.lens === me ? mw.msg( 'constellation-my-themes' ) : mw.msg( 'constellation-themes-of', state.lens ) ) :
-				mw.msg( 'constellation-no-lens' ),
-			onChanged: () => loadThemes(),
-			onSelectConcept: ( id ) => {
-				const node = state.data && state.data.nodes.find( ( n ) => n.id === id );
-				if ( node ) {
-					select( node );
+		aside.textContent = '';
+		if ( !state.lens.length ) {
+			aside.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-no-lens' ) ) );
+			return;
+		}
+		// Un bloque por lector de la lente, en su orden; los colores siguen
+		// el índice global de temas (el mismo del grafo).
+		let offset = 0;
+		state.lens.forEach( ( name ) => {
+			const own = state.themes.filter( ( t ) => t.author === name );
+			const box = el( 'div', 'constel-side__lens' );
+			side.themesPanel( box, own, {
+				editable: cfg.canAnnotate && name === me,
+				colorOffset: offset,
+				ownerLabel: name === me ?
+					mw.msg( 'constellation-my-themes' ) :
+					mw.msg( 'constellation-themes-of', name ),
+				onChanged: () => loadThemes(),
+				onSelectConcept: ( id ) => {
+					const node = state.data && state.data.nodes.find( ( n ) => n.id === id );
+					if ( node ) {
+						select( node );
+					}
 				}
-			}
+			} );
+			offset += own.length;
+			aside.append( box );
 		} );
 	}
 
 	function loadThemes() {
 		const mine = me ? api.themesOf( me ) : Promise.resolve( [] );
-		const lensThemes = !state.lens ? Promise.resolve( [] ) :
-			state.lens === me ? mine : api.themesOf( state.lens );
-		return Promise.all( [ mine, lensThemes ] ).then( ( [ my, lensed ] ) => {
+		const lensed = state.lens.length ? api.themesOf( state.lens ) : Promise.resolve( [] );
+		return Promise.all( [ mine, lensed ] ).then( ( [ my, found ] ) => {
 			state.myThemes = my;
-			state.themes = lensed;
+			// Mismo orden que las píldoras: así el índice de color es estable.
+			const ofReader = ( name ) => found.filter( ( t ) => t.author === name );
+			state.themes = state.lens.flatMap( ofReader );
 			render();
 			if ( !state.selected ) {
 				renderThemes();
@@ -304,11 +355,14 @@ function main( root ) {
 
 	function loadGraph() {
 		canvas.textContent = mw.msg( 'constellation-loading' );
-		const params = { cgscope: state.scope };
-		const pageLookup = state.page ? api.pageId( state.page ) : Promise.resolve( null );
-		return pageLookup.then( ( id ) => {
-			if ( id ) {
-				params.cgpageid = id;
+		return api.pageIds( state.pages ).then( ( ids ) => {
+			const params = {};
+			if ( state.readers.length ) {
+				params.cgusers = state.readers;
+			}
+			if ( state.pages.length ) {
+				// Páginas inexistentes: filtro imposible, no "todas".
+				params.cgpageids = ids.length ? ids : [ 0 ];
 			}
 			return api.graph( params );
 		} ).then( ( data ) => {

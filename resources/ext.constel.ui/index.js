@@ -7,5 +7,6 @@ module.exports = {
 	panel: require( './panel.js' ),
 	autocomplete: require( './autocomplete.js' ),
 	variants: require( './variants.js' ),
-	detail: require( './detail.js' )
+	detail: require( './detail.js' ),
+	icons: require( './icons.js' )
 };

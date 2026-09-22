@@ -26,7 +26,11 @@ class PageHooks implements
 	SkinTemplateNavigation__UniversalHook
 {
 
-	/** Preferencia: con§tel activado en las páginas (default: sí). */
+	/**
+	 * Preferencia: con§tel activado en las páginas. Desactivada por defecto:
+	 * cada lector la activa en su pestaña de preferencias (o el sitio cambia
+	 * el default con $wgDefaultUserOptions['constel-enabled']).
+	 */
 	public const PREF_ENABLED = 'constel-enabled';
 	/** Preferencia oculta: el lector ya vio que sus anotaciones son públicas. */
 	public const PREF_PUBLIC_ACK = 'constel-public-ack';
@@ -130,7 +134,8 @@ class PageHooks implements
 	public function onGetPreferences( $user, &$preferences ) {
 		$preferences[self::PREF_ENABLED] = [
 			'type' => 'toggle',
-			'section' => 'rendering/constel',
+			// Pestaña propia: no es una opción de apariencia.
+			'section' => 'constel/constel-activation',
 			'label-message' => 'constel-pref-enabled',
 			'help-message' => 'constel-pref-enabled-help',
 		];

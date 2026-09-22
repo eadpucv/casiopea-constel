@@ -3,7 +3,7 @@
  * temas de un lector (spec: ThemesPanel). Los temas ajenos se leen, nunca se
  * editan (OthersReadOnly).
  */
-const { api, autocomplete } = require( 'ext.constel.ui' );
+const { api, autocomplete, icons } = require( 'ext.constel.ui' );
 
 function el( tag, className, text ) {
 	const node = document.createElement( tag );
@@ -193,7 +193,7 @@ function moderation( node, ctx ) {
  *
  * @param {HTMLElement} box
  * @param {Array} themes de list=constelthemes
- * @param {Object} ctx {editable, ownerLabel, onChanged, onSelectConcept}
+ * @param {Object} ctx {editable, ownerLabel, colorOffset, onChanged, onSelectConcept}
  */
 function themesPanel( box, themes, ctx ) {
 	box.textContent = '';
@@ -207,7 +207,8 @@ function themesPanel( box, themes, ctx ) {
 
 	themes.forEach( ( theme, index ) => {
 		// Clases: constel-theme--cat-0 … constel-theme--cat-7
-		const section = el( 'section', 'constel-theme constel-theme--cat-' + ( index % 8 ) );
+		const color = ( ( ctx.colorOffset || 0 ) + index ) % 8;
+		const section = el( 'section', 'constel-theme constel-theme--cat-' + color );
 		const fb = feedbackBox();
 		const title = el( 'h3', 'constel-theme__title' );
 		title.append( el( 'span', 'constel-theme__swatch' ), theme.label );
@@ -221,10 +222,9 @@ function themesPanel( box, themes, ctx ) {
 			open.addEventListener( 'click', () => ctx.onSelectConcept( c.id ) );
 			li.append( open );
 			if ( ctx.editable ) {
-				const remove = el( 'button', 'constel-chip__remove', '×' );
-				remove.type = 'button';
-				remove.setAttribute( 'aria-label', mw.msg( 'constellation-ungroup', c.label ) );
-				remove.title = mw.msg( 'constellation-ungroup', c.label );
+				const remove = icons.iconButton(
+					'x', mw.msg( 'constellation-ungroup', c.label ), 'constel-chip__remove'
+				);
 				remove.addEventListener( 'click', () => api.write( {
 					action: 'constel-groupconcept', op: 'ungroup', concept: c.id
 				} ).then( ctx.onChanged, fail( fb ) ) );

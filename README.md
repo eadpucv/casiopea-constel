@@ -4,14 +4,15 @@
 de [con§tel](https://github.com/hspencer/constel), la herramienta de lectura
 activa y análisis temático de la e[ad] PUCV.
 
-Al seleccionar un pasaje de una página aparece **§**. Con él el lector crea un
-*excerpt* y le asigna conceptos de un vocabulario compartido. Después agrupa
-esos conceptos en temas personales y escribe notas de desarrollo. La página
-especial *Constelación* reúne los conceptos de todos los lectores en un mapa.
-Ahí los conceptos quedan unidos cuando están en un mismo § y cuando los §§ de
-lectores distintos se solapan sobre un pasaje.
+Al seleccionar un texto de una página aparece **§**. Con él el lector crea una
+**sección** y le asigna conceptos de un vocabulario compartido, más una glosa
+opcional. Después agrupa esos conceptos en temas personales y escribe notas de
+desarrollo. La página especial *Constelación* reúne los conceptos de todos los
+lectores en un mapa 3D: los conceptos quedan unidos cuando están en una misma
+sección, cuando secciones de lectores distintos se solapan y cuando se anotaron
+en la misma página.
 
-Estado: **versión 0.2.0** (hitos D0–D6 y ajustes). Extensión para
+Estado: **versión 0.3.0**. Extensión para
 MediaWiki 1.43 LTS. La GUI se diseña sobre los tokens de
 [Stella Nova](https://github.com/hspencer/stella-nova) y funciona con cualquier skin.
 
@@ -30,20 +31,46 @@ allium analyse specs/casiopea-constel.allium
 
 ## Instalación
 
-```bash
-cd extensions
-git clone https://github.com/hspencer/casiopea-constel.git
-```
+1. **Clonar** el repo en `extensions/`:
 
-```php
-wfLoadExtension( 'casiopea-constel' );
-```
+   ```bash
+   cd extensions
+   git clone https://github.com/hspencer/casiopea-constel.git
+   ```
 
-Después se corre `maintenance/run.php update`.
+2. **Cargarla** en `LocalSettings.php`:
 
-No hace falta ningún script propio: el esquema se instala con el
-`update.php` estándar (`LoadExtensionSchemaUpdates`), en el dominio de base de
-datos `virtual-constel`.
+   ```php
+   wfLoadExtension( 'casiopea-constel' );
+   ```
+
+3. **Crear las tablas** con el `update.php` estándar:
+
+   ```bash
+   php maintenance/run.php update
+   ```
+
+   No hace falta ningún script propio: el esquema se instala con
+   `LoadExtensionSchemaUpdates`, en el dominio de base de datos
+   `virtual-constel`.
+
+4. **Cada lector la activa en sus preferencias.** Instalada, la extensión
+   viene **desactivada** para todos: las páginas se ven igual que antes. Cada
+   usuario registrado la enciende en **Preferencias › con§tel ›
+   Activación** («Usar con§tel en las páginas»). Desde ese momento, al
+   seleccionar texto aparece §, se ven las marcas de pasajes y el menú de
+   usuario muestra los controles de lectura. La constelación
+   (`Especial:Constelación`) y la lista propia (`Especial:MiConstel`) están
+   siempre disponibles en Páginas especiales, aun con la extensión
+   desactivada.
+
+   Si el sitio prefiere que venga activada para todos, basta con cambiar el
+   valor por defecto en `LocalSettings.php` (cada lector puede apagarla
+   igual):
+
+   ```php
+   $wgDefaultUserOptions['constel-enabled'] = 1;
+   ```
 
 ### Desinstalación
 

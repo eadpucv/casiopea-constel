@@ -26,13 +26,13 @@ class GraphBuilder {
 	}
 
 	/**
-	 * @param int|null $onlyActor sólo los §§ de este lector (alcance "mine")
-	 * @param int|null $onlyPage sólo los §§ de esta página
+	 * @param int[]|null $actors sólo los §§ de estos lectores (null o vacío = todos)
+	 * @param int[]|null $pages sólo los §§ de estas páginas (null o vacío = todas)
 	 * @param int|null $viewerActor para marcar los conceptos a los que aportó quien mira
 	 * @return array{nodes: array, links: array}
 	 */
-	public function build( ?int $onlyActor, ?int $onlyPage, ?int $viewerActor ): array {
-		$excerpts = $this->loadExcerpts( $onlyActor, $onlyPage );
+	public function build( ?array $actors, ?array $pages, ?int $viewerActor ): array {
+		$excerpts = $this->loadExcerpts( $actors ?: null, $pages ?: null );
 
 		$nodes = [];
 		$links = [];
@@ -117,18 +117,18 @@ class GraphBuilder {
 	/**
 	 * @return array<int,array{actor:int,page:int,status:int,start:int,end:int,concepts:int[]}>
 	 */
-	private function loadExcerpts( ?int $onlyActor, ?int $onlyPage ): array {
+	private function loadExcerpts( ?array $actors, ?array $pages ): array {
 		$db = $this->dbProvider->getReplicaDatabase( ConceptStore::DOMAIN );
 		$query = $db->newSelectQueryBuilder()
 			->select( [ 'ccd_excerpt', 'ccd_concept', 'ce_actor', 'ce_page', 'ce_status', 'ce_start', 'ce_end' ] )
 			->from( 'constel_coding' )
 			->join( 'constel_excerpt', null, 'ce_id = ccd_excerpt' )
 			->orderBy( [ 'ccd_excerpt', 'ccd_timestamp' ] );
-		if ( $onlyActor !== null ) {
-			$query->where( [ 'ce_actor' => $onlyActor ] );
+		if ( $actors !== null ) {
+			$query->where( [ 'ce_actor' => array_values( $actors ) ] );
 		}
-		if ( $onlyPage !== null ) {
-			$query->where( [ 'ce_page' => $onlyPage ] );
+		if ( $pages !== null ) {
+			$query->where( [ 'ce_page' => array_values( $pages ) ] );
 		}
 		$excerpts = [];
 		foreach ( $query->caller( __METHOD__ )->fetchResultSet() as $row ) {

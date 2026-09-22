@@ -45,6 +45,17 @@ class PageHooksTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
+	/**
+	 * Un lector con con§tel activado (viene desactivado por defecto).
+	 */
+	private function enabledReader(): User {
+		$user = $this->getMutableTestUser()->getUser();
+		$options = $this->getServiceContainer()->getUserOptionsManager();
+		$options->setOption( $user, PageHooks::PREF_ENABLED, 1 );
+		$options->saveOptions( $user );
+		return $user;
+	}
+
 	private function page(): Title {
 		$title = Title::makeTitle( NS_MAIN, 'ConstelHookTest' );
 		$this->editPage( $title, 'La travesía abre el espacio.' );
@@ -53,7 +64,7 @@ class PageHooksTest extends MediaWikiIntegrationTestCase {
 
 	public function testRegisteredReaderGetsTheReader(): void {
 		$title = $this->page();
-		$out = $this->display( $this->getTestUser()->getUser(), $title );
+		$out = $this->display( $this->enabledReader(), $title );
 		$this->assertContains( 'ext.constel.reader', $out->getModules() );
 		$config = $out->getJsConfigVars()['wgConstel'];
 		$this->assertSame( $title->getArticleID(), $config['pageId'] );
@@ -67,7 +78,7 @@ class PageHooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testNotOnEditOrNonContentPages(): void {
-		$user = $this->getTestUser()->getUser();
+		$user = $this->enabledReader();
 		$this->assertNotContains( 'ext.constel.reader', $this->display( $user, $this->page(), 'edit' )->getModules() );
 		$talk = Title::makeTitle( NS_TALK, 'ConstelHookTest' );
 		$this->editPage( $talk, 'Una discusión.' );
@@ -76,9 +87,16 @@ class PageHooksTest extends MediaWikiIntegrationTestCase {
 
 	public function testUserWithoutTheRightReadsButCannotAnnotate(): void {
 		$this->setGroupPermissions( 'user', 'constel-annotate', false );
-		$out = $this->display( $this->getTestUser()->getUser(), $this->page() );
+		$out = $this->display( $this->enabledReader(), $this->page() );
 		$this->assertContains( 'ext.constel.reader', $out->getModules() );
 		$this->assertFalse( $out->getJsConfigVars()['wgConstel']['canAnnotate'] );
+	}
+
+	public function testOffByDefault(): void {
+		$this->assertFalse( $this->getServiceContainer()->getUserOptionsLookup()
+			->getBoolOption( $this->getMutableTestUser()->getUser(), PageHooks::PREF_ENABLED ) );
+		$this->assertNotContains( 'ext.constel.reader',
+			$this->display( $this->getMutableTestUser()->getUser(), $this->page() )->getModules() );
 	}
 
 	public function testReaderWhoTurnedItOffSeesNothing(): void {
@@ -92,7 +110,7 @@ class PageHooksTest extends MediaWikiIntegrationTestCase {
 	public function testUserMenuGetsReadingControlsAndLinks(): void {
 		$title = $this->page();
 		$context = new RequestContext();
-		$context->setUser( $this->getTestUser()->getUser() );
+		$context->setUser( $this->enabledReader() );
 		$context->setTitle( $title );
 		$context->setActionName( 'view' );
 		$context->getOutput()->setRevisionId( $title->getLatestRevID() );

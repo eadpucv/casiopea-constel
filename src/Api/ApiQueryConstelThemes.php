@@ -36,10 +36,13 @@ class ApiQueryConstelThemes extends ApiQueryBase {
 		$this->requireOnlyOneParameter( $params, 'user', 'ids' );
 
 		if ( $params['user'] !== null ) {
-			$actorId = $this->actorStore->findActorIdByName(
-				$params['user'], $this->dbProvider->getReplicaDatabase()
-			);
-			$records = $actorId ? $this->themes->listForActor( $actorId ) : [];
+			$records = [];
+			foreach ( $params['user'] as $name ) {
+				$actorId = $this->actorStore->findActorIdByName( $name, $this->dbProvider->getReplicaDatabase() );
+				if ( $actorId ) {
+					array_push( $records, ...$this->themes->listForActor( $actorId ) );
+				}
+			}
 		} else {
 			$records = array_filter( array_map( [ $this->themes, 'get' ], $params['ids'] ) );
 		}
@@ -88,7 +91,11 @@ class ApiQueryConstelThemes extends ApiQueryBase {
 	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
-			'user' => [ ParamValidator::PARAM_TYPE => 'user', 'user-must-exist' => true ],
+			'user' => [
+				ParamValidator::PARAM_TYPE => 'user',
+				ParamValidator::PARAM_ISMULTI => true,
+				'user-must-exist' => true,
+			],
 			'ids' => [ ParamValidator::PARAM_TYPE => 'integer', ParamValidator::PARAM_ISMULTI => true ],
 		];
 	}

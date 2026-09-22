@@ -21,12 +21,9 @@ function open( opts ) {
 	el.setAttribute( 'role', 'dialog' );
 	el.setAttribute( 'aria-label', opts.label );
 
-	const closeButton = document.createElement( 'button' );
-	closeButton.type = 'button';
-	closeButton.className = 'constel-panel__close';
-	closeButton.setAttribute( 'aria-label', mw.msg( 'constel-panel-close' ) );
-	closeButton.title = mw.msg( 'constel-panel-close' );
-	closeButton.textContent = '×';
+	const closeButton = require( './icons.js' ).iconButton(
+		'x', mw.msg( 'constel-panel-close' ), 'constel-panel__close'
+	);
 	closeButton.addEventListener( 'click', () => close() );
 
 	const body = document.createElement( 'div' );

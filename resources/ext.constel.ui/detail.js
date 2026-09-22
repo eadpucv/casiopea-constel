@@ -12,6 +12,7 @@ const api = require( './api.js' );
 const panel = require( './panel.js' );
 const autocomplete = require( './autocomplete.js' );
 const variants = require( './variants.js' );
+const icons = require( './icons.js' );
 
 function el( tag, className, text ) {
 	const node = document.createElement( tag );
@@ -96,11 +97,10 @@ function editor( excerpt, ctx ) {
 	excerpt.concepts.forEach( ( concept ) => {
 		const li = el( 'li', 'constel-chip' );
 		li.append( el( 'span', 'constel-chip__label', concept.label ) );
-		const remove = el( 'button', 'constel-chip__remove', '×' );
-		remove.type = 'button';
+		const remove = icons.iconButton(
+			'x', mw.msg( 'constel-detail-remove', concept.label ), 'constel-chip__remove'
+		);
 		remove.setAttribute( 'aria-pressed', 'false' );
-		remove.setAttribute( 'aria-label', mw.msg( 'constel-detail-remove', concept.label ) );
-		remove.title = mw.msg( 'constel-detail-remove', concept.label );
 		remove.addEventListener( 'click', () => {
 			const on = !removing.has( concept.id );
 			if ( on ) {

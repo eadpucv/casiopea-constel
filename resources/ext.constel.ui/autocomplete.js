@@ -1,16 +1,32 @@
 /**
- * Autocompletado del vocabulario compartido (spec: SharedVocabularyAutocomplete).
- * Patrón ARIA combobox: el input conserva el foco; las flechas recorren la
- * lista; Enter elige; Escape cierra sólo la lista.
+ * Autocompletado. Por defecto, del vocabulario compartido
+ * (spec: SharedVocabularyAutocomplete); con opts.source, de cualquier otra
+ * fuente (usuarios, páginas). Patrón ARIA combobox: el input conserva el
+ * foco; las flechas recorren la lista; Enter elige; Escape cierra sólo la
+ * lista.
  */
 const api = require( './api.js' );
 
 let seq = 0;
 
 /**
+ * Fuente por defecto: conceptos del vocabulario, con su uso como pista.
+ *
+ * @param {string} typed
+ * @return {Promise<Array<{label: string, hint: string}>>}
+ */
+function conceptSource( typed ) {
+	return api.searchConcepts( typed ).then( ( concepts ) => concepts.map( ( c ) => ( {
+		label: c.label,
+		hint: mw.msg( 'constel-suggestion-uses', mw.language.convertNumber( c.uses ), c.uses )
+	} ) ) );
+}
+
+/**
  * @param {HTMLInputElement} input
  * @param {Object} [opts]
  * @param {Function} [opts.onPick] (label) => void
+ * @param {Function} [opts.source] (typed) => Promise<Array<{label, hint?}>>
  * @return {{isOpen: Function, close: Function}}
  */
 function attach( input, opts = {} ) {
@@ -53,26 +69,30 @@ function attach( input, opts = {} ) {
 			opts.onPick( label );
 		}
 	};
-	const render = ( concepts ) => {
+	const source = opts.source || conceptSource;
+	const render = ( items ) => {
 		list.textContent = '';
-		concepts.forEach( ( c, i ) => {
+		items.forEach( ( c, i ) => {
 			const li = document.createElement( 'li' );
 			li.id = id + '-' + i;
 			li.setAttribute( 'role', 'option' );
 			li.className = 'constel-ac__option';
 			const label = document.createElement( 'span' );
 			label.textContent = c.label;
-			const uses = document.createElement( 'span' );
-			uses.className = 'constel-ac__uses';
-			uses.textContent = mw.msg( 'constel-suggestion-uses', mw.language.convertNumber( c.uses ), c.uses );
-			li.append( label, uses );
+			li.append( label );
+			if ( c.hint ) {
+				const hint = document.createElement( 'span' );
+				hint.className = 'constel-ac__uses';
+				hint.textContent = c.hint;
+				li.append( hint );
+			}
 			li.addEventListener( 'mousedown', ( e ) => {
 				e.preventDefault();
 				pick( c.label );
 			} );
 			list.appendChild( li );
 		} );
-		list.hidden = !concepts.length;
+		list.hidden = !items.length;
 		input.setAttribute( 'aria-expanded', String( !list.hidden ) );
 		setActive( -1 );
 	};
@@ -86,11 +106,11 @@ function attach( input, opts = {} ) {
 		}
 		timer = setTimeout( () => {
 			const mine = ++request;
-			api.searchConcepts( typed ).then( ( concepts ) => {
+			source( typed ).then( ( items ) => {
 				if ( mine === request ) {
-					render( concepts );
+					render( items );
 				}
-			} );
+			}, () => render( [] ) );
 		}, 150 );
 	} );
 	input.addEventListener( 'keydown', ( e ) => {

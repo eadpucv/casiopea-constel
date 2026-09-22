@@ -98,10 +98,19 @@ class GraphBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( 2, $all['Travesía']['excerpts'] );
 		$this->assertSame( 2, $all['Travesía']['pages'] );
 
-		$mine = $this->constel()->getGraphBuilder()->build( 1, null, 1 );
+		$mine = $this->constel()->getGraphBuilder()->build( [ 1 ], null, 1 );
 		$this->assertSame( [ 'Travesía' ], array_column( $mine['nodes'], 'label' ) );
 
-		$page = $this->constel()->getGraphBuilder()->build( null, 11, null );
+		$page = $this->constel()->getGraphBuilder()->build( null, [ 11 ], null );
+		$this->assertEqualsCanonicalizing( [ 'Travesía', 'Diseño' ], array_column( $page['nodes'], 'label' ) );
+
+		$both = $this->constel()->getGraphBuilder()->build( [ 1, 2 ], [ 10, 11 ], null );
+		$this->assertCount( 2, $both['nodes'] );
+		$this->assertSame( 2, array_column( $both['nodes'], null, 'label' )['Travesía']['pages'] );
+
+		$page = $this->constel()->getGraphBuilder()->build( [], [], null );
+		$this->assertCount( 2, $page['nodes'], 'vacío = todos' );
+		$page = $this->constel()->getGraphBuilder()->build( null, [ 11 ], null );
 		$this->assertEqualsCanonicalizing( [ 'Travesía', 'Diseño' ], array_column( $page['nodes'], 'label' ) );
 	}
 }

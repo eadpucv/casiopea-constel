@@ -3,21 +3,45 @@
  * Solo consume alias --constel-* (ext.constel.tokens.css).
  */
 
-/* ── Controles ────────────────────────────────────────────────────────── */
+/* ── Barra de herramientas ─────────────────────────────────────────────
+ * Fila 1: vista (+ girar solo) · aristas (+ peso) · zoom.
+ * Fila 2: filtros como píldoras. */
 
 .constel-map__controls {
 	display: flex;
-	flex-wrap: wrap;
+	flex-direction: column;
 	gap: var( --constel-s-3 );
-	align-items: flex-end;
 	margin: var( --constel-s-3 ) 0;
+	padding: var( --constel-s-3 );
+	border: 1px solid var( --constel-hairline-soft );
+	border-radius: var( --constel-radius-l );
+	background: var( --constel-surface );
 	font-family: var( --constel-font-ui );
 	font-size: var( --constel-fs-sm );
 }
 
+.constel-map__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-4 );
+	align-items: flex-end;
+}
+
+.constel-map__row--filters {
+	align-items: flex-start;
+	padding-top: var( --constel-s-3 );
+	border-top: 1px solid var( --constel-hairline-soft );
+}
+
+.constel-map__group {
+	display: flex;
+	gap: var( --constel-s-3 );
+	align-items: flex-end;
+}
+
 .constel-map__field .constel-input {
 	width: auto;
-	min-width: 9rem;
+	min-width: 6rem;
 }
 
 .constel-map__field--inline {
@@ -27,14 +51,73 @@
 	padding-bottom: var( --constel-s-2 );
 }
 
+.constel-map__field--inline[ hidden ] {
+	display: none;
+}
+
+.constel-map__field[ hidden ] {
+	display: none;
+}
+
 .constel-map__threshold {
-	width: 5rem;
+	width: 4.5rem;
 }
 
 .constel-map__zoom {
 	display: inline-flex;
 	gap: var( --constel-s-1 );
 	margin-left: auto;
+}
+
+/* ── Píldoras con autocompletado ─────────────────────────────────────── */
+
+.constel-pills {
+	flex: 1 1 14rem;
+	min-width: 0;
+}
+
+.constel-pills__box {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-1 );
+	align-items: center;
+	min-height: 2.25rem;
+	padding: var( --constel-s-1 );
+	border: 1px solid var( --constel-field-border );
+	border-radius: var( --constel-radius );
+	background: var( --constel-field-bg );
+}
+
+.constel-pills__box:focus-within {
+	border-color: var( --constel-focus-border );
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-map .constel-pills__list {
+	display: contents;
+}
+
+.constel-pills__empty {
+	color: var( --constel-ink-faint );
+	font-style: italic;
+}
+
+.constel-pills__empty[ hidden ] {
+	display: none;
+}
+
+.constel-pills__field {
+	flex: 1 1 8rem;
+	min-width: 8rem;
+}
+
+.constel-map .constel-pills__input {
+	width: 100%;
+	min-width: 0;
+	padding: var( --constel-s-1 );
+	border: 0;
+	background: transparent;
+	box-shadow: none;
 }
 
 /* ── Lienzo y panel ───────────────────────────────────────────────────── */
