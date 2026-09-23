@@ -1,6 +1,6 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.7.1 — 2026-09-23
 
 - **MiConstel se recorre con filtros.** La tabla va paginada (antes cortaba
   sin avisar en 1000 secciones), se ordena por fecha o estado y se filtra
