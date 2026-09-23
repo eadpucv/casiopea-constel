@@ -179,10 +179,11 @@ value TextAnchor {
 
 -- Vocabulario GLOBAL. Identidad ESTRICTA, con la semántica de un título
 -- de MediaWiki (decisión 2026-09-22): "Diseño" ≠ "Diseno". Ver
--- normalize_concept.
+-- normalize_concept. El rótulo ES la identidad: se guarda ya en forma
+-- canónica («diseño  gráfico» se ve «Diseño gráfico»), no hay un rótulo
+-- visible aparte de la clave (decisión 2026-09-23).
 entity Concept {
-    key: String                     -- normalize_concept(label): forma canónica de título
-    label: String                   -- rótulo visible (primera aportación o renombre)
+    label: String                   -- normalize_concept(lo escrito al crearlo o renombrarlo)
 
     codings: Coding with concept = this
     memberships: ThemeMembership with concept = this
@@ -302,9 +303,9 @@ rule ReaderCreatesExcerpt {
     requires: length(anchor.exact) <= config.selection_max_length
     requires: anchor_resolves(anchor, revision)
     requires: not is_blank(concept_label)
-    requires: length(trim(concept_label)) <= config.concept_max_length
+    requires: length(normalize_concept(concept_label)) <= config.concept_max_length
     requires: gloss = null or length(gloss) <= config.gloss_max_length
-    let existing = Concept{key: normalize_concept(concept_label)}
+    let existing = Concept{label: normalize_concept(concept_label)}
     ensures:
         let excerpt = Excerpt.created(
             author: author,
@@ -317,10 +318,7 @@ rule ReaderCreatesExcerpt {
         )
         let concept =
             if exists existing: existing
-            else: Concept.created(
-                key: normalize_concept(concept_label),
-                label: trim(concept_label)
-            )
+            else: Concept.created(label: normalize_concept(concept_label))
         Coding.created(excerpt: excerpt, concept: concept, coded_at: now)
     @guidance
         -- Como en constel, un § nace con su primer concepto: el popup no
@@ -348,16 +346,13 @@ rule ReaderCodesExcerpt {
     requires: excerpt.page not in actor.blocked_pages
     requires: not excerpt.is_frozen
     requires: not is_blank(concept_label)
-    requires: length(trim(concept_label)) <= config.concept_max_length
-    let existing = Concept{key: normalize_concept(concept_label)}
+    requires: length(normalize_concept(concept_label)) <= config.concept_max_length
+    let existing = Concept{label: normalize_concept(concept_label)}
     requires: not (exists existing and existing in excerpt.concepts)
     ensures:
         let concept =
             if exists existing: existing
-            else: Concept.created(
-                key: normalize_concept(concept_label),
-                label: trim(concept_label)
-            )
+            else: Concept.created(label: normalize_concept(concept_label))
         Coding.created(excerpt: excerpt, concept: concept, coded_at: now)
     @guidance
         -- Aplica también a §§ perdidos: siguen siendo codificables (su
@@ -479,12 +474,11 @@ rule ModeratorRenamesConcept {
     requires: config.moderate_right in actor.rights
     requires: not actor.is_blocked
     requires: not is_blank(new_label)
-    requires: length(trim(new_label)) <= config.concept_max_length
-    requires: not exists Concept{key: normalize_concept(new_label)}
-        or normalize_concept(new_label) = concept.key
+    requires: length(normalize_concept(new_label)) <= config.concept_max_length
+    requires: not exists Concept{label: normalize_concept(new_label)}
+        or normalize_concept(new_label) = concept.label
     ensures:
-        concept.label = trim(new_label)
-        concept.key = normalize_concept(new_label)
+        concept.label = normalize_concept(new_label)
     @guidance
         -- Si el rótulo nuevo ya existe como otro concepto, eso es una
         -- fusión (ModeratorMergesConcepts), no un renombre. Renombrar es
@@ -650,9 +644,9 @@ invariant NoDuplicateCoding {
         e.codings.count = e.concepts.unique.count
 }
 
-invariant ConceptKeysAreNormalised {
+invariant ConceptLabelsAreCanonical {
     for c in Concepts:
-        c.key = normalize_concept(c.label)
+        c.label = normalize_concept(c.label)
 }
 
 -- constel: cada concepto pertenece a 1 tema o a ninguno — aquí, por lector.
@@ -835,10 +829,12 @@ surface ConceptDetail {
         -- (Intro o salir guarda, Esc cancela). Fusionar se ofrece bajo el
         -- mapa, en una sola línea (ícono, campo, botón) y sin encabezado.
 
-    @guarantee HereAndElsewhere
-        -- Separa los §§ de la página actual ("§ en esta página") de los
-        -- de otras páginas ("en otras páginas"), y los del viewer de los
-        -- de otros lectores. Los perdidos se marcan como tales.
+    @guarantee OwnFirst
+        -- Los §§ del viewer van primero. Los perdidos y los congelados
+        -- (éstos, sólo para quien puede verlos: FrozenIsPrivate) se marcan
+        -- como tales. No hay «página actual»: el panel vive en el mapa, y
+        -- la procedencia de cada § va a su pie (SectionProvenance;
+        -- reemplaza HereAndElsewhere, decisión 2026-09-23).
 }
 
 -- Especial:Constelación — el mapa de conceptos.

@@ -168,7 +168,7 @@ classDiagram
         coded_at
     }
     class Concept {
-        key: forma canónica = rótulo
+        label: forma canónica = identidad
         fold: clave tolerante
     }
     class Theme {
