@@ -292,7 +292,7 @@ config {
 ------------------------------------------------------------
 
 rule ReaderCreatesExcerpt {
-    when: ReaderCreatesExcerpt(author, page, revision, anchor, concept_label, gloss)
+    when: ReaderCreatesExcerpt(author, page, revision, anchor, concept_label, gloss, variant_confirmed)
     requires: author.identity = registered
     requires: config.annotate_right in author.rights
     requires: not author.is_blocked
@@ -306,6 +306,8 @@ rule ReaderCreatesExcerpt {
     requires: length(normalize_concept(concept_label)) <= config.concept_max_length
     requires: gloss = null or length(gloss) <= config.gloss_max_length
     let existing = Concept{label: normalize_concept(concept_label)}
+    requires: exists existing or variant_confirmed
+        or not has_variants(normalize_concept(concept_label))
     ensures:
         let excerpt = Excerpt.created(
             author: author,
@@ -340,7 +342,7 @@ rule ReaderCreatesExcerpt {
 }
 
 rule ReaderCodesExcerpt {
-    when: ReaderCodesExcerpt(actor, excerpt, concept_label)
+    when: ReaderCodesExcerpt(actor, excerpt, concept_label, variant_confirmed)
     requires: actor = excerpt.author
     requires: not actor.is_blocked
     requires: excerpt.page not in actor.blocked_pages
@@ -348,6 +350,8 @@ rule ReaderCodesExcerpt {
     requires: not is_blank(concept_label)
     requires: length(normalize_concept(concept_label)) <= config.concept_max_length
     let existing = Concept{label: normalize_concept(concept_label)}
+    requires: exists existing or variant_confirmed
+        or not has_variants(normalize_concept(concept_label))
     requires: not (exists existing and existing in excerpt.concepts)
     ensures:
         let concept =
@@ -669,7 +673,7 @@ surface SelectionPopup {
         page.latest_revision
 
     provides:
-        ReaderCreatesExcerpt(viewer, page, page.latest_revision, anchor, concept_label, gloss)
+        ReaderCreatesExcerpt(viewer, page, page.latest_revision, anchor, concept_label, gloss, variant_confirmed)
             when viewer.identity = registered
                 and config.annotate_right in viewer.rights
                 and not viewer.is_blocked
@@ -696,7 +700,10 @@ surface SelectionPopup {
         -- para teclados sin ñ; decisión 2026-09-23). Crear la
         -- variante sigue siendo posible, pero requiere un gesto explícito:
         -- nunca se sustituye ni se une en silencio. La comparación
-        -- tolerante sólo sugiere; la identidad sigue siendo estricta.
+        -- tolerante sólo sugiere; la identidad sigue siendo estricta. El
+        -- gesto es variant_confirmed, y no es sólo del popup: el servidor
+        -- rechaza crear una variante sin él, venga de donde venga la
+        -- llamada (ReaderCreatesExcerpt, ReaderCodesExcerpt).
 
     @guarantee OnlyContentSelections
         -- Selecciones que tocan chrome del skin, el propio popup, campos
@@ -735,7 +742,7 @@ surface PageReading {
             e.author = viewer
 
     provides:
-        ReaderCodesExcerpt(viewer, excerpt, concept_label)
+        ReaderCodesExcerpt(viewer, excerpt, concept_label, variant_confirmed)
         ReaderGlossesExcerpt(viewer, excerpt, gloss)
         ReaderUncodesExcerpt(viewer, coding)
         ReaderDeletesExcerpt(viewer, excerpt)
@@ -992,7 +999,7 @@ surface MyReading {
         excerpt.created_at
 
     provides:
-        ReaderCodesExcerpt(viewer, excerpt, concept_label)
+        ReaderCodesExcerpt(viewer, excerpt, concept_label, variant_confirmed)
             when not excerpt.is_frozen
         ReaderGlossesExcerpt(viewer, excerpt, gloss)
             when not excerpt.is_frozen
@@ -1037,6 +1044,7 @@ surface MediaWikiIntegration {
 -- Deferred
 ------------------------------------------------------------
 
+deferred Concept.has_variants       -- see: docs/ARCHITECTURE.md#conceptos — ¿hay conceptos de otro rótulo con la misma clave tolerante (fold: sin tildes, diéresis ni la marca de la ñ, en minúsculas)?
 deferred Concept.normalize_concept    -- see: docs/ARCHITECTURE.md#conceptos — forma canónica de título MW: NFC, trim, '_' y espacios colapsados a uno, primera letra según $wgCapitalLinks; el resto exacto
 deferred Excerpt.anchor_resolves      -- see: docs/ARCHITECTURE.md#anclaje — ¿el TextAnchor se ubica sin ambigüedad en el texto renderizado?
 deferred Excerpt.relocate             -- see: docs/ARCHITECTURE.md#anclaje — el TextAnchor recalculado en la nueva revisión
