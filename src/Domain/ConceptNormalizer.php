@@ -14,13 +14,11 @@ use Normalizer;
  * «Diseno» son conceptos distintos.
  *
  * La clave tolerante (fold) sólo sirve para encontrar variantes: pliega
- * mayúsculas, tildes y diéresis, pero conserva la ñ («año» no es variante de
- * «ano»). Nunca identifica.
+ * mayúsculas, tildes, diéresis y también la ñ, para que «Diseno», escrito
+ * desde un teclado sin ñ, sugiera «Diseño» (decisión 2026-09-23). Nunca
+ * identifica: sugerir «¿Año?» ante «ano» no une nada.
  */
 class ConceptNormalizer {
-
-	/** U+0303 COMBINING TILDE: la marca que hace de la n una ñ. */
-	private const COMBINING_TILDE = "\u{0303}";
 
 	public function __construct(
 		private readonly bool $capitalLinks
@@ -47,10 +45,8 @@ class ConceptNormalizer {
 		if ( $decomposed === false ) {
 			$decomposed = $label;
 		}
-		// Protege la ñ/Ñ antes de quitar marcas combinantes.
-		$decomposed = preg_replace( '/([nN])' . self::COMBINING_TILDE . '/u', "$1\u{E000}", $decomposed );
+		// Sin marcas combinantes: tildes, diéresis y la de la ñ.
 		$stripped = preg_replace( '/\p{Mn}+/u', '', $decomposed );
-		$stripped = str_replace( "\u{E000}", self::COMBINING_TILDE, $stripped );
 		$recomposed = Normalizer::normalize( $stripped, Normalizer::FORM_C );
 		return mb_strtolower( $recomposed === false ? $stripped : $recomposed );
 	}

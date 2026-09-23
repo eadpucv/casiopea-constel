@@ -140,10 +140,16 @@ class ApiConstelTest extends ApiTestCase {
 		$this->assertSame( 'Travesia', $out['concept']['label'], 'identidad estricta: se crea la variante' );
 	}
 
-	public function testEnyeIsNotAVariant(): void {
-		$this->create( $this->reader(), [ 'concept' => 'Año' ] );
-		$out = $this->create( $this->reader( 'other' ), [ 'concept' => 'ano' ] );
-		$this->assertSame( 'Ano', $out['concept']['label'], 'la ñ es una letra: no pide confirmación' );
+	public function testEnyeIsSuggestedButNeverMerged(): void {
+		$this->create( $this->reader(), [ 'concept' => 'Diseño' ] );
+		try {
+			$this->create( $this->reader( 'other' ), [ 'concept' => 'Diseno' ] );
+			$this->fail( 'Se esperaba el error de variantes' );
+		} catch ( ApiUsageException $e ) {
+			$this->assertApiErrorCode( 'variants', $e );
+		}
+		$out = $this->create( $this->reader( 'other' ), [ 'concept' => 'Diseno', 'allowvariant' => true ] );
+		$this->assertSame( 'Diseno', $out['concept']['label'], 'sólo sugiere: la identidad sigue estricta' );
 	}
 
 	public function testOnlyTheAuthorCodesAnExcerpt(): void {

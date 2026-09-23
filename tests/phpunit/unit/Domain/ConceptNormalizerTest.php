@@ -45,8 +45,8 @@ class ConceptNormalizerTest extends TestCase {
 			'mayúsculas' => [ 'Travesía', 'TRAVESÍA', true ],
 			'diéresis' => [ 'Pingüino', 'pinguino', true ],
 			'espacios' => [ 'La ronda', 'la_ronda', true ],
-			'la ñ no es una tilde' => [ 'Año', 'Ano', false ],
-			'ñ mayúscula' => [ 'AÑO', 'año', true ],
+			'ñ ≈ n, sólo para sugerir' => [ 'Diseño', 'Diseno', true ],
+			'ñ mayúscula' => [ 'AÑO', 'ano', true ],
 			'palabras distintas' => [ 'Casa', 'Caza', false ],
 		];
 	}

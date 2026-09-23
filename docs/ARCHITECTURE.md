@@ -521,9 +521,11 @@ no un enlace.
 
 **La convergencia a la forma bien escrita se hace al escribir, no en la
 identidad.** `ConceptNormalizer::fold` es una clave tolerante que **solo sirve
-para sugerir**: NFD, sin marcas combinantes **salvo la tilde de la ñ** (la ñ es
-una letra: «año» y «ano» no son variantes), minúsculas y espacios colapsados.
-Se guarda indexada (`cc_fold`). La usan el autocompletado (`ccsearch`, los más
+para sugerir**: NFD, sin marcas combinantes (tildes, diéresis y también la de
+la ñ: «Diseno», escrito desde un teclado sin ñ, sugiere «Diseño»; decisión del
+2026-09-23), minúsculas y espacios colapsados. Como sólo sugiere, que «ano»
+ofrezca «¿Año?» no une nada. Se guarda indexada (`cc_fold`); `update.php` la
+recalcula (`SchemaHooks::refoldConcepts`) cuando cambia la regla. La usan el autocompletado (`ccsearch`, los más
 usados primero) y la guía de variantes: si el concepto escrito no existe pero
 hay variantes, la API responde `variants` y la interfaz las ofrece antes de
 crear una nueva (`VariantsSteered`); crearla igual requiere un gesto

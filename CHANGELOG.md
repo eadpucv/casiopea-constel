@@ -1,5 +1,14 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **«Diseno» sugiere «Diseño».** La guía de variantes y el autocompletado
+  pliegan ahora la ñ como una tilde más, para quien escribe desde un teclado
+  sin ñ. Sólo sugiere: la identidad sigue estricta y crear la variante sigue
+  pidiendo un gesto explícito. La búsqueda de lectores también («nandu»
+  encuentra a «Ñandú»). **Requiere `update.php`**, que recalcula la clave
+  tolerante guardada de los conceptos existentes.
+
 ## 0.7.0 — 2026-09-23
 
 - **La lista del mapa nombra los temas.** «Ver como lista», la alternativa

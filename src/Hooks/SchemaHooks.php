@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\CasiopeaConstel\Hooks;
 
+use MediaWiki\Extension\CasiopeaConstel\Domain\ConceptNormalizer;
 use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
 
@@ -38,6 +39,43 @@ class SchemaHooks implements LoadExtensionSchemaUpdatesHook {
 			[ 'virtual-constel', 'dropIndex', 'constel_note', 'cn_theme',
 				"$dir/patch-constel_note-cn_theme_unique.sql", true ]
 		);
+		// Tras 0.7.0: la clave tolerante pliega también la ñ. Recalcula la guardada.
+		$updater->addExtensionUpdateOnVirtualDomain(
+			[ 'virtual-constel', [ self::class, 'refoldConcepts' ] ]
+		);
+	}
+
+	/**
+	 * Recalcula cc_fold con el ConceptNormalizer vigente. Idempotente: sólo
+	 * escribe las filas cuya clave cambió (fold no depende de $wgCapitalLinks).
+	 */
+	public static function refoldConcepts( DatabaseUpdater $updater ): void {
+		$db = $updater->getDB();
+		if ( !$db->tableExists( 'constel_concept', __METHOD__ ) ) {
+			return;
+		}
+		$normalizer = new ConceptNormalizer( true );
+		$rows = $db->newSelectQueryBuilder()
+			->select( [ 'cc_id', 'cc_key', 'cc_fold' ] )
+			->from( 'constel_concept' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+		$changed = 0;
+		foreach ( $rows as $row ) {
+			$fold = $normalizer->fold( $row->cc_key );
+			if ( $fold !== $row->cc_fold ) {
+				$db->newUpdateQueryBuilder()
+					->update( 'constel_concept' )
+					->set( [ 'cc_fold' => $fold ] )
+					->where( [ 'cc_id' => (int)$row->cc_id ] )
+					->caller( __METHOD__ )
+					->execute();
+				$changed++;
+			}
+		}
+		if ( $changed ) {
+			$updater->output( "...refolded $changed concept(s).\n" );
+		}
 	}
 
 	/**

@@ -2,6 +2,8 @@
 
 namespace MediaWiki\Extension\CasiopeaConstel\Tests\Integration\Store;
 
+use MediaWiki\Extension\CasiopeaConstel\Hooks\SchemaHooks;
+use MediaWiki\Installer\DatabaseUpdater;
 use MediaWikiIntegrationTestCase;
 
 /**
@@ -26,6 +28,33 @@ class ConceptStoreTest extends MediaWikiIntegrationTestCase {
 		$variants = $store->findVariants( 'travesia' );
 		$this->assertSame( [ 'Travesía' ], array_map( static fn ( $c ) => $c->label, $variants ) );
 		$this->assertSame( [], $store->findVariants( 'Travesía' ), 'la forma exacta no es su propia variante' );
+	}
+
+	public function testEnyeVariantsAreFound(): void {
+		$store = $this->constel()->getConceptStore();
+		$store->acquire( 'Diseño' );
+		$variants = $store->findVariants( 'Diseno' );
+		$this->assertSame( [ 'Diseño' ], array_map( static fn ( $c ) => $c->label, $variants ) );
+		$found = $store->search( 'disen' );
+		$this->assertSame( [ 'Diseño' ], array_map( static fn ( $s ) => $s['concept']->label, $found ) );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\CasiopeaConstel\Hooks\SchemaHooks::refoldConcepts
+	 */
+	public function testUpdateRefoldsStoredKeys(): void {
+		$store = $this->constel()->getConceptStore();
+		$concept = $store->acquire( 'Diseño' );
+		// La clave que guardaba la regla anterior (que conservaba la ñ).
+		$this->getDb()->newUpdateQueryBuilder()
+			->update( 'constel_concept' )->set( [ 'cc_fold' => 'diseño' ] )
+			->where( [ 'cc_id' => $concept->id ] )->caller( __METHOD__ )->execute();
+		$this->assertSame( [], $store->findVariants( 'Diseno' ) );
+
+		$updater = $this->createMock( DatabaseUpdater::class );
+		$updater->method( 'getDB' )->willReturn( $this->getDb() );
+		SchemaHooks::refoldConcepts( $updater );
+		$this->assertCount( 1, $store->findVariants( 'Diseno' ) );
 	}
 
 	public function testRenameRefusesATakenForm(): void {
