@@ -77,6 +77,7 @@
 	"apihelp-query+constelgraph-summary": "{{doc-apihelp-summary|query+constelgraph}}",
 	"apihelp-query+constelgraph-example-all": "{{doc-apihelp-example|query+constelgraph}}",
 	"apihelp-query+constelexcerpts-param-concept": "{{doc-apihelp-param|query+constelexcerpts|concept}}",
+	"apihelp-query+constelexcerpts-param-ids": "{{doc-apihelp-param|query+constelexcerpts|ids}}",
 	"apihelp-query+constelconcepts-param-themes": "{{doc-apihelp-param|query+constelconcepts|themes}}",
 	"apihelp-constel-moderate-summary": "{{doc-apihelp-summary|constel-moderate}}",
 	"apihelp-constel-moderate-param-op": "{{doc-apihelp-param|constel-moderate|op}}",

@@ -894,3 +894,28 @@
 	border-color: var( --constel-ink-soft );
 	color: var( --constel-ink-soft );
 }
+
+/* Filtros de Especial:MiConstel (spec: MyReading.Browsable). */
+.constel-mine__filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: var( --constel-s-2 ) var( --constel-s-3 );
+	margin: var( --constel-s-3 ) 0;
+}
+
+.constel-mine__filter {
+	position: relative;
+	flex: 1 1 12rem;
+	max-width: 20rem;
+}
+
+.constel-mine__filter .constel-input {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.constel-mine__filters .constel-actions {
+	display: flex;
+	gap: var( --constel-s-2 );
+}

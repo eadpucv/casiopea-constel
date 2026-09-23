@@ -333,6 +333,15 @@ class ApiConstelTest extends ApiTestCase {
 		$this->assertSame( $excerpt, $out['excerpt'] );
 	}
 
+	public function testExcerptsByIds(): void {
+		$first = $this->create( $this->reader() )['excerpt'];
+		$other = $this->create( $this->reader( 'other' ) )['excerpt'];
+		$list = $this->doApiRequest( [
+			'action' => 'query', 'list' => 'constelexcerpts', 'ceids' => "$first|$other|999999",
+		] )[0]['query']['constelexcerpts'];
+		$this->assertSame( [ $first, $other ], array_column( $list, 'id' ) );
+	}
+
 	public function testThemesAreOwnedByTheirReader(): void {
 		$user = $this->reader();
 		$concept = $this->create( $user )['concept']['id'];

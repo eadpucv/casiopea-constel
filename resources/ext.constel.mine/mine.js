@@ -4,7 +4,7 @@
  * congelado (su página se borró), o cualquiera si no se tiene el derecho de
  * anotar, sólo ofrece borrarlo.
  */
-const { api, detail } = require( 'ext.constel.ui' );
+const { api, autocomplete, detail } = require( 'ext.constel.ui' );
 
 function button( text, danger ) {
 	const b = document.createElement( 'button' );
@@ -54,7 +54,26 @@ function deleteOnly( row, id ) {
 	cell.append( ' ', del );
 }
 
+/**
+ * Autocompletado en los filtros: páginas y conceptos del vocabulario.
+ */
+function filters() {
+	const page = document.getElementById( 'constel-mine-page' );
+	if ( page ) {
+		autocomplete.attach( page, {
+			source: ( typed ) => api.searchPages( typed ).then(
+				( titles ) => titles.map( ( title ) => ( { label: title } ) )
+			)
+		} );
+	}
+	const concept = document.getElementById( 'constel-mine-concept' );
+	if ( concept ) {
+		autocomplete.attach( concept );
+	}
+}
+
 $( () => {
+	filters();
 	const rows = document.querySelectorAll( '.constel-mine__row' );
 	if ( !rows.length ) {
 		return;
@@ -68,8 +87,9 @@ $( () => {
 	if ( !canAnnotate ) {
 		return;
 	}
-	const me = mw.config.get( 'wgUserName' );
-	api.excerptsOf( me ).then( ( excerpts ) => {
+	// Sólo las filas visibles: la tabla va paginada.
+	const ids = Array.from( rows, ( row ) => Number( row.dataset.constelExcerpt ) );
+	api.excerptsByIds( ids ).then( ( excerpts ) => {
 		const byId = new Map( excerpts.map( ( e ) => [ e.id, e ] ) );
 		rows.forEach( ( row ) => {
 			const excerpt = byId.get( Number( row.dataset.constelExcerpt ) );

@@ -40,9 +40,11 @@ class ApiQueryConstelExcerpts extends ApiQueryBase {
 
 	public function execute() {
 		$params = $this->extractRequestParams();
-		$this->requireOnlyOneParameter( $params, 'pageid', 'user', 'concept' );
+		$this->requireOnlyOneParameter( $params, 'pageid', 'user', 'concept', 'ids' );
 
-		if ( $params['pageid'] !== null ) {
+		if ( $params['ids'] !== null ) {
+			$records = $this->excerpts->listByIds( $params['ids'] );
+		} elseif ( $params['pageid'] !== null ) {
 			$records = $this->excerpts->listAnchoredForPage( $params['pageid'] );
 		} elseif ( $params['concept'] !== null ) {
 			$records = $this->excerpts->listForConcept( $params['concept'], $params['limit'] );
@@ -150,6 +152,7 @@ class ApiQueryConstelExcerpts extends ApiQueryBase {
 			'pageid' => [ ParamValidator::PARAM_TYPE => 'integer' ],
 			'user' => [ ParamValidator::PARAM_TYPE => 'user', 'user-must-exist' => true ],
 			'concept' => [ ParamValidator::PARAM_TYPE => 'integer' ],
+			'ids' => [ ParamValidator::PARAM_TYPE => 'integer', ParamValidator::PARAM_ISMULTI => true ],
 			'limit' => [
 				ParamValidator::PARAM_TYPE => 'limit',
 				ParamValidator::PARAM_DEFAULT => 500,

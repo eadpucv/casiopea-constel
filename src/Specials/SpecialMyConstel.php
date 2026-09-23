@@ -4,8 +4,8 @@ namespace MediaWiki\Extension\CasiopeaConstel\Specials;
 
 use MediaWiki\CommentStore\CommentStore;
 use MediaWiki\Extension\CasiopeaConstel\Export\ExportBuilder;
-use MediaWiki\Extension\CasiopeaConstel\Page\DeletionLog;
 use MediaWiki\Extension\CasiopeaConstel\Store\ConceptStore;
+use MediaWiki\Extension\CasiopeaConstel\Store\ExcerptRecord;
 use MediaWiki\Extension\CasiopeaConstel\Store\ExcerptStore;
 use MediaWiki\Html\Html;
 use MediaWiki\Page\PageStore;
@@ -20,6 +20,13 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * (spec: ReaderExportsReading): Especial:MiConstel/export.
  */
 class SpecialMyConstel extends SpecialPage {
+
+	/** Estados que se pueden filtrar, con su valor guardado. */
+	private const STATUSES = [
+		'anchored' => ExcerptRecord::STATUS_ANCHORED,
+		'lost' => ExcerptRecord::STATUS_LOST,
+		'frozen' => ExcerptRecord::STATUS_FROZEN,
+	];
 
 	public function __construct(
 		private readonly ExcerptStore $excerpts,
@@ -67,92 +74,99 @@ class SpecialMyConstel extends SpecialPage {
 			], $this->msg( 'myconstel-map' )->text() )
 		) );
 
-		$records = $actorId ? $this->excerpts->listForActor( $actorId, 1000 ) : [];
-		if ( !$records ) {
+		if ( !$actorId ) {
 			$out->addHTML( Html::element( 'p', [], $this->msg( 'myconstel-empty' )->text() ) );
 			return;
 		}
-		$out->addHTML( $this->table( $records ) );
+		$request = $this->getRequest();
+		$typed = [
+			'page' => trim( $request->getText( 'page' ) ),
+			'concept' => trim( $request->getText( 'concept' ) ),
+			'status' => $request->getVal( 'status', '' ),
+		];
+		$out->addHTML( $this->filterForm( $typed ) );
+		$pager = new MyConstelPager(
+			$this->getContext(), $this->getLinkRenderer(), $this->excerpts, $this->concepts, $this->pageStore,
+			$this->dbProvider, $this->commentStore, $actorId, $this->filters( $typed )
+		);
+		$out->addParserOutputContent( $pager->getFullOutput() );
 	}
 
-	private function table( array $records ): string {
-		$codings = $this->excerpts->conceptIdsForMany( array_map( static fn ( $e ) => $e->id, $records ) );
-		$concepts = $this->concepts->getByIds( array_merge( [], ...array_values( $codings ) ) );
-		$pages = [];
-		foreach ( $this->pageStore->newSelectQueryBuilder()
-			->wherePageIds( array_values( array_unique( array_map( static fn ( $e ) => $e->pageId, $records ) ) ) )
-			->fetchPageRecords() as $page
-		) {
-			$pages[$page->getId()] = Title::newFromPageIdentity( $page );
+	/**
+	 * Lo escrito en el formulario, resuelto a ids. Una página o un concepto que
+	 * no existen dan 0: la tabla sale vacía en vez de ignorar el filtro.
+	 *
+	 * @param array{page:string,concept:string,status:string} $typed
+	 * @return array{page:?int,concept:?int,status:?int}
+	 */
+	private function filters( array $typed ): array {
+		$page = null;
+		if ( $typed['page'] !== '' ) {
+			$title = Title::newFromText( $typed['page'] );
+			$record = $title ? $this->pageStore->getPageForLink( $title ) : null;
+			$page = $record && $record->exists() ? $record->getId() : 0;
 		}
-		$linkRenderer = $this->getLinkRenderer();
-		$lang = $this->getLanguage();
+		$concept = null;
+		if ( $typed['concept'] !== '' ) {
+			$concept = $this->concepts->getByLabel( $typed['concept'] )->id ?? 0;
+		}
+		return [
+			'page' => $page,
+			'concept' => $concept,
+			'status' => self::STATUSES[$typed['status']] ?? null,
+		];
+	}
 
-		$head = '';
-		foreach ( [ 'passage', 'page', 'concepts', 'status', 'created' ] as $col ) {
-			$head .= Html::element( 'th', [ 'scope' => 'col' ], $this->msg( "myconstel-col-$col" )->text() );
-		}
-		$rows = '';
-		$frozen = array_filter( $records, static fn ( $e ) => $e->isFrozen() );
-		$deletions = ( new DeletionLog( $this->dbProvider, $this->commentStore ) )
-			->lastDeletions( array_map( static fn ( $e ) => $e->pageId, $frozen ), $this->getAuthority() );
-		foreach ( $records as $e ) {
-			$title = $pages[$e->pageId] ?? null;
-			$notice = '';
-			if ( $e->isFrozen() ) {
-				// Congelado: la página se borró. El título y el motivo, si el
-				// registro de borrado los deja ver (spec: MyReading.FrozenFlagged).
-				$deletion = $deletions[$e->pageId] ?? null;
-				$pageCell = $deletion && $deletion['title']
-					? $linkRenderer->makeLink( $deletion['title'] )
-					: $this->msg( 'myconstel-page-gone' )->escaped();
-				$notice = Html::rawElement( 'div', [ 'class' => 'constel-frozen', 'role' => 'alert' ],
-					Html::element( 'strong', [], $this->msg( 'myconstel-frozen-notice' )->text() ) .
-					( $deletion && $deletion['reason'] !== null
-						? ' ' . Html::element( 'span', [ 'class' => 'constel-frozen__reason' ],
-							$this->msg( 'myconstel-frozen-reason', $deletion['reason'] )->text() )
-						: '' )
-				);
-			} elseif ( !$title ) {
-				$pageCell = $this->msg( 'myconstel-page-gone' )->escaped();
-			} elseif ( $e->isAnchored() ) {
-				$pageCell = $linkRenderer->makeKnownLink( $title );
-			} else {
-				// Perdido: la página y la revisión donde el § era válido.
-				$pageCell = $linkRenderer->makeKnownLink( $title ) . ' · ' .
-					$linkRenderer->makeKnownLink( $title, $this->msg( 'myconstel-where-valid' )->text(), [],
-						[ 'oldid' => $e->revId ] );
-			}
-			$chips = '';
-			foreach ( $codings[$e->id] ?? [] as $conceptId ) {
-				if ( isset( $concepts[$conceptId] ) ) {
-					$chips .= Html::element( 'li', [ 'class' => 'constel-chip' ], $concepts[$conceptId]->label );
-				}
-			}
-			$status = $e->statusName();
-			// Clases: constel-mine__row--anchored, --lost, --frozen
-			$rows .= Html::rawElement( 'tr', [
-					'class' => "constel-mine__row constel-mine__row--$status",
-					'data-constel-excerpt' => $e->id,
-					'data-constel-status' => $status,
-				],
-				Html::rawElement( 'td', [],
-					$notice .
-					Html::element( 'blockquote', [ 'class' => 'constel-quote' ], $e->anchor->exact ) .
-					( $e->gloss === null ? '' :
-						Html::element( 'div', [ 'class' => 'constel-gloss-text' ], $e->gloss ) ) ) .
-				Html::rawElement( 'td', [], $pageCell ) .
-				Html::rawElement( 'td', [], Html::rawElement( 'ul', [ 'class' => 'constel-chips' ], $chips ) ) .
-				// Clases: constel-status--anchored, constel-status--lost, constel-status--frozen
-				// Mensajes: myconstel-status-anchored, -lost, -frozen
-				Html::element( 'td', [ 'class' => "constel-status constel-status--$status" ],
-					$this->msg( "myconstel-status-$status" )->text() ) .
-				Html::element( 'td', [], $lang->userDate( $e->created, $this->getUser() ) )
+	/**
+	 * Filtros sobre la tabla (spec: MyReading.Browsable). GET: el filtro queda
+	 * en la URL. mine.js suma el autocompletado de páginas y conceptos.
+	 *
+	 * @param array{page:string,concept:string,status:string} $typed
+	 */
+	private function filterForm( array $typed ): string {
+		$field = function ( string $name, string $control ): string {
+			// Mensajes: myconstel-filter-page, myconstel-filter-concept, myconstel-filter-status
+			return Html::rawElement( 'div', [ 'class' => 'constel-field constel-mine__filter' ],
+				Html::label( $this->msg( "myconstel-filter-$name" )->text(), "constel-mine-$name",
+					[ 'class' => 'constel-label' ] ) .
+				$control
 			);
+		};
+		$input = static fn ( string $name, string $value ) => Html::input( $name, $value, 'search', [
+			'id' => "constel-mine-$name",
+			'class' => 'constel-input',
+			'autocomplete' => 'off',
+		] );
+		$options = Html::element( 'option', [ 'value' => '' ], $this->msg( 'myconstel-filter-status-all' )->text() );
+		foreach ( array_keys( self::STATUSES ) as $status ) {
+			// Mensajes: myconstel-status-anchored, -lost, -frozen
+			$options .= Html::element( 'option', [ 'value' => $status, 'selected' => $typed['status'] === $status ],
+				$this->msg( "myconstel-status-$status" )->text() );
 		}
-		return Html::rawElement( 'table', [ 'class' => 'wikitable constel-mine' ],
-			Html::rawElement( 'thead', [], Html::rawElement( 'tr', [], $head ) ) .
-			Html::rawElement( 'tbody', [], $rows )
+		$active = $typed['page'] !== '' || $typed['concept'] !== '' || isset( self::STATUSES[$typed['status']] );
+		return Html::rawElement( 'form', [
+				'class' => 'constel-ui constel-mine__filters',
+				'method' => 'get',
+				'action' => $this->getConfig()->get( 'Script' ),
+				'role' => 'search',
+			],
+			Html::hidden( 'title', $this->getPageTitle()->getPrefixedDBkey() ) .
+			// Filtrar conserva la cantidad por página elegida.
+			( $this->getRequest()->getCheck( 'limit' )
+				? Html::hidden( 'limit', $this->getRequest()->getInt( 'limit' ) ) : '' ) .
+			$field( 'page', $input( 'page', $typed['page'] ) ) .
+			$field( 'concept', $input( 'concept', $typed['concept'] ) ) .
+			$field( 'status', Html::rawElement( 'select', [
+				'id' => 'constel-mine-status', 'name' => 'status', 'class' => 'constel-input',
+			], $options ) ) .
+			Html::rawElement( 'div', [ 'class' => 'constel-actions' ],
+				Html::submitButton( $this->msg( 'myconstel-filter-submit' )->text(),
+					[ 'class' => 'constel-button constel-button--primary' ] ) .
+				( $active ? ' ' . Html::element( 'a', [
+					'class' => 'constel-button',
+					'href' => $this->getPageTitle()->getLocalURL(),
+				], $this->msg( 'myconstel-filter-clear' )->text() ) : '' )
+			)
 		);
 	}
 

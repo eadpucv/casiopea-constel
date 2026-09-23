@@ -19,7 +19,8 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
  */
 class ExcerptStore {
 
-	private const FIELDS = [
+	/** Columnas de un §, para quien arme su propia consulta (MyConstelPager). */
+	public const FIELDS = [
 		'ce_id', 'ce_actor', 'ce_page', 'ce_rev', 'ce_exact', 'ce_prefix', 'ce_suffix',
 		'ce_start', 'ce_end', 'ce_gloss', 'ce_status', 'ce_created', 'ce_lost',
 	];
@@ -281,6 +282,21 @@ class ExcerptStore {
 	}
 
 	/**
+	 * @param int[] $ids
+	 * @return ExcerptRecord[] esos §§ (los que existan), en orden de id.
+	 */
+	public function listByIds( array $ids ): array {
+		if ( !$ids ) {
+			return [];
+		}
+		$res = $this->select( $this->replica() )
+			->where( [ 'ce_id' => array_values( array_unique( array_map( 'intval', $ids ) ) ) ] )
+			->orderBy( 'ce_id' )
+			->caller( __METHOD__ )->fetchResultSet();
+		return array_map( [ $this, 'newRecord' ], iterator_to_array( $res ) );
+	}
+
+	/**
 	 * @return ExcerptRecord[] §§ de un lector, incluidos los perdidos, del más nuevo al más viejo.
 	 */
 	public function listForActor( int $actorId, int $limit = 500 ): array {
@@ -348,7 +364,10 @@ class ExcerptStore {
 		return $db->newSelectQueryBuilder()->select( self::FIELDS )->from( 'constel_excerpt' );
 	}
 
-	private function newRecord( stdClass $row ): ExcerptRecord {
+	/**
+	 * Un § a partir de una fila con las columnas de FIELDS.
+	 */
+	public function newRecord( stdClass $row ): ExcerptRecord {
 		return new ExcerptRecord(
 			(int)$row->ce_id,
 			(int)$row->ce_actor,

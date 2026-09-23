@@ -2,6 +2,10 @@
 
 ## Sin publicar
 
+- **MiConstel se recorre con filtros.** La tabla va paginada (antes cortaba
+  sin avisar en 1000 secciones), se ordena por fecha o estado y se filtra
+  por página, concepto y estado, con autocompletado; el filtro queda en la
+  URL. Nuevo parámetro `ceids` en `list=constelexcerpts`.
 - **Derecho a retirarse.** Sin el derecho `constel-annotate` (p. ej. si se
   le quita a un grupo al cerrar un taller) ya no se crea ni se edita, pero
   las secciones y los temas propios se siguen pudiendo borrar: el detalle,

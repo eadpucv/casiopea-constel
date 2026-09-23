@@ -766,12 +766,19 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   quien puede verlos.
 
 **Especial:MiConstel** (`SpecialMyConstel`, cuentas registradas): tabla de
-§§ propios, anclados, perdidos y congelados, con sus glosas. Cada § perdido
+§§ propios, anclados, perdidos y congelados, con sus glosas. La arma
+`MyConstelPager` (`TablePager` sobre el dominio `virtual-constel`): paginada,
+ordenable por fecha (`ce_created`, lo más nuevo primero) o estado, y con
+filtros por página, concepto y estado en un formulario GET (`page`,
+`concept`, `status`), sin tope oculto. Ordenar por página o por pasaje
+pediría cruzar con la tabla `page` del core o ordenar blobs: queda fuera. Cada § perdido
 enlaza al `oldid` donde era válido. Un § congelado lleva un aviso de alarma
 («Texto borrado por un administrador») con el motivo y el título que el
 registro de borrados deje ver (`DeletionLog`, respeta `log_deleted`; un
 borrado suprimido no figura). `ext.constel.mine` agrega «Editar», que
-reutiliza el detalle del §, o, en uno congelado, sólo «Borrar esta sección».
+reutiliza el detalle del §, o, en uno congelado (o sin `constel-annotate`),
+sólo «Borrar esta sección»; pide sólo las filas visibles (`ceids`) y suma el
+autocompletado de páginas y conceptos a los filtros.
 
 **Páginas anchas.** Las dos páginas especiales agregan
 `<body class="constel-wide">`. Qué significa lo decide el skin: Stella Nova la
@@ -822,7 +829,7 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 
 | Módulo | Parámetros |
 |---|---|
-| `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto). Los congelados sólo salen para su autor y para quien tiene `deletedtext` |
+| `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto), `ceids` (por id). Los congelados sólo salen para su autor y para quien tiene `deletedtext` |
 | `list=constelconcepts` | `ccsearch` (autocompletado tolerante, por uso), `ccvariantsof`, `ccids`, `ccthemes` (temas que lo contienen) |
 | `list=constelthemes` | `ctuser` (uno o varios), `ctids` (con conceptos y `development`) |
 | `list=constelgraph` | `cgusers` (lectores), `cgpageids` (páginas); vacío = todos |

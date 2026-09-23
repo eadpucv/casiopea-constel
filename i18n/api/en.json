@@ -77,6 +77,7 @@
 	"apihelp-query+constelgraph-summary": "The concept map: concepts with their frequencies, and the links between them (same section, or overlapping sections by different readers).",
 	"apihelp-query+constelgraph-example-all": "The map of every reader.",
 	"apihelp-query+constelexcerpts-param-concept": "List the sections coded with this concept, including lost ones.",
+	"apihelp-query+constelexcerpts-param-ids": "List these sections, by id.",
 	"apihelp-query+constelconcepts-param-themes": "Include the themes (of any reader) that contain each concept.",
 	"apihelp-constel-moderate-summary": "Moderate the shared vocabulary: rename a concept, or merge it into another. Requires the <code>constel-moderate</code> right; recorded in the con§tel log.",
 	"apihelp-constel-moderate-param-op": "Operation.",

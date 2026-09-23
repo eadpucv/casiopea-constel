@@ -77,6 +77,7 @@
 	"apihelp-query+constelgraph-summary": "El mapa de conceptos: los conceptos con sus frecuencias y las aristas entre ellos (misma sección, secciones solapadas de lectores distintos o misma página).",
 	"apihelp-query+constelgraph-example-all": "El mapa de todos los lectores.",
 	"apihelp-query+constelexcerpts-param-concept": "Listar las secciones codificadas con este concepto, incluidas las perdidas.",
+	"apihelp-query+constelexcerpts-param-ids": "Listar estas secciones, por id.",
 	"apihelp-query+constelconcepts-param-themes": "Incluir los temas (de cualquier lector) que contienen cada concepto.",
 	"apihelp-constel-moderate-summary": "Moderar el vocabulario compartido: renombrar un concepto o fusionarlo en otro. Requiere el derecho <code>constel-moderate</code>; queda en el registro de con§tel.",
 	"apihelp-constel-moderate-param-op": "Operación.",

@@ -60,6 +60,20 @@ function themesOf( userNames ) {
 		.then( ( r ) => r.query.constelthemes, () => [] );
 }
 
+/**
+ * §§ por id (p. ej. las filas visibles de Especial:MiConstel).
+ *
+ * @param {number[]} ids
+ * @return {Promise<Array>}
+ */
+function excerptsByIds( ids ) {
+	if ( !ids.length ) {
+		return Promise.resolve( [] );
+	}
+	return get().get( { action: 'query', list: 'constelexcerpts', ceids: ids } )
+		.then( ( r ) => r.query.constelexcerpts );
+}
+
 function excerptsOf( userName ) {
 	return get().get( { action: 'query', list: 'constelexcerpts', ceuser: userName } )
 		.then( ( r ) => r.query.constelexcerpts );
@@ -146,7 +160,7 @@ function saveAck() {
 
 module.exports = {
 	listExcerpts, searchConcepts, write, describeError, saveAck,
-	graph, excerptsOfConcept, conceptThemes, themesOf, excerptsOf,
+	graph, excerptsOfConcept, conceptThemes, themesOf, excerptsOf, excerptsByIds,
 	pageId: pageIdOf, conceptByLabel, searchPages, pageIds,
 	searchReaders, describeReaders
 };

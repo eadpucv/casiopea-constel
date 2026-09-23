@@ -1050,6 +1050,13 @@ surface MyReading {
         -- Los §§ perdidos se listan marcados, con su pasaje citado y la
         -- revisión donde fueron válidos (enlace a ese oldid).
 
+    @guarantee Browsable
+        -- La lista no tiene tope oculto: va paginada (cantidad por página
+        -- a elección), se ordena por fecha o por estado y se filtra por
+        -- página, por concepto y por estado, combinables; los filtros
+        -- quedan en la URL y sugieren páginas y conceptos al escribir
+        -- (decisión 2026-09-23).
+
     @guarantee FrozenFlagged
         -- Un § congelado se lista con un aviso de alarma («Texto borrado
         -- por un administrador»), el motivo del borrado y el título de la
