@@ -51,6 +51,10 @@ class SpecialMyConstel extends SpecialPage {
 		// su skinStyles; en otros skins no tiene efecto).
 		$out->addBodyClasses( 'constel-wide' );
 		$out->addModules( [ 'ext.constel.mine' ] );
+		// Sin el derecho de anotar, lo propio sólo se borra (spec: RightToWithdraw).
+		$out->addJsConfigVars( 'wgConstelMine', [
+			'canAnnotate' => $this->getAuthority()->isAllowed( 'constel-annotate' ),
+		] );
 
 		$out->addHTML( Html::rawElement( 'p', [ 'class' => 'constel-mine__actions' ],
 			Html::element( 'a', [

@@ -793,7 +793,11 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 
 - que sea una cuenta registrada (`isNamed()`): ni anónimos ni cuentas
   temporales;
-- el derecho `constel-annotate` (o `constel-moderate` para moderar);
+- el derecho `constel-annotate` para crear y editar (o `constel-moderate`
+  para moderar). **Borrar lo propio** (un § o un tema) no lo pide: basta una
+  cuenta registrada sin bloqueo (`requireReader`), para que quien pierde el
+  derecho no quede atrapado con su lectura pública (`RightToWithdraw`). Un
+  moderador borra §§ ajenos con `constel-moderate` solo;
 - que no haya un bloqueo sitewide y, en los módulos que tocan una página
   (crear un § y codificar, descodificar, glosar o borrar uno existente),
   tampoco uno parcial sobre esa página (`checkTitleUserPermissions` con

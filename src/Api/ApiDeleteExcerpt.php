@@ -33,8 +33,9 @@ class ApiDeleteExcerpt extends ApiExcerptWriteBase {
 
 	public function execute() {
 		$params = $this->extractRequestParams();
-		$actorId = $this->requireAnnotator();
-		// Borrar es lo único que admite un § congelado.
+		// Borrar lo propio no pide el derecho de anotar (spec: RightToWithdraw);
+		// es también lo único que admite un § congelado.
+		$actorId = $this->requireReader();
 		$excerpt = $this->requireOwnExcerpt( $params['excerpt'], $actorId, true, true );
 		$this->excerpts->delete( $excerpt->id );
 		if ( $excerpt->actorId !== $actorId ) {

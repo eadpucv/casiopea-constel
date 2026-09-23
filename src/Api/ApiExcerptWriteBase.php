@@ -32,12 +32,14 @@ abstract class ApiExcerptWriteBase extends ApiConstelWriteBase {
 	 * Carga un § que el lector puede modificar: el propio o, si $allowModerator,
 	 * cualquiera para quien tenga constel-moderate.
 	 *
-	 * Un § congelado (su página fue borrada) sólo admite $allowFrozen (borrar).
-	 * Uno vivo exige además no estar bloqueado sobre SU página: los bloqueos
-	 * parciales cuentan (la protección de página no: anotar no es editar).
+	 * $deleting: la operación es borrarlo. Un § congelado (su página fue
+	 * borrada) sólo admite eso. Uno vivo exige además no estar bloqueado sobre
+	 * SU página: los bloqueos parciales cuentan (la protección de página no:
+	 * anotar no es editar); para editarlo, con el derecho de anotar sobre ella;
+	 * para borrarlo, basta no estar bloqueado (spec: RightToWithdraw).
 	 */
 	protected function requireOwnExcerpt(
-		int $excerptId, int $actorId, bool $allowModerator = false, bool $allowFrozen = false
+		int $excerptId, int $actorId, bool $allowModerator = false, bool $deleting = false
 	): ExcerptRecord {
 		$excerpt = $this->excerpts->get( $excerptId, true );
 		if ( !$excerpt ) {
@@ -48,12 +50,20 @@ abstract class ApiExcerptWriteBase extends ApiConstelWriteBase {
 			$this->dieWithError( 'apierror-constel-notyours', 'notyours' );
 		}
 		if ( $excerpt->isFrozen() ) {
-			if ( !$allowFrozen ) {
+			if ( !$deleting ) {
 				$this->dieWithError( 'apierror-constel-frozen', 'frozen' );
 			}
 		} else {
 			$page = $this->getTitleOrPageId( [ 'pageid' => $excerpt->pageId ], 'fromdbmaster' );
-			$this->checkTitleUserPermissions( $page, self::RIGHT_ANNOTATE );
+			if ( !$deleting ) {
+				$this->checkTitleUserPermissions( $page, self::RIGHT_ANNOTATE );
+			} else {
+				// Sin exigir el derecho: sólo el bloqueo (el sitewide ya se miró).
+				$block = $this->getUser()->getBlock();
+				if ( $block && $block->appliesToTitle( $page->getTitle() ) ) {
+					$this->dieBlocked( $block );
+				}
+			}
 		}
 		return $excerpt;
 	}
@@ -90,7 +100,7 @@ abstract class ApiExcerptWriteBase extends ApiConstelWriteBase {
 
 	/**
 	 * Si el concepto es nuevo pero hay variantes (misma palabra con otras
-	 * tildes, mayúsculas o espacios), exige confirmación explícita
+	 * tildes, ñ/n, mayúsculas o espacios), exige confirmación explícita
 	 * (spec: SelectionPopup.VariantsSteered). La identidad sigue siendo
 	 * estricta: esto sólo evita crear una variante sin querer.
 	 */

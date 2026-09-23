@@ -2,6 +2,11 @@
 
 ## Sin publicar
 
+- **Derecho a retirarse.** Sin el derecho `constel-annotate` (p. ej. si se
+  le quita a un grupo al cerrar un taller) ya no se crea ni se edita, pero
+  las secciones y los temas propios se siguen pudiendo borrar: el detalle,
+  MiConstel y los temas del mapa ofrecen sólo «Borrar». Un moderador borra
+  secciones ajenas con `constel-moderate` solo.
 - **«Diseno» sugiere «Diseño».** La guía de variantes y el autocompletado
   pliegan ahora la ñ como una tilde más, para quien escribe desde un teclado
   sin ñ. Sólo sugiere: la identidad sigue estricta y crear la variante sigue

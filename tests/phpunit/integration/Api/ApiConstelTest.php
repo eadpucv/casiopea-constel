@@ -294,6 +294,45 @@ class ApiConstelTest extends ApiTestCase {
 		$this->assertSame( [], $seenBy( $this->getServiceContainer()->getUserFactory()->newAnonymous() ), 'anónimo' );
 	}
 
+	/**
+	 * spec: RightToWithdraw — sin el derecho de anotar no se crea ni se edita,
+	 * pero lo propio se sigue pudiendo borrar.
+	 */
+	public function testWithoutTheRightReadersCanStillDeleteTheirOwn(): void {
+		$user = $this->reader();
+		$excerpt = $this->create( $user )['excerpt'];
+		$theme = $this->write( $user, [ 'action' => 'constel-theme', 'op' => 'create', 'label' => 'Lugar' ] )['theme'];
+		$this->setGroupPermissions( 'user', 'constel-annotate', false );
+
+		foreach ( [
+			[ 'action' => 'constel-codeexcerpt', 'excerpt' => $excerpt, 'concept' => 'Acto' ],
+			[ 'action' => 'constel-glossexcerpt', 'excerpt' => $excerpt, 'gloss' => 'Eco' ],
+			[ 'action' => 'constel-theme', 'op' => 'rename', 'theme' => $theme, 'label' => 'Otro' ],
+			[ 'action' => 'constel-theme', 'op' => 'create', 'label' => 'Nuevo' ],
+		] as $params ) {
+			try {
+				$this->write( $user, $params );
+				$this->fail( "Se esperaba permissiondenied en {$params['action']}" );
+			} catch ( ApiUsageException $e ) {
+				$this->assertApiErrorCode( 'permissiondenied', $e );
+			}
+		}
+
+		$this->assertSame( $excerpt,
+			$this->write( $user, [ 'action' => 'constel-deleteexcerpt', 'excerpt' => $excerpt ] )['excerpt'] );
+		$this->assertSame( $theme,
+			$this->write( $user, [ 'action' => 'constel-theme', 'op' => 'delete', 'theme' => $theme ] )['theme'] );
+	}
+
+	public function testModeratorDeletesWithTheModerateRightAlone(): void {
+		$excerpt = $this->create( $this->reader() )['excerpt'];
+		$this->setGroupPermissions( 'user', 'constel-annotate', false );
+		$out = $this->write( $this->getTestSysop()->getUser(), [
+			'action' => 'constel-deleteexcerpt', 'excerpt' => $excerpt,
+		] );
+		$this->assertSame( $excerpt, $out['excerpt'] );
+	}
+
 	public function testThemesAreOwnedByTheirReader(): void {
 		$user = $this->reader();
 		$concept = $this->create( $user )['concept']['id'];

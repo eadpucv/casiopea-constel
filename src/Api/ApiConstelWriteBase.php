@@ -51,11 +51,26 @@ abstract class ApiConstelWriteBase extends ApiBase {
 	 * @return int actor id del lector
 	 */
 	protected function requireAnnotator(): int {
+		if ( !$this->getUser()->isNamed() ) {
+			$this->dieWithError( 'apierror-constel-notnamed', 'notnamed' );
+		}
+		$this->checkUserRightsAny( self::RIGHT_ANNOTATE );
+		return $this->requireReader();
+	}
+
+	/**
+	 * Exige un lector, con o sin el derecho de anotar: cuenta registrada y sin
+	 * bloqueo sitewide. Basta para BORRAR lo propio (y, con constel-moderate,
+	 * lo ajeno): quien pierde el derecho no queda atrapado con su lectura
+	 * pública y firmada (spec: RightToWithdraw).
+	 *
+	 * @return int actor id del lector
+	 */
+	protected function requireReader(): int {
 		$user = $this->getUser();
 		if ( !$user->isNamed() ) {
 			$this->dieWithError( 'apierror-constel-notnamed', 'notnamed' );
 		}
-		$this->checkUserRightsAny( self::RIGHT_ANNOTATE );
 		$block = $user->getBlock();
 		if ( $block && $block->isSitewide() ) {
 			$this->dieBlocked( $block );

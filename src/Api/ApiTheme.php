@@ -12,7 +12,8 @@ class ApiTheme extends ApiThemeWriteBase {
 
 	public function execute() {
 		$params = $this->extractRequestParams();
-		$actorId = $this->requireAnnotator();
+		// Borrar el tema propio no pide el derecho de anotar (spec: RightToWithdraw).
+		$actorId = $params['op'] === 'delete' ? $this->requireReader() : $this->requireAnnotator();
 		$result = [ 'op' => $params['op'] ];
 
 		switch ( $params['op'] ) {

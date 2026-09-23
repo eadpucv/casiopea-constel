@@ -73,8 +73,10 @@ function section( excerpt, ctx ) {
 	if ( excerpt.gloss ) {
 		box.append( el( 'div', 'constel-gloss-text', excerpt.gloss ) );
 	}
-	if ( ctx.canModerate ) {
-		box.append( moderatorDelete( excerpt, ctx ) );
+	// Borrar: el moderador, lo ajeno; el autor sin derecho de anotar, lo
+	// suyo (spec: RightToWithdraw).
+	if ( ctx.canModerate || mine ) {
+		box.append( deleteAction( excerpt, ctx ) );
 	}
 	return box;
 }
@@ -221,13 +223,14 @@ function editor( excerpt, ctx ) {
 }
 
 /**
- * Borrar un § ajeno (sólo moderadores), con confirmación en línea.
+ * Borrar un § sin editarlo, con confirmación en línea: uno ajeno (sólo
+ * moderadores) o uno propio cuando no se tiene el derecho de anotar.
  *
  * @param {Object} excerpt
  * @param {Object} ctx
  * @return {HTMLElement}
  */
-function moderatorDelete( excerpt, ctx ) {
+function deleteAction( excerpt, ctx ) {
 	const wrap = el( 'div', 'constel-actions' );
 	const feedback = el( 'div', 'constel-feedback' );
 	feedback.setAttribute( 'role', 'alert' );

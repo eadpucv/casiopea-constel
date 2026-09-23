@@ -99,6 +99,15 @@ contract MediaWikiExtensionConformance {
         -- (config.annotate_right, config.moderate_right), asignables por
         -- grupo; nunca comprobaciones de grupo cableadas.
 
+    @invariant RightToWithdraw
+        -- Crear y editar la lectura propia (§§, codificaciones, glosas,
+        -- temas, desarrollos) requiere config.annotate_right; BORRARLA no:
+        -- basta ser su dueño y no estar bloqueado. Quien pierde el derecho
+        -- —p. ej. un grupo al que se le cierra con§tel— no queda atrapado
+        -- con una lectura pública y firmada que no puede quitar (decisión
+        -- 2026-09-23). Un moderador borra §§ ajenos con config.moderate_right,
+        -- sin necesitar además el de anotar.
+
     @invariant AnnotatingIsNotEditing
         -- Anotar una página se autoriza con config.annotate_right sobre ESA
         -- página: cuentan los bloqueos (sitewide y parciales), no la
@@ -345,6 +354,7 @@ rule ReaderCodesExcerpt {
     when: ReaderCodesExcerpt(actor, excerpt, concept_label, variant_confirmed)
     requires: actor = excerpt.author
     requires: not actor.is_blocked
+    requires: config.annotate_right in actor.rights
     requires: excerpt.page not in actor.blocked_pages
     requires: not excerpt.is_frozen
     requires: not is_blank(concept_label)
@@ -370,6 +380,7 @@ rule ReaderGlossesExcerpt {
     when: ReaderGlossesExcerpt(actor, excerpt, gloss)
     requires: actor = excerpt.author
     requires: not actor.is_blocked
+    requires: config.annotate_right in actor.rights
     requires: excerpt.page not in actor.blocked_pages
     requires: not excerpt.is_frozen
     requires: gloss = null or length(gloss) <= config.gloss_max_length
@@ -383,6 +394,7 @@ rule ReaderUncodesExcerpt {
     when: ReaderUncodesExcerpt(actor, coding)
     requires: actor = coding.excerpt.author
     requires: not actor.is_blocked
+    requires: config.annotate_right in actor.rights
     requires: coding.excerpt.page not in actor.blocked_pages
     requires: not coding.excerpt.is_frozen
     ensures: not exists coding
@@ -541,6 +553,7 @@ rule ReaderRenamesTheme {
     when: ReaderRenamesTheme(actor, theme, label)
     requires: actor = theme.owner
     requires: not actor.is_blocked
+    requires: config.annotate_right in actor.rights
     requires: not is_blank(label)
     requires: length(trim(label)) <= config.theme_label_max_length
     ensures: theme.label = trim(label)
@@ -566,6 +579,7 @@ rule ReaderGroupsConcept {
     when: ReaderGroupsConcept(actor, concept, theme)
     requires: actor = theme.owner
     requires: not actor.is_blocked
+    requires: config.annotate_right in actor.rights
     let previous = ThemeMembership{concept: concept, owner: actor}
     requires: not (exists previous and previous.theme = theme)
     ensures:
@@ -578,6 +592,7 @@ rule ReaderUngroupsConcept {
     when: ReaderUngroupsConcept(actor, membership)
     requires: actor = membership.owner
     requires: not actor.is_blocked
+    requires: config.annotate_right in actor.rights
     ensures: not exists membership
 }
 
@@ -586,6 +601,7 @@ rule ReaderWritesThemeDevelopment {
     when: ReaderWritesThemeDevelopment(actor, theme, text)
     requires: actor = theme.owner
     requires: not actor.is_blocked
+    requires: config.annotate_right in actor.rights
     requires: length(text) <= config.note_max_length
     ensures:
         if is_blank(text):
@@ -743,8 +759,11 @@ surface PageReading {
 
     provides:
         ReaderCodesExcerpt(viewer, excerpt, concept_label, variant_confirmed)
+            when config.annotate_right in viewer.rights
         ReaderGlossesExcerpt(viewer, excerpt, gloss)
+            when config.annotate_right in viewer.rights
         ReaderUncodesExcerpt(viewer, coding)
+            when config.annotate_right in viewer.rights
         ReaderDeletesExcerpt(viewer, excerpt)
 
     related:
@@ -815,7 +834,7 @@ surface ConceptDetail {
         ModeratorMergesConcepts(viewer, concept, absorbed)
             when config.moderate_right in viewer.rights
         ReaderGroupsConcept(viewer, concept, theme)
-            when viewer.identity = registered
+            when viewer.identity = registered and config.annotate_right in viewer.rights
 
     related:
         ConceptMap(viewer)
@@ -966,15 +985,15 @@ surface ThemesPanel {
 
     provides:
         ReaderCreatesTheme(viewer, label)
-            when viewer.identity = registered
+            when viewer.identity = registered and config.annotate_right in viewer.rights
         ReaderRenamesTheme(viewer, theme, label)
-            when theme.owner = viewer
+            when theme.owner = viewer and config.annotate_right in viewer.rights
         ReaderDeletesTheme(viewer, theme)
             when theme.owner = viewer
         ReaderUngroupsConcept(viewer, membership)
-            when theme.owner = viewer
+            when theme.owner = viewer and config.annotate_right in viewer.rights
         ReaderWritesThemeDevelopment(viewer, theme, text)
-            when theme.owner = viewer
+            when theme.owner = viewer and config.annotate_right in viewer.rights
 
     @guarantee OthersReadOnly
         -- Los temas y desarrollos de otros lectores se pueden leer, nunca
@@ -1000,9 +1019,9 @@ surface MyReading {
 
     provides:
         ReaderCodesExcerpt(viewer, excerpt, concept_label, variant_confirmed)
-            when not excerpt.is_frozen
+            when not excerpt.is_frozen and config.annotate_right in viewer.rights
         ReaderGlossesExcerpt(viewer, excerpt, gloss)
-            when not excerpt.is_frozen
+            when not excerpt.is_frozen and config.annotate_right in viewer.rights
         ReaderDeletesExcerpt(viewer, excerpt)
         ReaderExportsReading(viewer)
 

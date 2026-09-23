@@ -1,7 +1,8 @@
 /**
  * Especial:MiConstel — acciones sobre los §§ propios (spec: MyReading):
  * codificar y borrar, con el mismo detalle que sobre la página. Un §
- * congelado (su página se borró) sólo ofrece borrarlo.
+ * congelado (su página se borró), o cualquiera si no se tiene el derecho de
+ * anotar, sólo ofrece borrarlo.
  */
 const { api, detail } = require( 'ext.constel.ui' );
 
@@ -14,12 +15,14 @@ function button( text, danger ) {
 }
 
 /**
- * Borrar con confirmación en su lugar (sin diálogos del navegador).
+ * Sólo borrar, con confirmación en su lugar (sin diálogos del navegador): un
+ * § congelado, o cualquiera cuando no se tiene el derecho de anotar
+ * (spec: RightToWithdraw).
  *
  * @param {HTMLElement} row
  * @param {number} id
  */
-function frozenActions( row, id ) {
+function deleteOnly( row, id ) {
 	const cell = row.lastElementChild;
 	const del = button( mw.msg( 'constel-detail-delete' ), true );
 	del.addEventListener( 'click', () => {
@@ -56,11 +59,15 @@ $( () => {
 	if ( !rows.length ) {
 		return;
 	}
+	const canAnnotate = !!( mw.config.get( 'wgConstelMine' ) || {} ).canAnnotate;
 	rows.forEach( ( row ) => {
-		if ( row.dataset.constelStatus === 'frozen' ) {
-			frozenActions( row, Number( row.dataset.constelExcerpt ) );
+		if ( row.dataset.constelStatus === 'frozen' || !canAnnotate ) {
+			deleteOnly( row, Number( row.dataset.constelExcerpt ) );
 		}
 	} );
+	if ( !canAnnotate ) {
+		return;
+	}
 	const me = mw.config.get( 'wgUserName' );
 	api.excerptsOf( me ).then( ( excerpts ) => {
 		const byId = new Map( excerpts.map( ( e ) => [ e.id, e ] ) );

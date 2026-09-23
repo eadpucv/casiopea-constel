@@ -618,6 +618,8 @@ function main( root ) {
 			const box = el( 'div', 'constel-side__lens' );
 			side.themesPanel( box, own, {
 				editable: cfg.canAnnotate && name === me,
+				// Borrar lo propio no pide el derecho (spec: RightToWithdraw).
+				deletable: !!me && name === me,
 				colorOffset: offset,
 				ownerLabel: name === me ?
 					mw.msg( 'constellation-my-themes' ) :

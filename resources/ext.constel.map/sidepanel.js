@@ -274,6 +274,21 @@ function themeTitle( theme, section, fb, ctx, fail ) {
 				return $.Deferred().reject();
 			} ) );
 
+	return [ name, themeDelete( theme, section, fb, ctx, fail ) ];
+}
+
+/**
+ * La «x» que borra un tema propio, previa confirmación bajo el título. Se
+ * ofrece también sin el derecho de anotar (spec: RightToWithdraw).
+ *
+ * @param {Object} theme
+ * @param {HTMLElement} section del tema (la confirmación va dentro)
+ * @param {HTMLElement} fb caja de errores
+ * @param {Object} ctx {onChanged}
+ * @param {Function} fail (fb) => manejador de error
+ * @return {HTMLElement}
+ */
+function themeDelete( theme, section, fb, ctx, fail ) {
 	const remove = icons.iconButton(
 		'x', mw.msg( 'constellation-theme-delete', theme.label ), 'constel-theme__delete'
 	);
@@ -294,7 +309,7 @@ function themeTitle( theme, section, fb, ctx, fail ) {
 		section.querySelector( '.constel-theme__title' ).after( confirm );
 		confirm.querySelector( 'button' ).focus();
 	} );
-	return [ name, remove ];
+	return remove;
 }
 
 /**
@@ -302,7 +317,8 @@ function themeTitle( theme, section, fb, ctx, fail ) {
  *
  * @param {HTMLElement} box
  * @param {Array} themes de list=constelthemes
- * @param {Object} ctx {editable, ownerLabel, colorOffset, onChanged, onSelectConcept}
+ * @param {Object} ctx {editable, deletable, ownerLabel, colorOffset, onChanged,
+ *  onSelectConcept}
  */
 function themesPanel( box, themes, ctx ) {
 	box.textContent = '';
@@ -325,6 +341,9 @@ function themesPanel( box, themes, ctx ) {
 			title.append( ...themeTitle( theme, section, fb, ctx, fail ) );
 		} else {
 			title.textContent = theme.label;
+			if ( ctx.deletable ) {
+				title.append( themeDelete( theme, section, fb, ctx, fail ) );
+			}
 		}
 		section.append( title );
 
