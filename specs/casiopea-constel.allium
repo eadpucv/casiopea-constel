@@ -628,12 +628,16 @@ rule ReaderExportsReading {
         -- Produce un ZIP compatible con el Importar de constel v0.2.x:
         -- constel-db.json (version 1) + un .txt por página fuente con el
         -- texto plano renderizado de su revisión vigente. Los §§ perdidos
-        -- NO se exportan (decisión 2026-09-22): no tienen texto vigente
-        -- donde ubicarse; tampoco los conceptos que sólo ellos usaban.
-        -- Mapeo: página→source, §→excerpt (start/end del ancla),
-        -- conceptos usados por el owner→concepts, temas propios→themes
-        -- (concept.themeId desde su ThemeMembership), desarrollo→una note
-        -- por tema.
+        -- y los congelados NO se exportan (decisión 2026-09-22): no tienen
+        -- texto vigente donde ubicarse.
+        -- Mapeo: página→source, §→excerpt (start/end del ancla; su glosa
+        -- viaja en un campo propio, gloss, que constel conserva),
+        -- temas propios→themes (concept.themeId desde su ThemeMembership),
+        -- desarrollo→una note por tema. concepts = los de sus §§ exportados
+        -- MÁS todos los de sus temas, aunque no los haya codificado él (o
+        -- sólo en §§ que no se exportan): el tema es su lente sobre el
+        -- vocabulario compartido y debe llegar completo (decisión
+        -- 2026-09-23). De esos conceptos ajenos sólo viaja el rótulo.
 }
 
 ------------------------------------------------------------
