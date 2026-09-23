@@ -323,7 +323,7 @@ rule ReaderCreatesExcerpt {
             page: page,
             anchor: anchor,
             revision: revision,
-            gloss: gloss,
+            gloss: if gloss = null or is_blank(gloss): null else: trim(gloss),
             created_at: now,
             anchor_status: anchored
         )
@@ -383,11 +383,16 @@ rule ReaderGlossesExcerpt {
     requires: config.annotate_right in actor.rights
     requires: excerpt.page not in actor.blocked_pages
     requires: not excerpt.is_frozen
-    requires: gloss = null or length(gloss) <= config.gloss_max_length
-    ensures: excerpt.gloss = gloss
+    requires: gloss = null or length(trim(gloss)) <= config.gloss_max_length
+    ensures:
+        if gloss = null or is_blank(gloss):
+            excerpt.gloss = null
+        else:
+            excerpt.gloss = trim(gloss)
     @guidance
         -- Aplica también a §§ perdidos. Como el resto de la lectura, la
-        -- glosa es pública (ReadingIsPublicData).
+        -- glosa es pública (ReadingIsPublicData). Se guarda sin espacios
+        -- extremos; en blanco = sin glosa.
 }
 
 rule ReaderUncodesExcerpt {
@@ -581,11 +586,14 @@ rule ReaderGroupsConcept {
     requires: not actor.is_blocked
     requires: config.annotate_right in actor.rights
     let previous = ThemeMembership{concept: concept, owner: actor}
-    requires: not (exists previous and previous.theme = theme)
     ensures:
-        if exists previous:
-            not exists previous
-        ThemeMembership.created(theme: theme, concept: concept)
+        if not (exists previous and previous.theme = theme):
+            if exists previous:
+                not exists previous
+            ThemeMembership.created(theme: theme, concept: concept)
+    @guidance
+        -- Agrupar en el tema donde ya está no cambia nada y no es un error
+        -- (decisión 2026-09-23): el gesto se puede repetir sin temor.
 }
 
 rule ReaderUngroupsConcept {
@@ -602,17 +610,17 @@ rule ReaderWritesThemeDevelopment {
     requires: actor = theme.owner
     requires: not actor.is_blocked
     requires: config.annotate_right in actor.rights
-    requires: length(text) <= config.note_max_length
+    requires: length(trim(text)) <= config.note_max_length
     ensures:
         if is_blank(text):
             if exists theme.development:
                 not exists theme.development
         else:
             if exists theme.development:
-                theme.development.text = text
+                theme.development.text = trim(text)
                 theme.development.updated_at = now
             else:
-                ThemeDevelopment.created(theme: theme, text: text, updated_at: now)
+                ThemeDevelopment.created(theme: theme, text: trim(text), updated_at: now)
 }
 
 ------------------------------------------------------------
@@ -812,6 +820,12 @@ surface PageReading {
     @guarantee LostNotDrawn
         -- Los §§ perdidos no se dibujan (no hay dónde); viven en
         -- ConceptDetail, MyReading y el mapa.
+
+    @guarantee CurrentRevisionOnly
+        -- La lectura se ofrece sólo sobre la vista de la revisión vigente:
+        -- en una revisión antigua, un diff o una acción que no sea «ver», la
+        -- página se muestra sin marcas ni afordancia, porque los §§ se
+        -- anclan a la vigente (decisión 2026-09-23).
 }
 
 -- Detalle de un concepto (panel de constel: "§ en este texto" / "en otros").
@@ -1077,4 +1091,7 @@ deferred Concept.concept_links        -- see: docs/ARCHITECTURE.md#mapa — aris
 -- Open questions
 ------------------------------------------------------------
 
-open question "Solapamiento (decisión 2026-09-22: los conceptos distintos de §§ solapados no convergen): ¿se mantiene la arista `overlap` como mera relación en el mapa, o se elimina y el mapa queda sólo con co_excerpt?"
+-- (Sin preguntas abiertas. La del solapamiento se cerró el 2026-09-23: la
+-- arista overlap se mantiene como mera relación en el mapa, con su propia
+-- fuerza de 0 a 100 % —ProximityDegreesAreParametric—, y nunca identifica
+-- ni fusiona conceptos —OverlapNeverConverges—.)
