@@ -1,5 +1,65 @@
 # Changelog — Casiopea-Con§tel
 
+## 0.5.0 — 2026-09-23
+
+- **Especial:Constelación a pantalla completa.** El mapa posee el viewport,
+  como la biblioteca con§tel: la barra arriba de borde a borde y, debajo,
+  grafo y panel mitad y mitad, cada uno con su propio scroll; el lienzo toma
+  la proporción de su celda y la sigue al cambiar el tamaño de la ventana. La
+  lista accesible pasa al final del panel y la moderación, al pie del grafo.
+  En Stella Nova la página entra al modo `__PANTALLACOMPLETA__` (misma
+  propiedad de OutputPage) y el skin absorbe `constel-full`; en pantallas
+  angostas grafo y panel se apilan.
+- **La división ante-dentro se arrastra.** Ante (el grafo) y dentro (el panel)
+  reparten el ancho según se arrastre la línea que los separa (20–80 %);
+  también con las flechas (Mayús: pasos largos), Inicio y Fin, y doble clic
+  vuelve a mitad y mitad. Cada navegador recuerda la proporción. El lienzo
+  conserva su escala: al abrir ante se gana espacio alrededor, no letras más
+  grandes.
+- **El concepto elegido es el centro del mapa.** Al seleccionar un concepto,
+  el mapa se desliza hasta dejarlo al medio y «Girar solo» orbita a su
+  alrededor; volver a los temas o «Encuadrar todo» devuelve el centro al
+  origen. Con prefers-reduced-motion, salta sin animación.
+- **Barra baja, con íconos.** Los controles ya no llevan rótulo encima: cada
+  uno va en línea con su ícono Feather (vista `eye`, girar `rotate-cw`,
+  aristas `share-2`, peso `filter`, fuerzas `align-left` / `layers` /
+  `file-text`, secciones `users`, páginas `file`, temas `tag`) y el nombre
+  como tooltip y para lectores de pantalla.
+- **Aristas continuas y proximidad parametrizable.** Las aristas ya no son
+  punteadas: se distinguen por transparencia. Cada grado de proximidad —misma
+  sección (§), traslape, mismo texto— tiene su fuerza (0–100 %) en la barra:
+  cuánto atrae a sus conceptos y cuán visible es su arista; en 0 no aparece.
+  Por omisión 100 / 60 / 35 %, y se recuerda por navegador.
+- **Descarga del SVG arreglada.** La descarga ya no depende de URLs
+  blob:/data: del navegador (en Chrome de macOS guardaban el archivo trunco y
+  sin extensión): el mapa serializado se envía a la nueva página oculta
+  Especial:ConstellationSvg, que lo devuelve como adjunto con
+  `Content-Disposition` (`mapa-….svg`). Sólo acepta POST con un SVG válido de
+  hasta 2 MB, limpia el nombre y lo sirve con nosniff y CSP sandbox
+  (reglas en `Domain\SvgExport`, con pruebas).
+- **El tema se edita en su título.** En «Mis temas» desaparecen el campo
+  «Renombrar» y el botón «Borrar tema»: el título del tema se reescribe en su
+  lugar (Intro o salir del campo guarda; Esc deshace) y una «x» a su lado lo
+  borra, previa confirmación bajo el título.
+- **Lectura en tres posiciones.** Las tres entradas «con§tel:» del menú de
+  usuario pasan a ser un solo control, como en con§tel: − (sin marcas) ·
+  § (solo mis secciones) · §* (las de todos). Es un grupo de radios (Tab
+  entra, flechas se mueven) y elegir no cierra el menú. «−» conserva el
+  alcance elegido.
+- **El concepto lleva su signo, [a].** En la nomenclatura de con§tel un
+  concepto es un [a] (ancla, p[a]labra, nombre): el título del detalle lo
+  antepone en tinta tenue, como el «§» a la sección.
+- **Afordancia «§» más discreta.** Deja el círculo de acento por un cuadrado
+  de esquinas redondeadas (1,75rem, `--constel-radius-l`) con el token oscuro
+  del botón primario y sombra suave. La tinta del «§» ocupa el 60 % del alto y
+  queda centrada con márgenes iguales: `trigger.js` mide el glifo en la
+  tipografía real y corrige su desplazamiento vertical.
+- **2D: los conceptos chocan y nunca se traslapan.** Cada rótulo ocupa su
+  caja de tinta (ancho y alto reales del texto) con un margen breve e igual
+  por los cuatro lados, centrada en su punto; las cajas que se tocan se
+  separan, y el mapa se encuadra al final. Probado sin traslapes con 300
+  conceptos sintéticos (170 ms).
+
 ## 0.4.0 — 2026-09-22
 
 - **Un desarrollo por tema.** Un tema ya no acumula notas: tiene un solo texto,

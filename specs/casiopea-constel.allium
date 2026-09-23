@@ -695,7 +695,9 @@ surface PageReading {
         -- Los controles de lectura (alcance mine/everyone, ocultar marcas)
         -- y los accesos al mapa y a la lista propia se ofrecen en el menú
         -- de usuario del skin, alcanzable desde cualquier punto de una
-        -- página larga (decisión 2026-09-22).
+        -- página larga (decisión 2026-09-22). La lectura es un solo control
+        -- de tres posiciones, como en con§tel: − (sin marcas) · § (mías) ·
+        -- §* (de todos).
 
     @guarantee NothingForAnonymous
         -- Anónimos y cuentas temporales no ven marcas ni controles de
@@ -774,6 +776,11 @@ surface ConceptMap {
         ConceptDetail(concept)
         ThemesPanel(viewer)
 
+    @guarantee LabelsNeverOverlapIn2D
+        -- En la vista 2D ningún rótulo pisa a otro: cada uno ocupa una caja
+        -- ajustada a su texto con un margen breve e igual por los cuatro
+        -- lados, y las cajas chocan en vez de traslaparse.
+
     @guarantee ReadOnlyForAnonymous
         -- Anónimos y cuentas temporales ven el mapa (alcance everyone) y
         -- navegan a conceptos, temas y páginas, pero no pueden operar
@@ -805,8 +812,16 @@ surface ConceptMap {
         --     también debe mostrar su constelación).
         -- Los §§ perdidos aportan co_excerpt y co_page, pero no overlap (no
         -- tienen posición vigente). Las tres clases de arista se
-        -- distinguen visualmente; co_page es la más tenue, porque no es
-        -- una decisión explícita del lector.
+        -- distinguen visualmente sólo por su transparencia (siempre
+        -- continuas, nunca punteadas); co_page es la más tenue, porque no
+        -- es una decisión explícita del lector.
+
+    @guarantee ProximityDegreesAreParametric
+        -- Cada grado de proximidad (co_excerpt: misma sección; overlap:
+        -- traslape; co_page: mismo texto) tiene su propia fuerza, de 0 a
+        -- 100 %, que quien mira ajusta: con qué intensidad atrae a sus
+        -- conceptos en el layout y cuán visible es su arista. En 0 el grado
+        -- no dibuja arista ni atrae. Se recuerda por navegador.
 
     @guarantee OverlapNeverConverges
         -- Que dos §§ solapados tengan conceptos distintos es criterio de

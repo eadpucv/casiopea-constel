@@ -122,8 +122,7 @@ class PageHooksTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertSame(
 			[
-				'preferences', 'constel-mine', 'constel-everyone', 'constel-marks',
-				'constel-map', 'constel-myconstel', 'logout',
+				'preferences', 'constel-reading', 'constel-map', 'constel-myconstel', 'logout',
 			],
 			array_keys( $links['user-menu'] )
 		);

@@ -598,7 +598,7 @@ Módulos:
 | `marks.js` | reader | Dibuja §§ como `<mark>` (solo en el cliente); si el DOM difiere, re-ubica por la cita |
 | `trigger.js` | reader | La afordancia «§»: aparece al terminar una selección válida; con teclado, Alt+Mayús+Intro |
 | `form.js` | reader | Crear un §: concepto (autocompletado) y glosa, un solo botón; aviso de datos públicos la primera vez; vista vieja |
-| `menu.js` | reader | Comportamiento de las entradas del menú de usuario (solo mis §§ / los de todos / ocultar marcas); se recuerda por navegador |
+| `menu.js` | reader | El control de lectura del menú de usuario, de tres posiciones como en con§tel: − (sin marcas) · § (solo mis §§) · §* (los de todos); grupo de radios, se recuerda por navegador |
 | `config.json` | reader | Callback PHP: la lista de exclusión y los límites, los mismos del servidor |
 | `api.js` | ui | Llamadas a la API; errores localizados (`errorformat=html`) |
 | `panel.js` | ui | Panel emergente: Escape, clic fuera, foco retenido y devuelto, dentro del viewport |
@@ -661,7 +661,20 @@ una *check key* que tocan las escrituras.
 
 **Especial:Constelación** (`SpecialConstellation`, pública; los anónimos ven y
 navegan, pero no operan). El servidor emite la lista de conceptos por
-frecuencia (respaldo sin JS). `ext.constel.map` dibuja encima:
+frecuencia (respaldo sin JS). La página va **a pantalla completa**: fija
+`stellanova-fullscreen` en la OutputPage (lo mismo que `__PANTALLACOMPLETA__`
+en Stella Nova) y marca `<body class="constel-full">`; con `wgConstelMap.full`
+el cliente arma `.constel-map--full` —barra arriba; grafo y panel mitad y
+mitad, a todo el alto, cada uno con su scroll; la lista al final del panel— y
+dibuja el grafo con `fill`: la escala (unidades por píxel) se fija al primer
+dibujo y el viewBox sigue el tamaño de la celda (ResizeObserver), así que al
+agrandarla se gana espacio, no letras más grandes. Al par grafo-panel lo
+llamamos **ante-dentro** (ante, el grafo; dentro, el panel): la división es un
+`role="separator"` que se arrastra o se mueve con el teclado y fija
+`--constel-ante` (20–80 %, recordado por navegador en `mw.storage`
+`constel-map`, junto a «Girar solo»). El skin absorbe el resto: sin padding de canvas,
+título e introducción sólo para lectores de pantalla, y la primera fila de la
+barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
 
 - `graph.js`: layout de fuerzas propio en **3D** (por defecto) o 2D, sin
   dependencias: repulsión, resortes según peso y clase de arista, gravedad y
@@ -673,11 +686,20 @@ frecuencia (respaldo sin JS). `ext.constel.map` dibuja encima:
   (0.6·§§ + 0.4·páginas, como constel) y escalan con la perspectiva. Aristas
   con grosor constante en pantalla (`vector-effect: non-scaling-stroke`):
   continuas (co_excerpt), rayadas (overlap) y punteadas tenues (co_page).
+  **En 2D los rótulos chocan y nunca se traslapan:** cada uno ocupa su caja
+  de tinta (ancho y alto reales de las letras, medidos en un canvas con la
+  tipografía del skin) más un margen igual por los cuatro lados (`PAD`); la
+  tinta se centra en el punto del nodo. `separate()` aparta los pares que se
+  pisan por el eje de menor traslape y, si una zona densa no cede, abre el
+  mapa un 15 % y reintenta; al final se encuadra con el zoom, que escala
+  posiciones y letras por igual. Si la tipografía web llega tarde, se mide de
+  nuevo.
   Zoom con botones o Ctrl+rueda. Cada nodo es texto SVG enfocable (Enter lo
   abre).
-- `sidepanel.js`: el detalle de un concepto (título sin «§»: el § es de la
-  sección; sus §§ con glosa y, al pie en texto pequeño, la página de
-  procedencia enlazada; temas que lo contienen; agruparlo) y el panel de temas
+- `sidepanel.js`: el detalle de un concepto (título sin «§» —el § es de la
+  sección—, precedido del signo **[a]**, el concepto en la nomenclatura de
+  con§tel: ancla, p[a]labra, nombre; sus §§ con glosa y, al pie en texto
+  pequeño, la página de procedencia enlazada; temas que lo contienen; agruparlo) y el panel de temas
   (crear, renombrar, borrar, desagrupar y **un desarrollo por tema**, que se
   guarda entero). Títulos h4 (concepto, «Mis temas») y h5 (cada tema, «En
   temas»); el tema lleva su color del grafo en el título, sin viñeta. Los

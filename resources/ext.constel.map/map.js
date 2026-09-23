@@ -12,6 +12,12 @@
  * Al elegir un concepto, el panel lateral muestra su detalle; si no, los
  * temas de la lente. Debajo, la misma información como lista
  * (AccessibleAlternative).
+ *
+ * A pantalla completa (cfg.full) el mapa posee el viewport: barra arriba y,
+ * debajo, el par ante-dentro —ante, el grafo; dentro, el panel—, cada uno
+ * con su propio scroll; la lista va al final de dentro para no quedar fuera
+ * de la pantalla. La división entre ambos se arrastra (o se mueve con las
+ * flechas) y cada navegador recuerda la proporción.
  */
 const { api, icons } = require( 'ext.constel.ui' );
 const graph = require( './graph.js' );
@@ -21,6 +27,24 @@ const pills = require( './pills.js' );
 const cfg = mw.config.get( 'wgConstelMap' );
 const me = mw.user.isNamed() ? mw.config.get( 'wgUserName' ) : null;
 const THRESHOLD_MAX = 4;
+const full = !!cfg.full;
+/** Proporción de ante (el grafo) en el par ante-dentro, en %. */
+const ANTE_MIN = 20;
+const ANTE_MAX = 80;
+const ANTE_DEFAULT = 50;
+
+/**
+ * Preferencias del mapa por navegador: se fusionan, no se pisan.
+ *
+ * @return {Object} {autorotate, ante}
+ */
+function prefs() {
+	return mw.storage.getObject( 'constel-map' ) || {};
+}
+
+function savePref( key, value ) {
+	mw.storage.setObject( 'constel-map', Object.assign( prefs(), { [ key ]: value } ) );
+}
 
 function el( tag, className, text ) {
 	const node = document.createElement( tag );
@@ -33,13 +57,83 @@ function el( tag, className, text ) {
 	return node;
 }
 
+/**
+ * La división del par ante-dentro: un separador que se arrastra con el
+ * puntero o se mueve con las flechas (Inicio/Fin a los extremos; doble clic
+ * vuelve a mitad y mitad). Fija --constel-ante en el layout; el lienzo sigue
+ * a su celda solo (ResizeObserver en graph.js).
+ *
+ * @param {HTMLElement} layout
+ * @return {HTMLElement}
+ */
+function divider( layout ) {
+	const bar = el( 'div', 'constel-map__divider' );
+	bar.setAttribute( 'role', 'separator' );
+	bar.setAttribute( 'aria-orientation', 'vertical' );
+	bar.setAttribute( 'aria-label', mw.msg( 'constellation-divider' ) );
+	bar.setAttribute( 'aria-valuemin', String( ANTE_MIN ) );
+	bar.setAttribute( 'aria-valuemax', String( ANTE_MAX ) );
+	bar.tabIndex = 0;
+
+	let ante = Number( prefs().ante ) || ANTE_DEFAULT;
+	const set = ( value, keep ) => {
+		ante = Math.round( Math.min( ANTE_MAX, Math.max( ANTE_MIN, value ) ) * 10 ) / 10;
+		layout.style.setProperty( '--constel-ante', ante + '%' );
+		bar.setAttribute( 'aria-valuenow', String( Math.round( ante ) ) );
+		if ( keep ) {
+			savePref( 'ante', ante );
+		}
+	};
+	set( ante, false );
+
+	let dragging = false;
+	bar.addEventListener( 'pointerdown', ( e ) => {
+		dragging = true;
+		bar.setPointerCapture( e.pointerId );
+		layout.classList.add( 'constel-map__layout--dragging' );
+		e.preventDefault();
+	} );
+	bar.addEventListener( 'pointermove', ( e ) => {
+		if ( dragging ) {
+			const box = layout.getBoundingClientRect();
+			set( ( e.clientX - box.left ) / box.width * 100, false );
+		}
+	} );
+	const end = () => {
+		if ( dragging ) {
+			dragging = false;
+			layout.classList.remove( 'constel-map__layout--dragging' );
+			set( ante, true );
+		}
+	};
+	bar.addEventListener( 'pointerup', end );
+	bar.addEventListener( 'pointercancel', end );
+	bar.addEventListener( 'dblclick', () => set( ANTE_DEFAULT, true ) );
+	bar.addEventListener( 'keydown', ( e ) => {
+		const step = e.shiftKey ? 10 : 2;
+		const to = {
+			ArrowLeft: ante - step,
+			ArrowRight: ante + step,
+			Home: ANTE_MIN,
+			End: ANTE_MAX
+		}[ e.key ];
+		if ( to !== undefined ) {
+			e.preventDefault();
+			set( to, true );
+		}
+	} );
+	return bar;
+}
+
 function main( root ) {
 	const pageParam = mw.util.getParamValue( 'page' );
 	const state = {
 		mode: '3d',
-		autorotate: !!( mw.storage.getObject( 'constel-map' ) || {} ).autorotate,
+		autorotate: !!prefs().autorotate,
 		threshold: 1,
 		edges: true,
+		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
+		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
 		readersOn: !!me,
 		readers: me ? [ me ] : [],
 		readerLabel: ( name ) => name,
@@ -65,25 +159,45 @@ function main( root ) {
 	const below = el( 'div', 'constel-map__below' );
 	stage.append( canvas, below );
 	const aside = el( 'aside', 'constel-map__side' );
+	// Lo que cambia con la selección; la lista (a pantalla completa) queda.
+	const sideBody = el( 'div', 'constel-map__side-body' );
+	aside.append( sideBody );
 	const alt = el( 'details', 'constel-map__alt' );
 	alt.append( el( 'summary', null, mw.msg( 'constellation-as-list' ) ) );
 	const altList = el( 'ol', 'constel-map__fallback' );
 	alt.append( altList );
 	layout.append( stage, aside );
-	root.append( controls, layout, alt );
+	if ( full ) {
+		root.classList.add( 'constel-map--full' );
+		aside.append( alt );
+		layout.append( divider( layout ) );
+		root.append( controls, layout );
+	} else {
+		root.append( controls, layout, alt );
+	}
 
-	const field = ( labelMsg, control ) => {
-		const label = el( 'label', 'constel-map__field' );
-		label.append( el( 'span', 'constel-label', mw.msg( labelMsg ) ), control );
+	// Controles en línea: un ícono Feather en vez de rótulo; el nombre
+	// queda como tooltip y para lectores de pantalla. Así la barra es baja.
+	const iconLabel = ( iconName, msg ) => {
+		const label = el( 'label', 'constel-map__field constel-map__field--icon' );
+		label.title = mw.msg( msg );
+		const mark = el( 'span', 'constel-map__icon' );
+		mark.append( icons.icon( iconName ) );
+		label.append( mark, el( 'span', 'constel-visually-hidden', mw.msg( msg ) ) );
 		return label;
 	};
-	const checkbox = ( msg, checked, onChange ) => {
+	const field = ( iconName, labelMsg, control ) => {
+		const label = iconLabel( iconName, labelMsg );
+		label.append( control );
+		return label;
+	};
+	const checkbox = ( iconName, msg, checked, onChange ) => {
 		const input = el( 'input' );
 		input.type = 'checkbox';
 		input.checked = checked;
 		input.addEventListener( 'change', () => onChange( input.checked ) );
-		const label = el( 'label', 'constel-map__field constel-map__field--inline' );
-		label.append( input, ' ', mw.msg( msg ) );
+		const label = iconLabel( iconName, msg );
+		label.prepend( input );
 		return { label, input };
 	};
 
@@ -95,9 +209,9 @@ function main( root ) {
 		mode.append( o );
 	} );
 	// Girar solo: junto a la vista, sólo en 3D; apagado por defecto.
-	const spin = checkbox( 'constellation-autorotate', state.autorotate, ( on ) => {
+	const spin = checkbox( 'rotate-cw', 'constellation-autorotate', state.autorotate, ( on ) => {
 		state.autorotate = on;
-		mw.storage.setObject( 'constel-map', { autorotate: on } );
+		savePref( 'autorotate', on );
 		if ( state.view ) {
 			state.view.setAutorotate( on );
 		}
@@ -112,7 +226,7 @@ function main( root ) {
 		render();
 	} );
 	const viewGroup = el( 'div', 'constel-map__group' );
-	viewGroup.append( field( 'constellation-mode', mode ), spin.label );
+	viewGroup.append( field( 'eye', 'constellation-mode', mode ), spin.label );
 
 	// Mostrar aristas condiciona el peso mínimo (1–4).
 	const threshold = el( 'input', 'constel-input constel-map__threshold' );
@@ -127,8 +241,8 @@ function main( root ) {
 		threshold.value = String( state.threshold );
 		render();
 	} );
-	const thresholdField = field( 'constellation-threshold', threshold );
-	const edges = checkbox( 'constellation-edges', state.edges, ( on ) => {
+	const thresholdField = field( 'filter', 'constellation-threshold', threshold );
+	const edges = checkbox( 'share-2', 'constellation-edges', state.edges, ( on ) => {
 		state.edges = on;
 		// Sin aristas, el peso no tiene sentido: desaparece.
 		thresholdField.hidden = !on;
@@ -136,6 +250,43 @@ function main( root ) {
 	} );
 	const edgesGroup = el( 'div', 'constel-map__group' );
 	edgesGroup.append( edges.label, thresholdField );
+
+	// Proximidad: cada grado con su fuerza (0 = ni arista ni atracción).
+	const forces = el( 'div', 'constel-map__forces' );
+	forces.setAttribute( 'role', 'group' );
+	forces.setAttribute( 'aria-label', mw.msg( 'constellation-proximity' ) );
+	[ [ 'co_excerpt', 'constellation-force-coexcerpt', 'align-left' ],
+		[ 'overlap', 'constellation-force-overlap', 'layers' ],
+		[ 'co_page', 'constellation-force-copage', 'file-text' ]
+	].forEach( ( [ kind, msg, iconName ] ) => {
+		const range = el( 'input' );
+		range.type = 'range';
+		range.min = '0';
+		range.max = '100';
+		range.step = '5';
+		range.value = String( Math.round( state.forces[ kind ] * 100 ) );
+		const out = el( 'output' );
+		const show = () => {
+			const text = mw.language.convertNumber( Number( range.value ) ) + ' %';
+			out.textContent = text;
+			range.setAttribute( 'aria-valuetext', text );
+		};
+		show();
+		range.addEventListener( 'input', show );
+		range.addEventListener( 'change', () => {
+			state.forces[ kind ] = Number( range.value ) / 100;
+			savePref( 'forces', state.forces );
+			// Otro equilibrio de fuerzas: layout desde cero.
+			state.data.nodes.forEach( ( n ) => {
+				delete n.x;
+			} );
+			render();
+		} );
+		const label = iconLabel( iconName, msg );
+		label.classList.add( 'constel-map__force' );
+		label.append( range, out );
+		forces.append( label );
+	} );
 
 	// Navegación del mapa: íconos Feather con nombre accesible.
 	const zoom = el( 'div', 'constel-map__zoom' );
@@ -189,23 +340,43 @@ function main( root ) {
 			title: mw.msg( 'constellation-svg-title', mw.config.get( 'wgSiteName' ) ),
 			description: describe
 		} );
-		// URL data: y no blob: — una blob: revocada antes de que el lector
-		// elija dónde guardar (diálogo «Guardar como») deja la descarga
-		// colgada; la data: lleva el contenido y no vence.
-		const a = el( 'a' );
-		a.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent( svg );
-		a.download = fileName();
-		document.body.append( a );
-		a.click();
-		a.remove();
+		// La descarga la sirve la wiki (Especial:ConstellationSvg) como archivo
+		// adjunto: con URLs blob:/data: algunos navegadores (Chrome en macOS)
+		// guardaban el archivo trunco y sin extensión. El formulario se envía a
+		// un iframe oculto, así la página del mapa nunca navega.
+		let sink = document.getElementById( 'constel-svg-sink' );
+		if ( !sink ) {
+			sink = el( 'iframe' );
+			sink.id = 'constel-svg-sink';
+			sink.name = 'constel-svg-sink';
+			sink.hidden = true;
+			sink.title = mw.msg( 'constellation-export-svg' );
+			document.body.append( sink );
+		}
+		const form = el( 'form' );
+		form.method = 'post';
+		form.action = mw.util.getUrl( 'Special:ConstellationSvg' );
+		form.target = sink.name;
+		form.hidden = true;
+		[ [ 'svg', svg ], [ 'filename', fileName() ] ].forEach( ( [ name, value ] ) => {
+			const input = el( 'input' );
+			input.type = 'hidden';
+			input.name = name;
+			input.value = value;
+			form.append( input );
+		} );
+		document.body.append( form );
+		form.submit();
+		form.remove();
 	}
-	rowView.append( viewGroup, edgesGroup, zoom );
+	rowView.append( viewGroup, edgesGroup, forces, zoom );
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
 	// Secciones: como la lente (por defecto quien mira; se suman lectores).
 	// El interruptor, fuera de la caja, desactiva el filtro: todas.
 	const readers = pills.create( {
 		label: mw.msg( 'constellation-sections' ),
+		icon: 'users',
 		placeholder: mw.msg( 'constellation-add-reader' ),
 		values: state.readers,
 		min: 1,
@@ -221,7 +392,9 @@ function main( root ) {
 	readersSwitch.setAttribute( 'role', 'switch' );
 	readersSwitch.checked = state.readersOn;
 	const readersSwitchLabel = el( 'label', 'constel-map__field--inline constel-map__switch' );
-	readersSwitchLabel.append( readersSwitch, ' ', mw.msg( 'constellation-sections-filter' ) );
+	readersSwitch.setAttribute( 'aria-label', mw.msg( 'constellation-sections-filter' ) );
+	readersSwitchLabel.title = mw.msg( 'constellation-sections-filter' );
+	readersSwitchLabel.append( readersSwitch );
 	const allNote = el( 'div', 'constel-pills__box constel-pills__box--off' );
 	allNote.append( el( 'span', 'constel-pills__empty', mw.msg( 'constellation-all-sections' ) ) );
 	const syncReaders = () => {
@@ -239,6 +412,7 @@ function main( root ) {
 	syncReaders();
 	const pages = pills.create( {
 		label: mw.msg( 'constellation-pages' ),
+		icon: 'file',
 		placeholder: mw.msg( 'constellation-add-page' ),
 		empty: mw.msg( 'constellation-all-pages' ),
 		values: state.pages,
@@ -251,6 +425,7 @@ function main( root ) {
 	// La lente: por defecto quien mira; nunca vacía para una cuenta registrada.
 	const lens = pills.create( {
 		label: mw.msg( 'constellation-lens' ),
+		icon: 'tag',
 		placeholder: mw.msg( 'constellation-add-reader' ),
 		empty: mw.msg( 'constellation-no-lens' ),
 		values: state.lens,
@@ -293,6 +468,8 @@ function main( root ) {
 				autorotate: state.autorotate,
 				threshold: state.threshold,
 				edges: state.edges,
+				forces: state.forces,
+				fill: full,
 				themeOf: themeIndex(),
 				onSelect: select
 			} );
@@ -307,7 +484,8 @@ function main( root ) {
 		altList.textContent = '';
 		const byId = new Map( state.data.nodes.map( ( n ) => [ n.id, n ] ) );
 		const near = new Map();
-		state.data.links.filter( ( l ) => l.weight >= state.threshold ).forEach( ( l ) => {
+		state.data.links.filter( ( l ) => l.weight >= state.threshold &&
+			state.forces[ l.kind ] > 0 ).forEach( ( l ) => {
 			[ [ l.source, l.target ], [ l.target, l.source ] ].forEach( ( [ a, b ] ) => {
 				const entry = { id: b, kind: l.kind, weight: l.weight };
 				near.set( a, ( near.get( a ) || [] ).concat( entry ) );
@@ -357,8 +535,8 @@ function main( root ) {
 			renderThemes();
 		} );
 		const box = el( 'div' );
-		aside.textContent = '';
-		aside.append( back, box );
+		sideBody.textContent = '';
+		sideBody.append( back, box );
 		side.conceptDetail( box, node, {
 			me,
 			canAnnotate: cfg.canAnnotate,
@@ -380,10 +558,10 @@ function main( root ) {
 	}
 
 	function renderThemes() {
-		aside.textContent = '';
+		sideBody.textContent = '';
 		below.textContent = '';
 		if ( !state.lens.length ) {
-			aside.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-no-lens' ) ) );
+			sideBody.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-no-lens' ) ) );
 			return;
 		}
 		// Un bloque por lector de la lente, en su orden; los colores siguen
@@ -407,7 +585,7 @@ function main( root ) {
 				}
 			} );
 			offset += own.length;
-			aside.append( box );
+			sideBody.append( box );
 		} );
 	}
 

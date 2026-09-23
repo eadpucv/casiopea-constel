@@ -1,6 +1,6 @@
 {
 	"name": "Casiopea-Con§tel",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"author": [
 		"[https://herbertspencer.net Herbert Spencer González]",
 		".:TIG:. Taller de Investigaciones Gráficas, e[ad] Escuela de Arquitectura y Diseño, Pontificia Universidad Católica de Valparaíso"
@@ -223,6 +223,9 @@
 				"ConnectionProvider"
 			]
 		},
+		"ConstellationSvg": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Specials\\SpecialConstellationSvg"
+		},
 		"MyConstel": {
 			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Specials\\SpecialMyConstel",
 			"services": [
@@ -353,10 +356,10 @@
 				"constel-form-saving",
 				"constel-form-reload",
 				"constel-trigger-label",
-				"constel-mine-menu",
-				"constel-everyone-menu",
-				"constel-marks-menu",
-				"constel-marks-show-menu",
+				"constel-reading-menu",
+				"constel-reading-none",
+				"constel-reading-mine",
+				"constel-reading-everyone",
 				"constel-form-gloss-label",
 				"constel-form-gloss-placeholder"
 			],
@@ -388,6 +391,10 @@
 				"constellation-as-list",
 				"constellation-threshold",
 				"constellation-edges",
+				"constellation-proximity",
+				"constellation-force-coexcerpt",
+				"constellation-force-overlap",
+				"constellation-force-copage",
 				"constellation-lens",
 				"constellation-zoom-in",
 				"constellation-zoom-out",
@@ -407,7 +414,7 @@
 				"constellation-ungroup",
 				"constellation-theme-empty",
 				"constellation-save",
-				"constellation-theme-rename",
+				"constellation-theme-name",
 				"constellation-theme-delete",
 				"constellation-theme-delete-confirm",
 				"constellation-theme-new",
@@ -436,6 +443,7 @@
 				"constellation-export-svg",
 				"constellation-svg-title",
 				"constellation-navigation",
+				"constellation-divider",
 				"constellation-file-prefix",
 				"constellation-file-visitor",
 				"constellation-sections-filter",

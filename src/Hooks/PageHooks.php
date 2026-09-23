@@ -101,13 +101,13 @@ class PageHooks implements
 		}
 		$items = [];
 		if ( $this->isReaderView( $sktemplate ) ) {
-			foreach ( [ 'constel-mine', 'constel-everyone', 'constel-marks' ] as $key ) {
-				$items[$key] = [
-					'text' => $sktemplate->msg( "$key-menu" )->text(),
-					'href' => '#',
-					'class' => 'constel-menu-toggle',
-				];
-			}
+			// Un solo control de tres posiciones (− · § · §*): el cliente
+			// reemplaza el enlace por los botones.
+			$items['constel-reading'] = [
+				'text' => $sktemplate->msg( 'constel-reading-menu' )->text(),
+				'href' => '#',
+				'class' => 'constel-menu-toggle',
+			];
 		}
 		$items['constel-map'] = [
 			'text' => $sktemplate->msg( 'constellation' )->text(),

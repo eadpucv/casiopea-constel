@@ -23,6 +23,8 @@ function el( tag, className, text ) {
 /**
  * @param {Object} opts
  * @param {string} opts.label nombre del campo
+ * @param {string} [opts.icon] ícono Feather en lugar del rótulo visible (el
+ *  nombre queda como tooltip y para lectores de pantalla)
  * @param {string} opts.placeholder
  * @param {string} [opts.empty] texto cuando no hay ninguna
  * @param {string[]} [opts.values] valores iniciales
@@ -41,8 +43,16 @@ function create( opts ) {
 
 	const wrap = el( 'div', 'constel-map__field constel-pills' );
 	const id = 'constel-pills-' + Math.random().toString( 36 ).slice( 2, 8 );
-	const label = el( 'label', 'constel-label', opts.label );
+	const label = el( 'label', 'constel-label' );
 	label.htmlFor = id;
+	if ( opts.icon ) {
+		wrap.classList.add( 'constel-pills--icon' );
+		label.classList.add( 'constel-map__icon' );
+		label.title = opts.label;
+		label.append( icons.icon( opts.icon ), el( 'span', 'constel-visually-hidden', opts.label ) );
+	} else {
+		label.textContent = opts.label;
+	}
 	const box = el( 'div', 'constel-pills__box' );
 	const list = el( 'ul', 'constel-chips constel-pills__list' );
 	list.setAttribute( 'aria-label', opts.label );

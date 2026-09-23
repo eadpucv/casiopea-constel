@@ -46,8 +46,15 @@ function feedbackBox() {
  */
 function conceptDetail( box, node, ctx ) {
 	box.textContent = '';
+	// «[a]»: el concepto en la nomenclatura de con§tel (ancla, p[a]labra,
+	// nombre), antepuesto como signo; como el «§» de la sección. Es un signo,
+	// no parte del nombre: los lectores de pantalla no lo leen.
+	const title = el( 'h4', 'constel-side__title' );
+	const sign = el( 'span', 'constel-side__sign', '[a]' );
+	sign.setAttribute( 'aria-hidden', 'true' );
+	title.append( sign, node.label );
 	box.append(
-		el( 'h4', 'constel-side__title', node.label ),
+		title,
 		el( 'p', 'constel-side__meta',
 			mw.msg( 'constellation-counts', mw.language.convertNumber( node.excerpts ),
 				mw.language.convertNumber( node.pages ) ) )
@@ -180,6 +187,89 @@ function moderation( node, ctx ) {
 }
 
 /**
+ * Título de un tema propio, que se edita en su lugar: se reescribe y se
+ * guarda con Intro o al salir (Esc vuelve al nombre anterior; vacío no
+ * renombra). La «x» a su lado borra el tema, previa confirmación bajo el
+ * título.
+ *
+ * @param {Object} theme
+ * @param {HTMLElement} section del tema (la confirmación va dentro)
+ * @param {HTMLElement} fb caja de errores
+ * @param {Object} ctx {onChanged}
+ * @param {Function} fail (fb) => manejador de error
+ * @return {HTMLElement[]} el campo y la «x»
+ */
+function themeTitle( theme, section, fb, ctx, fail ) {
+	const name = el( 'input', 'constel-theme__name' );
+	name.value = theme.label;
+	name.setAttribute( 'aria-label', mw.msg( 'constellation-theme-name', theme.label ) );
+	name.title = mw.msg( 'constellation-theme-name', theme.label );
+	// El campo mide lo que su texto (medido con su tipografía), para que la
+	// «x» quede junto al nombre.
+	const fit = () => {
+		const style = getComputedStyle( name );
+		const ctx2d = fit.ctx || ( fit.ctx = document.createElement( 'canvas' ).getContext( '2d' ) );
+		ctx2d.font = `${ style.fontStyle } ${ style.fontWeight } ${ style.fontSize } ${ style.fontFamily }`;
+		const text = ctx2d.measureText( name.value || ' ' ).width;
+		const extra = parseFloat( style.paddingLeft ) + parseFloat( style.paddingRight ) +
+			parseFloat( style.borderLeftWidth ) + parseFloat( style.borderRightWidth );
+		name.style.width = Math.ceil( text + extra + 2 ) + 'px';
+	};
+	name.addEventListener( 'input', fit );
+	// Medir cuando ya está en la página (antes no tiene estilo calculado).
+	requestAnimationFrame( fit );
+	let done = false;
+	const commit = () => {
+		const label = name.value.trim();
+		if ( done || !label || label === theme.label ) {
+			name.value = label ? name.value : theme.label;
+			fit();
+			return;
+		}
+		done = true;
+		api.write( { action: 'constel-theme', op: 'rename', theme: theme.id, label } )
+			.then( ctx.onChanged, ( code, r ) => {
+				done = false;
+				name.value = theme.label;
+				fail( fb )( code, r );
+			} );
+	};
+	name.addEventListener( 'keydown', ( e ) => {
+		if ( e.key === 'Enter' ) {
+			e.preventDefault();
+			name.blur();
+		} else if ( e.key === 'Escape' ) {
+			name.value = theme.label;
+			fit();
+			name.blur();
+		}
+	} );
+	name.addEventListener( 'blur', commit );
+
+	const remove = icons.iconButton(
+		'x', mw.msg( 'constellation-theme-delete', theme.label ), 'constel-theme__delete'
+	);
+	remove.addEventListener( 'click', () => {
+		if ( section.querySelector( '.constel-confirm' ) ) {
+			return;
+		}
+		const confirm = el( 'div', 'constel-confirm' );
+		confirm.append(
+			el( 'span', null, mw.msg( 'constellation-theme-delete-confirm' ) ),
+			button( mw.msg( 'constel-detail-delete-no' ), '', () => {
+				confirm.remove();
+				remove.focus();
+			} ),
+			button( mw.msg( 'constel-detail-delete-yes' ), 'constel-button--danger', () => api.write( { action: 'constel-theme', op: 'delete', theme: theme.id } )
+				.then( ctx.onChanged, fail( fb ) ) )
+		);
+		section.querySelector( '.constel-theme__title' ).after( confirm );
+		confirm.querySelector( 'button' ).focus();
+	} );
+	return [ name, remove ];
+}
+
+/**
  * Temas de un lector, con sus conceptos y su desarrollo (uno por tema).
  *
  * @param {HTMLElement} box
@@ -202,7 +292,13 @@ function themesPanel( box, themes, ctx ) {
 		const section = el( 'section', 'constel-theme constel-theme--cat-' + color );
 		const fb = feedbackBox();
 		// El color del tema (el mismo del grafo) va en el título, sin viñeta.
-		section.append( el( 'h5', 'constel-theme__title', theme.label ) );
+		const title = el( 'h5', 'constel-theme__title' );
+		if ( ctx.editable ) {
+			title.append( ...themeTitle( theme, section, fb, ctx, fail ) );
+		} else {
+			title.textContent = theme.label;
+		}
+		section.append( title );
 
 		const chips = el( 'ul', 'constel-chips' );
 		theme.concepts.forEach( ( c ) => {
@@ -241,24 +337,7 @@ function themesPanel( box, themes, ctx ) {
 				.then( ctx.onChanged, fail( fb ) ) );
 			const saveRow = el( 'div', 'constel-actions' );
 			saveRow.append( save );
-
-			const rename = el( 'input', 'constel-input' );
-			rename.value = theme.label;
-			rename.setAttribute( 'aria-label', mw.msg( 'constellation-theme-rename' ) );
-			const renameRow = el( 'div', 'constel-add' );
-			renameRow.append( rename, button( mw.msg( 'constellation-theme-rename' ), '', () => api.write( { action: 'constel-theme', op: 'rename', theme: theme.id, label: rename.value } )
-				.then( ctx.onChanged, fail( fb ) ) ) );
-
-			const confirmRow = el( 'div', 'constel-actions' );
-			confirmRow.append( button( mw.msg( 'constellation-theme-delete' ), 'constel-button--danger', () => {
-				confirmRow.textContent = '';
-				confirmRow.append(
-					el( 'span', null, mw.msg( 'constellation-theme-delete-confirm' ) ),
-					button( mw.msg( 'constel-detail-delete-no' ), '', () => ctx.onChanged() ),
-					button( mw.msg( 'constel-detail-delete-yes' ), 'constel-button--danger', () => api.write( { action: 'constel-theme', op: 'delete', theme: theme.id } ).then( ctx.onChanged, fail( fb ) ) )
-				);
-			} ) );
-			section.append( area, saveRow, renameRow, confirmRow );
+			section.append( area, saveRow );
 		}
 		section.append( fb );
 		box.append( section );

@@ -4,13 +4,15 @@
  */
 
 /* ── Barra de herramientas ─────────────────────────────────────────────
- * Fila 1: vista (+ girar solo) · aristas (+ peso) · zoom.
- * Fila 2: filtros como píldoras. */
+ * Fila 1: vista (+ girar solo) · aristas (+ peso) · proximidad · zoom.
+ * Fila 2: filtros como píldoras.
+ * Sin rótulos visibles: cada control lleva su ícono Feather en línea, y el
+ * nombre va como tooltip y para lectores de pantalla (barra baja). */
 
 .constel-map__controls {
 	display: flex;
 	flex-direction: column;
-	gap: var( --constel-s-3 );
+	gap: var( --constel-s-2 );
 	margin: var( --constel-s-3 ) 0;
 	padding: var( --constel-s-3 );
 	border: 1px solid var( --constel-hairline-soft );
@@ -24,19 +26,39 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: var( --constel-s-4 );
-	align-items: flex-end;
+	align-items: center;
 }
 
 .constel-map__row--filters {
-	align-items: flex-start;
-	padding-top: var( --constel-s-3 );
+	gap: var( --constel-s-3 );
+	padding-top: var( --constel-s-2 );
 	border-top: 1px solid var( --constel-hairline-soft );
 }
 
 .constel-map__group {
 	display: flex;
 	gap: var( --constel-s-3 );
-	align-items: flex-end;
+	align-items: center;
+}
+
+/* Control con ícono en vez de rótulo: ícono · control, en una línea. */
+.constel-map__field--icon {
+	display: inline-flex;
+	gap: var( --constel-s-1 );
+	align-items: center;
+}
+
+.constel-map__icon {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	color: var( --constel-icon );
+	cursor: help;
+}
+
+.constel-map__icon .constel-i {
+	width: 1.15rem;
+	height: 1.15rem;
 }
 
 .constel-map__field .constel-input {
@@ -48,7 +70,6 @@
 	display: inline-flex;
 	gap: var( --constel-s-1 );
 	align-items: center;
-	padding-bottom: var( --constel-s-2 );
 }
 
 .constel-map__field--inline[ hidden ] {
@@ -57,6 +78,25 @@
 
 .constel-map__field[ hidden ] {
 	display: none;
+}
+
+/* Fuerza de cada grado de proximidad (0–100 %). */
+.constel-map__forces {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-3 );
+	align-items: center;
+}
+
+.constel-map__force input[ type='range' ] {
+	width: 6rem;
+	accent-color: var( --constel-accent );
+}
+
+.constel-map__force output {
+	min-width: 3.5ch;
+	color: var( --constel-ink-soft );
+	font-variant-numeric: tabular-nums;
 }
 
 .constel-map__threshold {
@@ -72,7 +112,8 @@
 /* ── Interruptor (checkbox con role=switch) ──────────────────────────── */
 
 .constel-map__switch {
-	margin: 0 0 var( --constel-s-1 ) var( --constel-s-2 );
+	flex: none;
+	margin: 0;
 	padding: 0;
 	font-size: var( --constel-fs-xs );
 }
@@ -226,6 +267,12 @@
 	touch-action: none;
 }
 
+/* Llena su celda (pantalla completa): el viewBox sigue la proporción. */
+.constel-graph--fill {
+	height: 100%;
+	aspect-ratio: auto;
+}
+
 .constel-graph:focus-visible {
 	outline: 0;
 	box-shadow: var( --constel-focus-ring );
@@ -233,7 +280,7 @@
 
 .constel-graph__link {
 	stroke: var( --constel-ink-faint );
-	stroke-opacity: 0.8;
+	stroke-opacity: var( --constel-link-opacity, 0.8 );
 }
 
 .constel-graph__link--near {
@@ -241,16 +288,8 @@
 	stroke-opacity: 1;
 }
 
-.constel-graph__link--overlap {
-	stroke-dasharray: 4 3;
-}
-
-/* Misma página: la relación más tenue (no es una decisión del lector). */
-.constel-graph__link--co_page {
-	stroke: var( --constel-ink-faint );
-	stroke-opacity: 0.55;
-	stroke-dasharray: 2 3;
-}
+/* Aristas siempre continuas: el grado de proximidad (misma sección,
+ * traslape, mismo texto) se lee en la transparencia, que fija graph.js. */
 
 .constel-graph__node {
 	fill: var( --constel-ink-soft );
@@ -330,6 +369,14 @@
 	font-weight: 600;
 }
 
+/* «[a]» antes del nombre del concepto: signo, no palabra. */
+.constel-side__sign {
+	margin-right: 0.4em;
+	color: var( --constel-ink-faint );
+	font-family: var( --constel-font-quote );
+	font-weight: normal;
+}
+
 .constel-side__meta {
 	margin: 0 0 var( --constel-s-3 );
 	color: var( --constel-ink-soft );
@@ -405,11 +452,60 @@
 }
 
 .constel-map .constel-theme__title {
+	display: flex;
+	gap: var( --constel-s-1 );
+	align-items: center;
 	margin: 0 0 var( --constel-s-2 );
 	font-family: var( --constel-font-ui );
 	font-size: var( --constel-fs-sm );
 	font-weight: 600;
 	color: var( --constel-ink-faint );
+}
+
+/* Título propio editable en su lugar: parece texto hasta que se pasa por
+ * encima o se enfoca. */
+.constel-theme__name {
+	min-width: 0;
+	max-width: 100%;
+	margin-left: calc( -1 * var( --constel-s-1 ) );
+	padding: 0 var( --constel-s-1 );
+	border: 1px solid transparent;
+	border-radius: var( --constel-radius );
+	background: transparent;
+	color: inherit;
+	font: inherit;
+}
+
+.constel-theme__name:hover {
+	border-color: var( --constel-hairline-soft );
+}
+
+.constel-theme__name:focus {
+	border-color: var( --constel-focus-border );
+	outline: 0;
+	background: var( --constel-field-bg );
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-theme__delete {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var( --constel-s-1 );
+	border: 0;
+	border-radius: var( --constel-radius-pill );
+	background: transparent;
+	color: var( --constel-icon );
+	cursor: pointer;
+}
+
+.constel-theme__delete:hover {
+	color: var( --constel-danger );
+}
+
+.constel-theme .constel-confirm {
+	margin-bottom: var( --constel-s-2 );
 }
 
 .constel-map .constel-theme--cat-0 .constel-theme__title {
@@ -523,4 +619,150 @@
 
 .constel-mine__row--lost .constel-quote {
 	border-left-style: dashed;
+}
+
+/* ── Pantalla completa ────────────────────────────────────────────────
+ * El mapa posee el viewport: barra arriba de borde a borde y, debajo, el
+ * par ante-dentro —ante, el grafo; dentro, el panel—, cada uno con su
+ * propio scroll. La división se arrastra (--constel-ante, en % de ante).
+ * La moderación queda al pie del grafo. En pantallas angostas se apilan. */
+
+.constel-map--full {
+	display: flex;
+	flex-direction: column;
+	height: 100dvh;
+}
+
+.constel-map--full .constel-map__controls {
+	flex: none;
+	margin: 0;
+	border-width: 0 0 1px;
+	border-radius: 0;
+}
+
+.constel-map--full .constel-map__layout {
+	position: relative;
+	flex: 1;
+	grid-template-columns: minmax( 0, var( --constel-ante, 50% ) ) minmax( 0, 1fr );
+	gap: 0;
+	min-height: 0;
+}
+
+/* Mientras se arrastra, nada se selecciona y el cursor no parpadea. */
+.constel-map__layout--dragging {
+	cursor: col-resize;
+	user-select: none;
+}
+
+.constel-map--full .constel-map__main {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+/* La división ante-dentro: una línea fina con un agarre más ancho que ella. */
+.constel-map__divider {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: var( --constel-ante, 50% );
+	z-index: 1;
+	width: 0.75rem;
+	transform: translateX( -50% );
+	cursor: col-resize;
+	touch-action: none;
+}
+
+.constel-map__divider::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 50%;
+	width: 1px;
+	background: var( --constel-hairline-soft );
+	transform: translateX( -50% );
+	transition: width var( --constel-dur ) var( --constel-ease ), background var( --constel-dur ) var( --constel-ease );
+}
+
+.constel-map__divider:hover::before,
+.constel-map__layout--dragging .constel-map__divider::before {
+	width: 3px;
+	background: var( --constel-accent );
+}
+
+.constel-map__divider:focus-visible {
+	outline: 0;
+}
+
+.constel-map__divider:focus-visible::before {
+	width: 3px;
+	background: var( --constel-accent );
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-map--full .constel-map__canvas {
+	flex: 1;
+	align-self: stretch;
+	min-height: 0;
+	border: 0;
+	border-radius: 0;
+}
+
+.constel-map--full .constel-map__below:not( :empty ) {
+	flex: none;
+	max-height: 40%;
+	padding: 0 var( --constel-s-3 ) var( --constel-s-3 );
+	overflow-y: auto;
+}
+
+.constel-map--full .constel-map__side {
+	min-height: 0;
+	padding: var( --constel-s-4 );
+	overflow-y: auto;
+}
+
+.constel-map--full .constel-map__alt {
+	margin-top: var( --constel-s-4 );
+	padding-top: var( --constel-s-3 );
+	border-top: 1px solid var( --constel-hairline-soft );
+}
+
+@media ( max-width: 50rem ) {
+	.constel-map--full {
+		height: auto;
+	}
+
+	.constel-map--full .constel-map__layout {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+
+	.constel-map--full .constel-map__main {
+		border-bottom: 1px solid var( --constel-hairline-soft );
+	}
+
+	.constel-map__divider {
+		display: none;
+	}
+
+	.constel-map--full .constel-map__canvas {
+		flex: none;
+		height: 70dvh;
+	}
+}
+
+/* Píldoras con ícono: ícono (+ interruptor) · caja, en una línea. */
+.constel-pills--icon {
+	display: flex;
+	gap: var( --constel-s-2 );
+	align-items: center;
+}
+
+.constel-pills--icon .constel-label {
+	margin: 0;
+}
+
+.constel-pills--icon .constel-pills__box {
+	flex: 1;
+	min-width: 0;
 }

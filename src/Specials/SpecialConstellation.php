@@ -37,11 +37,15 @@ class SpecialConstellation extends SpecialPage {
 		$out->addJsConfigVars( 'wgConstelMap', [
 			'canAnnotate' => $user->isNamed() && $this->getAuthority()->isAllowed( 'constel-annotate' ),
 			'canModerate' => $this->getAuthority()->isAllowed( 'constel-moderate' ),
+			'full' => true,
 		] );
 		$out->addModuleStyles( [ 'ext.constel.map.styles' ] );
-		// Página ancha: el skin decide qué significa (Stella Nova la absorbe en
-		// su skinStyles; en otros skins no tiene efecto).
-		$out->addBodyClasses( 'constel-wide' );
+		// Pantalla completa: el mapa posee el viewport (barra arriba; grafo y
+		// panel mitad y mitad). Stella Nova lo trata como __PANTALLACOMPLETA__
+		// (misma propiedad de OutputPage) y absorbe constel-full en su
+		// skinStyles; en otros skins el mapa llena la columna de contenido.
+		$out->setProperty( 'stellanova-fullscreen', true );
+		$out->addBodyClasses( [ 'constel-wide', 'constel-full' ] );
 		$out->addModules( [ 'ext.constel.map' ] );
 
 		$viewer = $user->isRegistered()

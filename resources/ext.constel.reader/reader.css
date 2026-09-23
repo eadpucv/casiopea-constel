@@ -38,23 +38,36 @@
 	cursor: text;
 }
 
-/* ── Afordancia "§" ───────────────────────────────────────────────────── */
+/* ── Afordancia "§" ───────────────────────────────────────────────────────
+ * Discreta: un cuadrado de esquinas redondeadas con el token oscuro del
+ * botón primario. La tinta del «§» ocupa el 60 % del alto y queda centrada
+ * (márgenes iguales arriba y abajo, e iguales a los lados): trigger.js mide
+ * el glifo y fija --constel-trigger-dy. */
 
 .constel-trigger {
 	position: absolute;
 	z-index: var( --constel-z-popup );
-	width: 2rem;
-	height: 2rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
 	padding: 0;
 	border: 0;
-	border-radius: var( --constel-radius-pill );
-	background: var( --constel-accent );
-	color: var( --constel-accent-ink );
+	border-radius: var( --constel-radius-l );
+	background: var( --constel-btn-primary-bg );
+	color: var( --constel-btn-primary-fg );
 	font-family: var( --constel-font-quote );
-	font-size: var( --constel-fs-base );
+	/* 0.6 × 1.75rem de tinta; el «§» mide ~0.96em de alto. */
+	font-size: 1.1rem;
 	line-height: 1;
-	box-shadow: var( --constel-lift );
+	box-shadow: var( --constel-lift-soft );
 	cursor: pointer;
+}
+
+.constel-trigger__glyph {
+	display: block;
+	transform: translateY( var( --constel-trigger-dy, 0 ) );
 }
 
 .constel-trigger[ hidden ] {
@@ -63,13 +76,56 @@
 
 .constel-trigger:focus-visible {
 	outline: 0;
-	box-shadow: var( --constel-lift ), var( --constel-focus-ring );
+	box-shadow: var( --constel-lift-soft ), var( --constel-focus-ring );
 }
 
 /* ── Controles en el menú de usuario: sin JS no hacen nada ─────────── */
 
 .client-nojs .constel-menu-toggle {
 	display: none;
+}
+
+/* Lectura en tres posiciones (− · § · §*), como en con§tel: una píldora
+ * hundida; la opción elegida, una píldora elevada dentro. */
+/* El margen lateral alinea la píldora con el texto de las demás entradas. */
+.constel-seg {
+	display: inline-flex;
+	gap: 2px;
+	margin: var( --constel-s-1 ) var( --constel-s-3 );
+	padding: 2px;
+	border-radius: var( --constel-radius-pill );
+	background: var( --constel-surface-sunk );
+	font-family: var( --constel-font-quote );
+	font-size: var( --constel-fs-base );
+	line-height: 1;
+}
+
+.constel-seg__option {
+	min-width: 2.25rem;
+	height: 1.75rem;
+	padding: 0 var( --constel-s-2 );
+	border: 0;
+	border-radius: var( --constel-radius-pill );
+	background: transparent;
+	color: var( --constel-ink-soft );
+	font: inherit;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.constel-seg__option:hover {
+	color: var( --constel-ink );
+}
+
+.constel-seg__option[ aria-checked='true' ] {
+	background: var( --constel-surface );
+	color: var( --constel-ink );
+	box-shadow: var( --constel-lift-soft );
+}
+
+.constel-seg__option:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
 }
 
 @media ( prefers-reduced-motion: reduce ) {
