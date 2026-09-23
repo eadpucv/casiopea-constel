@@ -3,6 +3,8 @@
  *
  * Se descarta con Escape y con activación fuera; retiene el foco mientras
  * está abierto y lo devuelve a quien lo abrió; se ubica dentro del viewport.
+ * Se arrastra tomándolo por cualquier zona que no sea un control; una vez
+ * movido por el lector, deja de reubicarse solo.
  * Lleva la clase constel-ui: queda fuera del texto canónico.
  */
 let current = null;
@@ -47,12 +49,19 @@ function open( opts ) {
 	el.addEventListener( 'keydown', onKey );
 	// En el siguiente ciclo, para no cerrarse con el mismo clic que lo abrió.
 	setTimeout( () => document.addEventListener( 'mousedown', onOutside ) );
+	const stopDrag = draggable( el, () => {
+		if ( current ) {
+			current.moved = true;
+		}
+	} );
 
 	current = {
 		el,
 		body,
+		moved: false,
 		close: () => {
 			document.removeEventListener( 'mousedown', onOutside );
+			stopDrag();
 			el.remove();
 			current = null;
 			if ( opts.returnFocus && document.contains( opts.returnFocus ) ) {
@@ -62,6 +71,58 @@ function open( opts ) {
 	};
 	position( el, opts.near );
 	return current;
+}
+
+/* Lo que se toma para escribir o elegir no inicia un arrastre. */
+const NO_DRAG = 'input, textarea, select, button, a, label, [contenteditable], ' +
+	'[role="option"], [role="listbox"], [tabindex]';
+
+/**
+ * Arrastre con puntero (ratón, lápiz o dedo), acotado al viewport.
+ *
+ * @param {HTMLElement} el
+ * @param {Function} onMove se llama al primer desplazamiento
+ * @return {Function} desinstala los manejadores globales en curso
+ */
+function draggable( el, onMove ) {
+	let drag = null;
+	const move = ( e ) => {
+		const margin = 8;
+		const x = Math.min(
+			Math.max( margin, e.clientX - drag.dx ),
+			window.innerWidth - el.offsetWidth - margin
+		);
+		const y = Math.min(
+			Math.max( margin, e.clientY - drag.dy ),
+			window.innerHeight - Math.min( el.offsetHeight, 48 ) - margin
+		);
+		el.style.left = ( Math.max( margin, x ) + window.scrollX ) + 'px';
+		el.style.top = ( y + window.scrollY ) + 'px';
+		onMove();
+	};
+	const end = () => {
+		if ( drag ) {
+			el.classList.remove( 'constel-panel--dragging' );
+			document.removeEventListener( 'pointermove', move );
+			document.removeEventListener( 'pointerup', end );
+			document.removeEventListener( 'pointercancel', end );
+			drag = null;
+		}
+	};
+	el.addEventListener( 'pointerdown', ( e ) => {
+		if ( e.button !== 0 || e.target.closest( NO_DRAG ) ) {
+			return;
+		}
+		const r = el.getBoundingClientRect();
+		drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+		el.classList.add( 'constel-panel--dragging' );
+		// Sin esto, arrastrar selecciona texto del panel o de la página.
+		e.preventDefault();
+		document.addEventListener( 'pointermove', move );
+		document.addEventListener( 'pointerup', end );
+		document.addEventListener( 'pointercancel', end );
+	} );
+	return end;
 }
 
 function close() {
@@ -113,12 +174,13 @@ function trapFocus( el, e ) {
 }
 
 /**
- * Reubica el panel abierto (su contenido cambió de alto).
+ * Reubica el panel abierto (su contenido cambió de alto), salvo que el
+ * lector ya lo haya movido.
  *
  * @param {DOMRect} near
  */
 function reposition( near ) {
-	if ( current ) {
+	if ( current && !current.moved ) {
 		position( current.el, near );
 	}
 }

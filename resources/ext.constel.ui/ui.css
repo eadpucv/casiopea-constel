@@ -30,6 +30,18 @@
 	font-size: var( --constel-fs-sm );
 	line-height: 1.45;
 	box-shadow: var( --constel-lift );
+	cursor: grab;
+}
+
+.constel-panel--dragging {
+	cursor: grabbing;
+	user-select: none;
+}
+
+.constel-panel input,
+.constel-panel textarea,
+.constel-panel [ contenteditable ] {
+	cursor: auto;
 }
 
 .constel-panel__close {
@@ -58,6 +70,8 @@
 	margin: 0 0 var( --constel-s-2 );
 	padding-right: 2rem;
 	font-weight: 600;
+	/* En pantallas táctiles el título es el asa: el resto del panel desplaza. */
+	touch-action: none;
 }
 
 .constel-quote {

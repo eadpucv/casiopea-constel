@@ -39,10 +39,10 @@
 }
 
 /* ── Afordancia "§" ───────────────────────────────────────────────────────
- * Discreta: un cuadrado de esquinas redondeadas con el token oscuro del
- * botón primario. La tinta del «§» ocupa el 60 % del alto y queda centrada
- * (márgenes iguales arriba y abajo, e iguales a los lados): trigger.js mide
- * el glifo y fija --constel-trigger-dy. */
+ * Discreta: un rectángulo vertical, angosto y de esquinas apenas redondeadas,
+ * con el token oscuro del botón primario y el «§» en la sans de la interfaz.
+ * La tinta queda centrada en la caja: trigger.js mide el glifo y fija
+ * --constel-trigger-dy. */
 
 .constel-trigger {
 	position: absolute;
@@ -50,16 +50,15 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 1.75rem;
+	width: 1.35rem;
 	height: 1.75rem;
 	padding: 0;
 	border: 0;
-	border-radius: var( --constel-radius-l );
+	border-radius: var( --constel-radius-s );
 	background: var( --constel-btn-primary-bg );
 	color: var( --constel-btn-primary-fg );
-	font-family: var( --constel-font-quote );
-	/* 0.6 × 1.75rem de tinta; el «§» mide ~0.96em de alto. */
-	font-size: 1.1rem;
+	font-family: var( --constel-font-ui );
+	font-size: 1.05rem;
 	line-height: 1;
 	box-shadow: var( --constel-lift-soft );
 	cursor: pointer;
