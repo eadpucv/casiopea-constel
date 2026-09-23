@@ -9,6 +9,7 @@ use MediaWiki\Extension\CasiopeaConstel\Export\ExportBuilder;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
 use MediaWiki\Extension\CasiopeaConstel\Moderation\ModerationLog;
 use MediaWiki\Extension\CasiopeaConstel\Page\RenderedTextProvider;
+use MediaWiki\Extension\CasiopeaConstel\Readers\ReaderDirectory;
 use MediaWiki\Extension\CasiopeaConstel\Store\ConceptStore;
 use MediaWiki\Extension\CasiopeaConstel\Store\ExcerptStore;
 use MediaWiki\Extension\CasiopeaConstel\Store\ThemeStore;
@@ -61,6 +62,10 @@ class ConstelServices {
 
 	public function getModerationLog(): ModerationLog {
 		return $this->services->get( 'CasiopeaConstel.ModerationLog' );
+	}
+
+	public function getReaderDirectory(): ReaderDirectory {
+		return $this->services->get( 'CasiopeaConstel.ReaderDirectory' );
 	}
 
 	public function getRenderedTextProvider(): RenderedTextProvider {

@@ -4,9 +4,11 @@
  * Barra de herramientas en dos filas:
  *  1. Vista 2D/3D (+ «Girar solo» sólo en 3D) · Mostrar aristas (+ peso
  *     mínimo, 1–4, visible sólo con aristas) · zoom.
- *  2. Píldoras con autocompletado: «Secciones de» (lectores; vacío = todas),
+ *  2. Píldoras con autocompletado: «Secciones de» (lectores; por defecto
+ *     quien mira; un interruptor fuera de la caja lo desactiva = todas),
  *     «Páginas» (vacío = todas) y «Temas de» (la lente; por defecto quien
- *     mira, nunca vacía para una cuenta registrada).
+ *     mira, nunca vacía para una cuenta registrada). Los lectores se
+ *     muestran con su nombre real (o el de usuario si no lo definieron).
  * Al elegir un concepto, el panel lateral muestra su detalle; si no, los
  * temas de la lente. Debajo, la misma información como lista
  * (AccessibleAlternative).
@@ -38,7 +40,9 @@ function main( root ) {
 		autorotate: !!( mw.storage.getObject( 'constel-map' ) || {} ).autorotate,
 		threshold: 1,
 		edges: true,
-		readers: [],
+		readersOn: !!me,
+		readers: me ? [ me ] : [],
+		readerLabel: ( name ) => name,
 		pages: pageParam ? [ pageParam ] : [],
 		lens: me ? [ me ] : [],
 		data: null,
@@ -55,13 +59,17 @@ function main( root ) {
 	const rowFilters = el( 'div', 'constel-map__row constel-map__row--filters' );
 	controls.append( rowView, rowFilters );
 	const layout = el( 'div', 'constel-map__layout' );
+	const stage = el( 'div', 'constel-map__main' );
 	const canvas = el( 'div', 'constel-map__canvas' );
+	// Moderación del concepto seleccionado: bajo el mapa, no en el panel.
+	const below = el( 'div', 'constel-map__below' );
+	stage.append( canvas, below );
 	const aside = el( 'aside', 'constel-map__side' );
 	const alt = el( 'details', 'constel-map__alt' );
 	alt.append( el( 'summary', null, mw.msg( 'constellation-as-list' ) ) );
 	const altList = el( 'ol', 'constel-map__fallback' );
 	alt.append( altList );
-	layout.append( canvas, aside );
+	layout.append( stage, aside );
 	root.append( controls, layout, alt );
 
 	const field = ( labelMsg, control ) => {
@@ -143,38 +151,92 @@ function main( root ) {
 		zoom.append( b );
 	} );
 
+	/**
+	 * Parte segura para un nombre de archivo: minúsculas, sin tildes ni §,
+	 * guiones en vez de espacios y signos.
+	 *
+	 * @param {string} text
+	 * @return {string}
+	 */
+	function slug( text ) {
+		return text.normalize( 'NFD' ).replace( /[\u0300-\u036f]/g, '' )
+			.toLowerCase().replace( /[^a-z0-9]+/g, '-' ).replace( /^-+|-+$/g, '' );
+	}
+
+	/**
+	 * mapa-{2d|3d}-{quien exporta}-{secciones}.svg; secciones = los lectores
+	 * del filtro «Secciones de», o «all» si está vacío.
+	 *
+	 * @return {string}
+	 */
+	function fileName() {
+		const who = slug( me || mw.msg( 'constellation-file-visitor' ) );
+		const sections = state.readersOn && state.readers.length ?
+			state.readers.map( slug ).join( '-' ) :
+			'all';
+		return [ mw.msg( 'constellation-file-prefix' ), state.mode, who, sections ].join( '-' ) + '.svg';
+	}
+
 	// Descarga el grafo tal como se ve (vista, filtros y proyección actuales).
 	function exportSvg() {
 		const describe = [
-			state.readers.length ? mw.msg( 'constellation-sections' ) + ': ' + state.readers.join( ', ' ) : '',
+			state.readersOn ?
+				mw.msg( 'constellation-sections' ) + ': ' + state.readers.map( state.readerLabel ).join( ', ' ) :
+				'',
 			state.pages.length ? mw.msg( 'constellation-pages' ) + ': ' + state.pages.join( ', ' ) : ''
 		].filter( Boolean ).join( ' · ' );
 		const svg = state.view.exportSvg( {
 			title: mw.msg( 'constellation-svg-title', mw.config.get( 'wgSiteName' ) ),
 			description: describe
 		} );
-		const url = URL.createObjectURL( new Blob( [ svg ], { type: 'image/svg+xml' } ) );
+		// URL data: y no blob: — una blob: revocada antes de que el lector
+		// elija dónde guardar (diálogo «Guardar como») deja la descarga
+		// colgada; la data: lleva el contenido y no vence.
 		const a = el( 'a' );
-		a.href = url;
-		a.download = 'constelacion-' + new Date().toISOString().slice( 0, 10 ) + '.svg';
+		a.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent( svg );
+		a.download = fileName();
 		document.body.append( a );
 		a.click();
 		a.remove();
-		setTimeout( () => URL.revokeObjectURL( url ), 1000 );
 	}
 	rowView.append( viewGroup, edgesGroup, zoom );
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
+	// Secciones: como la lente (por defecto quien mira; se suman lectores).
+	// El interruptor, fuera de la caja, desactiva el filtro: todas.
 	const readers = pills.create( {
 		label: mw.msg( 'constellation-sections' ),
 		placeholder: mw.msg( 'constellation-add-reader' ),
-		empty: mw.msg( 'constellation-all-sections' ),
-		search: api.searchUsers,
+		values: state.readers,
+		min: 1,
+		search: api.searchReaders,
+		describe: api.describeReaders,
 		onChange: ( values ) => {
 			state.readers = values;
 			loadGraph();
 		}
 	} );
+	const readersSwitch = el( 'input', 'constel-switch' );
+	readersSwitch.type = 'checkbox';
+	readersSwitch.setAttribute( 'role', 'switch' );
+	readersSwitch.checked = state.readersOn;
+	const readersSwitchLabel = el( 'label', 'constel-map__field--inline constel-map__switch' );
+	readersSwitchLabel.append( readersSwitch, ' ', mw.msg( 'constellation-sections-filter' ) );
+	const allNote = el( 'div', 'constel-pills__box constel-pills__box--off' );
+	allNote.append( el( 'span', 'constel-pills__empty', mw.msg( 'constellation-all-sections' ) ) );
+	const syncReaders = () => {
+		readers.box.hidden = !state.readersOn;
+		allNote.hidden = state.readersOn;
+	};
+	readersSwitch.addEventListener( 'change', () => {
+		state.readersOn = readersSwitch.checked;
+		syncReaders();
+		loadGraph();
+	} );
+	readers.el.querySelector( '.constel-label' ).after( readersSwitchLabel );
+	readers.box.after( allNote );
+	state.readerLabel = readers.labelOf;
+	syncReaders();
 	const pages = pills.create( {
 		label: mw.msg( 'constellation-pages' ),
 		placeholder: mw.msg( 'constellation-add-page' ),
@@ -193,7 +255,13 @@ function main( root ) {
 		empty: mw.msg( 'constellation-no-lens' ),
 		values: state.lens,
 		min: me ? 1 : 0,
-		search: api.searchUsers,
+		search: api.searchReaders,
+		describe: api.describeReaders,
+		onLabels: () => {
+			if ( !state.selected ) {
+				renderThemes();
+			}
+		},
 		onChange: ( values ) => {
 			state.lens = values;
 			state.selected = null;
@@ -294,21 +362,26 @@ function main( root ) {
 		side.conceptDetail( box, node, {
 			me,
 			canAnnotate: cfg.canAnnotate,
-			canModerate: cfg.canModerate,
 			myThemes: state.myThemes,
-			onChanged: () => loadThemes().then( () => select( node ) ),
-			// Tras renombrar o fusionar, el grafo cambia: recargar y abrir el que queda.
-			onModerated: ( keepId ) => loadGraph().then( loadThemes ).then( () => {
-				const kept = state.data.nodes.find( ( n ) => n.id === keepId );
-				if ( kept ) {
-					select( kept );
-				}
-			} )
+			onChanged: () => loadThemes().then( () => select( node ) )
 		} );
+		below.textContent = '';
+		if ( cfg.canModerate ) {
+			below.append( side.moderation( node, {
+				// Tras renombrar o fusionar, el grafo cambia: recargar y abrir el que queda.
+				onModerated: ( keepId ) => loadGraph().then( loadThemes ).then( () => {
+					const kept = state.data.nodes.find( ( n ) => n.id === keepId );
+					if ( kept ) {
+						select( kept );
+					}
+				} )
+			} ) );
+		}
 	}
 
 	function renderThemes() {
 		aside.textContent = '';
+		below.textContent = '';
 		if ( !state.lens.length ) {
 			aside.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-no-lens' ) ) );
 			return;
@@ -324,7 +397,7 @@ function main( root ) {
 				colorOffset: offset,
 				ownerLabel: name === me ?
 					mw.msg( 'constellation-my-themes' ) :
-					mw.msg( 'constellation-themes-of', name ),
+					mw.msg( 'constellation-themes-of', lens.labelOf( name ) ),
 				onChanged: () => loadThemes(),
 				onSelectConcept: ( id ) => {
 					const node = state.data && state.data.nodes.find( ( n ) => n.id === id );
@@ -357,7 +430,7 @@ function main( root ) {
 		canvas.textContent = mw.msg( 'constellation-loading' );
 		return api.pageIds( state.pages ).then( ( ids ) => {
 			const params = {};
-			if ( state.readers.length ) {
+			if ( state.readersOn && state.readers.length ) {
 				params.cgusers = state.readers;
 			}
 			if ( state.pages.length ) {

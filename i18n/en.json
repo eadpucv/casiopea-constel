@@ -5,7 +5,7 @@
 		]
 	},
 	"casiopea-constel-desc": "con§tel: active reading and a collective concept map. Readers select sections (§), code them with shared concepts and synthesise their own themes.",
-	"right-constel-annotate": "Create and code sections (§), and keep themes and notes in con§tel",
+	"right-constel-annotate": "Create and code sections (§), and keep themes and their development in con§tel",
 	"right-constel-moderate": "Moderate the shared con§tel vocabulary (rename and merge concepts, delete other readers' sections)",
 	"action-constel-annotate": "annotate sections with con§tel",
 	"action-constel-moderate": "moderate the con§tel vocabulary",
@@ -61,13 +61,10 @@
 	"constellation-group": "Group",
 	"constellation-ungroup": "Take \"$1\" out of the theme",
 	"constellation-theme-empty": "No concepts yet: open one on the map and group it here.",
-	"constellation-note-label": "Development note of \"$1\"",
-	"constellation-note-new": "New development note",
-	"constellation-note-add": "Add note",
 	"constellation-save": "Save",
 	"constellation-theme-rename": "Rename",
 	"constellation-theme-delete": "Delete theme",
-	"constellation-theme-delete-confirm": "Delete this theme and its notes? Its concepts stay on the map.",
+	"constellation-theme-delete-confirm": "Delete this theme and its development? Its concepts stay on the map.",
 	"constellation-theme-new": "New theme",
 	"constellation-theme-create": "Create theme",
 	"myconstel": "My con§tel",
@@ -125,5 +122,12 @@
 	"constellation-pill-remove": "Remove \"$1\"",
 	"constellation-export-svg": "Export the map as SVG",
 	"constellation-svg-title": "Constellation — $1",
-	"constellation-navigation": "Map navigation"
+	"constellation-navigation": "Map navigation",
+	"constellation-file-prefix": "map",
+	"constellation-file-visitor": "visitor",
+	"constellation-sections-filter": "only these readers",
+	"constellation-development-label": "Development of \"$1\"",
+	"constellation-development-placeholder": "Develop this theme…",
+	"constellation-development-save": "Save development",
+	"constellation-moderate-concept": "Moderate \"$1\""
 }

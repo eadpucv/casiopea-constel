@@ -78,4 +78,4 @@ CREATE TABLE constel_note (
   PRIMARY KEY(cn_id)
 );
 
-CREATE INDEX cn_theme ON constel_note (cn_theme);
+CREATE UNIQUE INDEX cn_theme_unique ON constel_note (cn_theme);

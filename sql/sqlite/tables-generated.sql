@@ -67,4 +67,4 @@ CREATE TABLE /*_*/constel_note (
   cn_text BLOB NOT NULL, cn_updated BLOB NOT NULL
 );
 
-CREATE INDEX cn_theme ON /*_*/constel_note (cn_theme);
+CREATE UNIQUE INDEX cn_theme_unique ON /*_*/constel_note (cn_theme);

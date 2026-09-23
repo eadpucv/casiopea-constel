@@ -68,7 +68,7 @@ class ExportBuilder {
 			foreach ( $this->themes->conceptIds( $theme->id ) as $conceptId ) {
 				$themeOf[$conceptId] = "thm_{$theme->id}";
 			}
-			foreach ( $this->themes->listNotes( $theme->id ) as $note ) {
+			foreach ( array_filter( [ $this->themes->getDevelopment( $theme->id ) ] ) as $note ) {
 				$db['notes']["note_{$note->id}"] = [
 					'id' => "note_{$note->id}",
 					'themeId' => "thm_{$theme->id}",

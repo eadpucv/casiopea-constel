@@ -69,6 +69,67 @@
 	margin-left: auto;
 }
 
+/* ── Interruptor (checkbox con role=switch) ──────────────────────────── */
+
+.constel-map__switch {
+	margin: 0 0 var( --constel-s-1 ) var( --constel-s-2 );
+	padding: 0;
+	font-size: var( --constel-fs-xs );
+}
+
+.constel-switch {
+	appearance: none;
+	position: relative;
+	width: 2rem;
+	height: 1.1rem;
+	margin: 0;
+	border: 1px solid var( --constel-field-border );
+	border-radius: var( --constel-radius-pill );
+	background: var( --constel-surface-sunk );
+	cursor: pointer;
+	transition: background-color var( --constel-dur ) var( --constel-ease );
+}
+
+.constel-switch::after {
+	content: '';
+	position: absolute;
+	top: 1px;
+	left: 1px;
+	width: calc( 1.1rem - 4px );
+	height: calc( 1.1rem - 4px );
+	border-radius: var( --constel-radius-pill );
+	background: var( --constel-ink-soft );
+	transition: transform var( --constel-dur ) var( --constel-ease );
+}
+
+.constel-switch:checked {
+	border-color: transparent;
+	background: var( --constel-accent );
+}
+
+.constel-switch:checked::after {
+	background: var( --constel-accent-ink );
+	transform: translateX( 0.9rem );
+}
+
+.constel-switch:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-pills .constel-label {
+	display: inline-block;
+}
+
+.constel-pills__box--off {
+	border-style: dashed;
+	background: transparent;
+}
+
+.constel-pills__box[ hidden ] {
+	display: none;
+}
+
 /* ── Píldoras con autocompletado ─────────────────────────────────────── */
 
 .constel-pills {
@@ -253,9 +314,20 @@
 
 /* ── Panel lateral ────────────────────────────────────────────────────── */
 
-.constel-side__title {
+/* Títulos h4/h5 propios: sin mayúsculas ni color de acento del skin
+ * (Stella Nova estiliza .sn-body h5; hace falta una clase más). */
+.constel-map .constel-map__side :is( h4, h5 ),
+.constel-map .constel-map__below h4 {
+	letter-spacing: normal;
+	text-transform: none;
+	color: var( --constel-ink );
+}
+
+.constel-map .constel-side__title {
 	margin: var( --constel-s-2 ) 0 var( --constel-s-1 );
+	font-family: var( --constel-font-ui );
 	font-size: var( --constel-fs-base );
+	font-weight: 600;
 }
 
 .constel-side__meta {
@@ -264,10 +336,40 @@
 	font-size: var( --constel-fs-xs );
 }
 
-.constel-side__page h3,
-.constel-side__themes h3 {
+.constel-map .constel-side__themes h5 {
 	margin: var( --constel-s-3 ) 0 var( --constel-s-1 );
+	font-family: var( --constel-font-ui );
 	font-size: var( --constel-fs-sm );
+	font-weight: 600;
+}
+
+.constel-side__source {
+	color: var( --constel-link );
+}
+
+/* Moderación del concepto seleccionado, bajo el mapa */
+.constel-map__main {
+	min-width: 0;
+}
+
+.constel-map__moderation {
+	margin-top: var( --constel-s-3 );
+	padding: var( --constel-s-3 );
+	border: 1px solid var( --constel-hairline-soft );
+	border-radius: var( --constel-radius-l );
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+}
+
+.constel-map .constel-map__moderation h4 {
+	margin: 0 0 var( --constel-s-2 );
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+	font-weight: 600;
+}
+
+.constel-map__moderation .constel-add {
+	max-width: 32rem;
 }
 
 .constel-side__excerpt {
@@ -303,52 +405,43 @@
 }
 
 .constel-map .constel-theme__title {
-	display: flex;
-	gap: var( --constel-s-2 );
-	align-items: center;
 	margin: 0 0 var( --constel-s-2 );
+	font-family: var( --constel-font-ui );
 	font-size: var( --constel-fs-sm );
+	font-weight: 600;
+	color: var( --constel-ink-faint );
 }
 
-.constel-theme__swatch {
-	display: inline-block;
-	flex: none;
-	width: 0.75rem;
-	height: 0.75rem;
-	border-radius: var( --constel-radius-pill );
-	background: var( --constel-ink-faint );
+.constel-map .constel-theme--cat-0 .constel-theme__title {
+	color: var( --constel-cat-0 );
 }
 
-.constel-theme--cat-0 .constel-theme__swatch {
-	background: var( --constel-cat-0 );
+.constel-map .constel-theme--cat-1 .constel-theme__title {
+	color: var( --constel-cat-1 );
 }
 
-.constel-theme--cat-1 .constel-theme__swatch {
-	background: var( --constel-cat-1 );
+.constel-map .constel-theme--cat-2 .constel-theme__title {
+	color: var( --constel-cat-2 );
 }
 
-.constel-theme--cat-2 .constel-theme__swatch {
-	background: var( --constel-cat-2 );
+.constel-map .constel-theme--cat-3 .constel-theme__title {
+	color: var( --constel-cat-3 );
 }
 
-.constel-theme--cat-3 .constel-theme__swatch {
-	background: var( --constel-cat-3 );
+.constel-map .constel-theme--cat-4 .constel-theme__title {
+	color: var( --constel-cat-4 );
 }
 
-.constel-theme--cat-4 .constel-theme__swatch {
-	background: var( --constel-cat-4 );
+.constel-map .constel-theme--cat-5 .constel-theme__title {
+	color: var( --constel-cat-5 );
 }
 
-.constel-theme--cat-5 .constel-theme__swatch {
-	background: var( --constel-cat-5 );
+.constel-map .constel-theme--cat-6 .constel-theme__title {
+	color: var( --constel-cat-6 );
 }
 
-.constel-theme--cat-6 .constel-theme__swatch {
-	background: var( --constel-cat-6 );
-}
-
-.constel-theme--cat-7 .constel-theme__swatch {
-	background: var( --constel-cat-7 );
+.constel-map .constel-theme--cat-7 .constel-theme__title {
+	color: var( --constel-cat-7 );
 }
 
 .constel-chip__open {
@@ -360,7 +453,7 @@
 	cursor: pointer;
 }
 
-.constel-note {
+.constel-development {
 	margin: var( --constel-s-2 ) 0;
 	white-space: pre-wrap;
 }

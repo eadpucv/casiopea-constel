@@ -38,9 +38,7 @@
 	"apihelp-constel-groupconcept-param-theme": "{{doc-apihelp-param|constel-groupconcept|theme}}",
 	"apihelp-constel-groupconcept-example-1": "{{doc-apihelp-example|constel-groupconcept}}",
 	"apihelp-constel-themenote-summary": "{{doc-apihelp-summary|constel-themenote}}",
-	"apihelp-constel-themenote-param-op": "{{doc-apihelp-param|constel-themenote|op}}",
 	"apihelp-constel-themenote-param-theme": "{{doc-apihelp-param|constel-themenote|theme}}",
-	"apihelp-constel-themenote-param-note": "{{doc-apihelp-param|constel-themenote|note}}",
 	"apihelp-constel-themenote-param-text": "{{doc-apihelp-param|constel-themenote|text}}",
 	"apihelp-constel-themenote-example-1": "{{doc-apihelp-example|constel-themenote}}",
 	"apihelp-query+constelexcerpts-summary": "{{doc-apihelp-summary|query+constelexcerpts}}",
@@ -96,5 +94,10 @@
 	"apihelp-constel-createexcerpt-param-gloss": "{{doc-apihelp-param|constel-createexcerpt|gloss}}",
 	"apihelp-query+constelgraph-param-users": "{{doc-apihelp-param|query+constelgraph|users}}",
 	"apihelp-query+constelgraph-param-pageids": "{{doc-apihelp-param|query+constelgraph|pageids}}",
-	"apihelp-query+constelgraph-example-users": "{{doc-apihelp-example|query+constelgraph}}"
+	"apihelp-query+constelgraph-example-users": "{{doc-apihelp-example|query+constelgraph}}",
+	"apihelp-query+constelreaders-summary": "{{doc-apihelp-summary|query+constelreaders}}",
+	"apihelp-query+constelreaders-param-search": "{{doc-apihelp-param|query+constelreaders|search}}",
+	"apihelp-query+constelreaders-param-names": "{{doc-apihelp-param|query+constelreaders|names}}",
+	"apihelp-query+constelreaders-param-limit": "{{doc-apihelp-param|query+constelreaders|limit}}",
+	"apihelp-query+constelreaders-example-search": "{{doc-apihelp-example|query+constelreaders}}"
 }

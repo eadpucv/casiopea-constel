@@ -10,7 +10,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
 
 /**
  * Temas personales, pertenencias concepto→tema por lector y notas de
- * desarrollo (spec: Theme, ThemeMembership, ThemeNote).
+ * desarrollo (spec: Theme, ThemeMembership, ThemeDevelopment).
  *
  * No comprueba permisos: eso es de la API. Sí garantiza las reglas de datos:
  * un concepto está en a lo sumo un tema de cada lector
@@ -129,48 +129,40 @@ class ThemeStore {
 		return $id === false ? null : (int)$id;
 	}
 
-	public function addNote( int $themeId, string $text ): NoteRecord {
-		$dbw = $this->primary();
-		$now = $dbw->timestamp();
-		$dbw->newInsertQueryBuilder()
-			->insertInto( 'constel_note' )
-			->row( [ 'cn_theme' => $themeId, 'cn_text' => $text, 'cn_updated' => $now ] )
-			->caller( __METHOD__ )->execute();
-		return new NoteRecord( $dbw->insertId(), $themeId, $text, $now );
-	}
-
-	public function getNote( int $noteId ): ?NoteRecord {
+	/**
+	 * El desarrollo de un tema (uno por tema), o null si no tiene.
+	 */
+	public function getDevelopment( int $themeId ): ?NoteRecord {
 		$row = $this->selectNotes( $this->replica() )
-			->where( [ 'cn_id' => $noteId ] )
+			->where( [ 'cn_theme' => $themeId ] )
 			->caller( __METHOD__ )->fetchRow();
 		return $row ? $this->newNote( $row ) : null;
 	}
 
 	/**
-	 * @return NoteRecord[]
+	 * Escribe el desarrollo de un tema; un texto vacío lo borra.
 	 */
-	public function listNotes( int $themeId ): array {
-		$res = $this->selectNotes( $this->replica() )
-			->where( [ 'cn_theme' => $themeId ] )
-			->orderBy( 'cn_id' )
-			->caller( __METHOD__ )->fetchResultSet();
-		return array_map( [ $this, 'newNote' ], iterator_to_array( $res ) );
-	}
-
-	public function editNote( int $noteId, string $text ): void {
+	public function setDevelopment( int $themeId, string $text ): ?NoteRecord {
 		$dbw = $this->primary();
-		$dbw->newUpdateQueryBuilder()
-			->update( 'constel_note' )
-			->set( [ 'cn_text' => $text, 'cn_updated' => $dbw->timestamp() ] )
-			->where( [ 'cn_id' => $noteId ] )
+		if ( trim( $text ) === '' ) {
+			$dbw->newDeleteQueryBuilder()
+				->deleteFrom( 'constel_note' )
+				->where( [ 'cn_theme' => $themeId ] )
+				->caller( __METHOD__ )->execute();
+			return null;
+		}
+		$now = $dbw->timestamp();
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'constel_note' )
+			->row( [ 'cn_theme' => $themeId, 'cn_text' => $text, 'cn_updated' => $now ] )
+			->onDuplicateKeyUpdate()
+			->uniqueIndexFields( [ 'cn_theme' ] )
+			->set( [ 'cn_text' => $text, 'cn_updated' => $now ] )
 			->caller( __METHOD__ )->execute();
-	}
-
-	public function deleteNote( int $noteId ): void {
-		$this->primary()->newDeleteQueryBuilder()
-			->deleteFrom( 'constel_note' )
-			->where( [ 'cn_id' => $noteId ] )
-			->caller( __METHOD__ )->execute();
+		$row = $this->selectNotes( $dbw )
+			->where( [ 'cn_theme' => $themeId ] )
+			->caller( __METHOD__ )->fetchRow();
+		return $this->newNote( $row );
 	}
 
 	private function selectThemes( IReadableDatabase $db ): SelectQueryBuilder {

@@ -1,6 +1,6 @@
 {
 	"name": "Casiopea-Con§tel",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"author": [
 		"[https://herbertspencer.net Herbert Spencer González]",
 		".:TIG:. Taller de Investigaciones Gráficas, e[ad] Escuela de Arquitectura y Diseño, Pontificia Universidad Católica de Valparaíso"
@@ -206,6 +206,12 @@
 				"ActorStore",
 				"ConnectionProvider"
 			]
+		},
+		"constelreaders": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Api\\ApiQueryConstelReaders",
+			"services": [
+				"CasiopeaConstel.ReaderDirectory"
+			]
 		}
 	},
 	"SpecialPages": {
@@ -400,9 +406,6 @@
 				"constellation-group",
 				"constellation-ungroup",
 				"constellation-theme-empty",
-				"constellation-note-label",
-				"constellation-note-new",
-				"constellation-note-add",
 				"constellation-save",
 				"constellation-theme-rename",
 				"constellation-theme-delete",
@@ -432,7 +435,14 @@
 				"constellation-pill-remove",
 				"constellation-export-svg",
 				"constellation-svg-title",
-				"constellation-navigation"
+				"constellation-navigation",
+				"constellation-file-prefix",
+				"constellation-file-visitor",
+				"constellation-sections-filter",
+				"constellation-development-label",
+				"constellation-development-placeholder",
+				"constellation-development-save",
+				"constellation-moderate-concept"
 			],
 			"dependencies": [
 				"ext.constel.ui",

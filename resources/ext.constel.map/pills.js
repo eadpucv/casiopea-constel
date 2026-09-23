@@ -1,9 +1,11 @@
 /**
- * Campo de píldoras con autocompletado: una lista de valores (usuarios,
+ * Campo de píldoras con autocompletado: una lista de valores (lectores,
  * páginas) que se agregan escribiendo y eligiendo, y se quitan con ×.
  *
- * Vacío puede significar "todos" (se muestra el texto de opts.empty); con
- * opts.min, no se deja quitar por debajo de ese número.
+ * Cada píldora guarda un valor (p. ej. el nombre de usuario) y muestra un
+ * rótulo (p. ej. el nombre real); el valor queda como tooltip. Vacío puede
+ * significar "todas" (opts.empty); con opts.min no se deja quitar por debajo
+ * de ese número.
  */
 const { autocomplete, icons } = require( 'ext.constel.ui' );
 
@@ -22,16 +24,20 @@ function el( tag, className, text ) {
  * @param {Object} opts
  * @param {string} opts.label nombre del campo
  * @param {string} opts.placeholder
- * @param {string} [opts.empty] texto cuando no hay ninguna (p. ej. "todas")
+ * @param {string} [opts.empty] texto cuando no hay ninguna
  * @param {string[]} [opts.values] valores iniciales
  * @param {number} [opts.min] mínimo de píldoras (default 0)
- * @param {Function} opts.search (typed) => Promise<string[]>
+ * @param {Function} opts.search (typed) => Promise<Array<string|{value, label, hint?}>>
+ * @param {Function} [opts.describe] (values) => Promise<Map<value,label>>
+ * @param {Function} [opts.onLabels] () => void, cuando llegan los rótulos iniciales
  * @param {Function} opts.onChange (values) => void
- * @return {{el: HTMLElement, values: Function}}
+ * @return {{el: HTMLElement, box: HTMLElement, values: Function, labelOf: Function}}
  */
 function create( opts ) {
 	let values = ( opts.values || [] ).slice();
+	const labels = new Map();
 	const min = opts.min || 0;
+	const labelOf = ( value ) => labels.get( value ) || value;
 
 	const wrap = el( 'div', 'constel-map__field constel-pills' );
 	const id = 'constel-pills-' + Math.random().toString( 36 ).slice( 2, 8 );
@@ -50,19 +56,24 @@ function create( opts ) {
 	box.append( list, emptyNote, field );
 	wrap.append( label, box );
 
+	const changed = () => opts.onChange( values.slice() );
 	const render = () => {
 		list.textContent = '';
 		values.forEach( ( value ) => {
 			const li = el( 'li', 'constel-chip constel-pill' );
-			li.append( el( 'span', 'constel-chip__label', value ) );
+			const text = el( 'span', 'constel-chip__label', labelOf( value ) );
+			if ( labelOf( value ) !== value ) {
+				text.title = value;
+			}
+			li.append( text );
 			if ( values.length > min ) {
 				const remove = icons.iconButton(
-					'x', mw.msg( 'constellation-pill-remove', value ), 'constel-chip__remove'
+					'x', mw.msg( 'constellation-pill-remove', labelOf( value ) ), 'constel-chip__remove'
 				);
 				remove.addEventListener( 'click', () => {
 					values = values.filter( ( v ) => v !== value );
 					render();
-					opts.onChange( values.slice() );
+					changed();
 					input.focus();
 				} );
 				li.append( remove );
@@ -72,21 +83,24 @@ function create( opts ) {
 		emptyNote.hidden = values.length > 0 || !opts.empty;
 	};
 
-	const add = ( value ) => {
+	const add = ( value, text ) => {
 		value = value.trim();
+		if ( text ) {
+			labels.set( value, text );
+		}
 		if ( value && !values.includes( value ) ) {
 			values.push( value );
 			render();
-			opts.onChange( values.slice() );
+			changed();
 		}
 		input.value = '';
 	};
 
+	const normalise = ( found ) => found.map( ( f ) => typeof f === 'string' ? { value: f, label: f } : f );
 	const combo = autocomplete.attach( input, {
-		source: ( typed ) => opts.search( typed ).then( ( found ) => found
-			.filter( ( v ) => !values.includes( v ) )
-			.map( ( v ) => ( { label: v } ) ) ),
-		onPick: add
+		source: ( typed ) => opts.search( typed ).then( ( found ) => normalise( found )
+			.filter( ( item ) => !values.includes( item.value ) ) ),
+		onPick: ( text, item ) => add( item.value || text, item.label )
 	} );
 	input.addEventListener( 'keydown', ( e ) => {
 		if ( e.key === 'Enter' && !combo.isOpen() ) {
@@ -96,12 +110,22 @@ function create( opts ) {
 		} else if ( e.key === 'Backspace' && input.value === '' && values.length > min ) {
 			values.pop();
 			render();
-			opts.onChange( values.slice() );
+			changed();
 		}
 	} );
 
 	render();
-	return { el: wrap, values: () => values.slice() };
+	// Rótulos de los valores iniciales (p. ej. nombre real de quien mira).
+	if ( opts.describe && values.length ) {
+		opts.describe( values ).then( ( found ) => {
+			found.forEach( ( text, value ) => labels.set( value, text ) );
+			render();
+			if ( opts.onLabels ) {
+				opts.onLabels();
+			}
+		} );
+	}
+	return { el: wrap, box, values: () => values.slice(), labelOf };
 }
 
 module.exports = { create };

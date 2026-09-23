@@ -37,12 +37,10 @@
 	"apihelp-constel-groupconcept-param-concept": "ID del concepto.",
 	"apihelp-constel-groupconcept-param-theme": "ID del tema (para <kbd>group</kbd>).",
 	"apihelp-constel-groupconcept-example-1": "Poner el concepto 2 en el tema 1.",
-	"apihelp-constel-themenote-summary": "Escribir, editar o borrar una nota de desarrollo en uno de tus temas.",
-	"apihelp-constel-themenote-param-op": "Operación.",
-	"apihelp-constel-themenote-param-theme": "ID del tema (para <kbd>create</kbd>).",
-	"apihelp-constel-themenote-param-note": "ID de la nota (para <kbd>edit</kbd> y <kbd>delete</kbd>).",
-	"apihelp-constel-themenote-param-text": "Texto de la nota.",
-	"apihelp-constel-themenote-example-1": "Escribir una nota en el tema 1.",
+	"apihelp-constel-themenote-summary": "Escribir el desarrollo de uno de tus temas (uno por tema); un texto vacío lo borra.",
+	"apihelp-constel-themenote-param-theme": "ID del tema.",
+	"apihelp-constel-themenote-param-text": "Texto del desarrollo. Vacío lo borra.",
+	"apihelp-constel-themenote-example-1": "Escribir el desarrollo del tema 1.",
 	"apihelp-query+constelexcerpts-summary": "Listar secciones (§): las ancladas de una página, o todas las de un lector, incluidas las perdidas.",
 	"apihelp-query+constelexcerpts-param-pageid": "Listar las secciones ancladas en esta página.",
 	"apihelp-query+constelexcerpts-param-user": "Listar todas las secciones de este usuario.",
@@ -96,5 +94,10 @@
 	"apihelp-constel-createexcerpt-param-gloss": "Glosa opcional: un comentario o aclaración sobre la sección.",
 	"apihelp-query+constelgraph-param-users": "Solo las secciones (§) de estos lectores. Vacío: las de todos.",
 	"apihelp-query+constelgraph-param-pageids": "Solo las secciones (§) de estas páginas. Vacío: todas.",
-	"apihelp-query+constelgraph-example-users": "El mapa del lector <kbd>Example</kbd>."
+	"apihelp-query+constelgraph-example-users": "El mapa del lector <kbd>Example</kbd>.",
+	"apihelp-query+constelreaders-summary": "Los lectores de con§tel (quienes tienen secciones o temas), con el nombre a mostrar: su nombre real si lo definieron en sus preferencias, si no su nombre de usuario.",
+	"apihelp-query+constelreaders-param-search": "Lectores cuyo nombre real o de usuario contiene este texto, sin distinguir tildes ni mayúsculas.",
+	"apihelp-query+constelreaders-param-names": "El nombre a mostrar para estos nombres de usuario.",
+	"apihelp-query+constelreaders-param-limit": "Cuántos lectores devolver.",
+	"apihelp-query+constelreaders-example-search": "Lectores cuyo nombre contiene <kbd>herb</kbd>."
 }

@@ -1,5 +1,41 @@
 # Changelog — Casiopea-Con§tel
 
+## 0.4.0 — 2026-09-22
+
+- **Un desarrollo por tema.** Un tema ya no acumula notas: tiene un solo texto,
+  su desarrollo, que se guarda entero («Guardar desarrollo»; vacío lo borra).
+  `action=constel-themenote` pasa a `theme` + `text` (sin `op`/`note`);
+  `list=constelthemes` devuelve `development` en vez de `notes`. Esquema:
+  `constel_note.cn_theme` pasa a índice único; `update.php` funde antes las
+  notas que hubiera por tema (en orden, separadas por una línea en blanco). El
+  ZIP de export no cambia: el desarrollo viaja como la única «note» del tema.
+- **Panel del mapa más sobrio:** títulos h4 (concepto, «Mis temas») y h5 (cada
+  tema, «En temas»), sin mayúsculas del skin; el concepto sin «§» delante; el
+  tema sin viñeta (su color del grafo va en el título); cada § con su página
+  de procedencia enlazada al pie, en texto pequeño, en vez de agruparlos bajo
+  el título de la página.
+- **Moderación bajo el mapa:** renombrar y fusionar el concepto seleccionado
+  salen del panel y quedan debajo del lienzo.
+- Campo y botón en la misma línea en los formularios cortos (renombrar tema,
+  crear tema, renombrar concepto).
+
+- **«Secciones de» igual que «Temas de»:** parte con quien mira y se suman
+  lectores; un interruptor fuera de la caja lo desactiva (= todas las
+  secciones; el SVG exportado lleva `all`).
+- **Lectores por su nombre real.** Las píldoras y el autocompletado de
+  «Secciones de» y «Temas de» (y los títulos «Temas de…») muestran el nombre
+  real de Preferencias, con el nombre de usuario como respaldo; se busca por
+  cualquiera de los dos, sin tildes. Nueva API `list=constelreaders`
+  (`crsearch`/`crnames`): solo lectores de con§tel, respeta
+  `$wgHiddenPrefs` y `hideuser`.
+
+- La exportación SVG usa una URL `data:` en vez de `blob:`. **Pendiente:** en
+  `http://casiopea.local` Chrome sigue dejando la descarga como «Sin confirmar
+  NNN.crdownload»; la causa aún no está confirmada.
+- **Nombre del SVG exportado:** `mapa-{2d|3d}-{usuario}-{secciones}.svg`
+  (secciones = lectores del filtro «Secciones de», o `all`), en minúsculas y
+  sin tildes.
+
 ## 0.3.0 — 2026-09-22
 
 - **Desactivada por defecto.** Instalada, la extensión no cambia nada hasta

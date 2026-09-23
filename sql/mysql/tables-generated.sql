@@ -67,6 +67,6 @@ CREATE TABLE /*_*/constel_note (
   cn_theme INT UNSIGNED NOT NULL,
   cn_text MEDIUMBLOB NOT NULL,
   cn_updated BINARY(14) NOT NULL,
-  INDEX cn_theme (cn_theme),
+  UNIQUE INDEX cn_theme_unique (cn_theme),
   PRIMARY KEY(cn_id)
 ) /*$wgDBTableOptions*/;

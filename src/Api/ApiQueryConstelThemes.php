@@ -66,20 +66,17 @@ class ApiQueryConstelThemes extends ApiQueryBase {
 			'userhidden' => $author['hidden'],
 			'created' => wfTimestamp( TS_ISO_8601, $theme->created ),
 			'concepts' => [],
-			'notes' => [],
+			'development' => null,
 		];
 		foreach ( $this->concepts->getByIds( $this->themes->conceptIds( $theme->id ) ) as $concept ) {
 			$entry['concepts'][] = [ 'id' => $concept->id, 'label' => $concept->label ];
 		}
-		foreach ( $this->themes->listNotes( $theme->id ) as $note ) {
-			$entry['notes'][] = [
-				'id' => $note->id,
-				'text' => $note->text,
-				'updated' => wfTimestamp( TS_ISO_8601, $note->updated ),
-			];
+		$development = $this->themes->getDevelopment( $theme->id );
+		if ( $development ) {
+			$entry['development'] = $development->text;
+			$entry['developmentupdated'] = wfTimestamp( TS_ISO_8601, $development->updated );
 		}
 		ApiResult::setIndexedTagName( $entry['concepts'], 'concept' );
-		ApiResult::setIndexedTagName( $entry['notes'], 'note' );
 		return $entry;
 	}
 

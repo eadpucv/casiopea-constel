@@ -61,9 +61,6 @@
 	"constellation-group": "Button that puts the concept into the chosen theme.",
 	"constellation-ungroup": "Button label. Parameters:\n* $1 - concept",
 	"constellation-theme-empty": "Empty theme.",
-	"constellation-note-label": "Accessible name of a note. Parameters:\n* $1 - theme",
-	"constellation-note-new": "Placeholder of the new note field.",
-	"constellation-note-add": "Button.",
 	"constellation-save": "Button.\n{{Identical|Save}}",
 	"constellation-theme-rename": "Button and field label.\n{{Identical|Rename}}",
 	"constellation-theme-delete": "Button.",
@@ -125,5 +122,12 @@
 	"constellation-pill-remove": "Button that removes a value from a filter. Parameters:\n* $1 - the value",
 	"constellation-export-svg": "Icon button that downloads the current map as an SVG file.",
 	"constellation-svg-title": "Title embedded in the exported SVG. Parameters:\n* $1 - site name",
-	"constellation-navigation": "Accessible name of the group of map buttons (zoom, fit, export)."
+	"constellation-navigation": "Accessible name of the group of map buttons (zoom, fit, export).",
+	"constellation-file-prefix": "Start of the exported SVG file name: \"map-{2d|3d}-{user}-{sections}.svg\". Use lowercase letters only.",
+	"constellation-file-visitor": "Used in the exported file name when the viewer is not logged in. Lowercase, no spaces.",
+	"constellation-sections-filter": "Switch next to the sections filter: when off, everyone's sections are shown.",
+	"constellation-development-label": "Accessible label of a theme's development text area. Parameters:\n* $1 - theme label",
+	"constellation-development-placeholder": "Placeholder of the development text area of a theme.",
+	"constellation-development-save": "Button: saves the development of a theme (one text per theme).",
+	"constellation-moderate-concept": "Heading of the moderation tools shown under the map for the selected concept. Parameters:\n* $1 - concept label"
 }

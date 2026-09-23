@@ -45,7 +45,7 @@ class ExportBuilderTest extends MediaWikiIntegrationTestCase {
 		$theme = $constel->getThemeStore()->create( 1, 'Lugar' );
 		$conceptId = $constel->getExcerptStore()->conceptIds( $kept->id )[0];
 		$constel->getThemeStore()->group( 1, $conceptId, $theme->id );
-		$constel->getThemeStore()->addNote( $theme->id, 'Síntesis' );
+		$constel->getThemeStore()->setDevelopment( $theme->id, 'Síntesis' );
 
 		$export = $constel->getExportBuilder()->build( 1, 'http://example.org' );
 		$db = $export['db'];

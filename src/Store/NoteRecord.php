@@ -3,7 +3,8 @@
 namespace MediaWiki\Extension\CasiopeaConstel\Store;
 
 /**
- * Una nota de desarrollo de un tema.
+ * El desarrollo de un tema (uno por tema; en el export de constel, una
+ * «note» del tema).
  */
 final class NoteRecord {
 

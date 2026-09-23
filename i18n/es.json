@@ -5,7 +5,7 @@
 		]
 	},
 	"casiopea-constel-desc": "con§tel: lectura activa y mapa colectivo de conceptos. Los lectores seleccionan secciones (§), las codifican con conceptos compartidos y sintetizan sus propios temas.",
-	"right-constel-annotate": "Crear y codificar secciones (§), y llevar temas y notas en con§tel",
+	"right-constel-annotate": "Crear y codificar secciones (§), y llevar temas y su desarrollo en con§tel",
 	"right-constel-moderate": "Moderar el vocabulario compartido de con§tel (renombrar y fusionar conceptos, borrar secciones de otros lectores)",
 	"action-constel-annotate": "anotar secciones con con§tel",
 	"action-constel-moderate": "moderar el vocabulario de con§tel",
@@ -61,13 +61,10 @@
 	"constellation-group": "Agrupar",
 	"constellation-ungroup": "Sacar «$1» del tema",
 	"constellation-theme-empty": "Aún sin conceptos: abre uno en el mapa y agrúpalo aquí.",
-	"constellation-note-label": "Nota de desarrollo de «$1»",
-	"constellation-note-new": "Nueva nota de desarrollo",
-	"constellation-note-add": "Agregar nota",
 	"constellation-save": "Guardar",
 	"constellation-theme-rename": "Renombrar",
 	"constellation-theme-delete": "Borrar tema",
-	"constellation-theme-delete-confirm": "¿Borrar este tema y sus notas? Sus conceptos siguen en el mapa.",
+	"constellation-theme-delete-confirm": "¿Borrar este tema y su desarrollo? Sus conceptos siguen en el mapa.",
 	"constellation-theme-new": "Nuevo tema",
 	"constellation-theme-create": "Crear tema",
 	"myconstel": "Mi con§tel",
@@ -125,5 +122,12 @@
 	"constellation-pill-remove": "Quitar «$1»",
 	"constellation-export-svg": "Exportar el mapa como SVG",
 	"constellation-svg-title": "Constelación — $1",
-	"constellation-navigation": "Navegación del mapa"
+	"constellation-navigation": "Navegación del mapa",
+	"constellation-file-prefix": "mapa",
+	"constellation-file-visitor": "visitante",
+	"constellation-sections-filter": "solo estos lectores",
+	"constellation-development-label": "Desarrollo de «$1»",
+	"constellation-development-placeholder": "Desarrolla este tema…",
+	"constellation-development-save": "Guardar desarrollo",
+	"constellation-moderate-concept": "Moderar «$1»"
 }

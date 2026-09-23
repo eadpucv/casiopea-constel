@@ -7,6 +7,7 @@ use MediaWiki\Extension\CasiopeaConstel\Export\ExportBuilder;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
 use MediaWiki\Extension\CasiopeaConstel\Moderation\ModerationLog;
 use MediaWiki\Extension\CasiopeaConstel\Page\RenderedTextProvider;
+use MediaWiki\Extension\CasiopeaConstel\Readers\ReaderDirectory;
 use MediaWiki\Extension\CasiopeaConstel\Store\ConceptStore;
 use MediaWiki\Extension\CasiopeaConstel\Store\ExcerptStore;
 use MediaWiki\Extension\CasiopeaConstel\Store\ThemeStore;
@@ -60,6 +61,15 @@ return [
 			$services->getPageStore(),
 			$services->getActorStore(),
 			$services->getConnectionProvider()
+		);
+	},
+	'CasiopeaConstel.ReaderDirectory' => static function ( MediaWikiServices $services ): ReaderDirectory {
+		return new ReaderDirectory(
+			$services->getConnectionProvider(),
+			$services->getActorStore(),
+			$services->getUserFactory(),
+			$services->get( 'CasiopeaConstel.ConceptNormalizer' ),
+			$services->getMainConfig()
 		);
 	},
 	'CasiopeaConstel.RenderedTextProvider' => static function ( MediaWikiServices $services ): RenderedTextProvider {

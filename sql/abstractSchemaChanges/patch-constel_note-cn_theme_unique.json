@@ -1,0 +1,111 @@
+{
+	"comment": "Un solo desarrollo por tema: el índice de constel_note.cn_theme pasa a único (0.4.0).",
+	"before": {
+		"name": "constel_note",
+		"comment": "Nota de desarrollo de un tema (spec: ThemeNote).",
+		"columns": [
+			{
+				"name": "cn_id",
+				"comment": "Clave primaria.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true,
+					"autoincrement": true
+				}
+			},
+			{
+				"name": "cn_theme",
+				"comment": "constel_theme.ct_id",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "cn_text",
+				"comment": "Texto de la nota.",
+				"type": "blob",
+				"options": {
+					"notnull": true,
+					"length": 16777215
+				}
+			},
+			{
+				"name": "cn_updated",
+				"comment": "Última edición.",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": true
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "cn_theme",
+				"columns": [
+					"cn_theme"
+				],
+				"unique": false
+			}
+		],
+		"pk": [
+			"cn_id"
+		]
+	},
+	"after": {
+		"name": "constel_note",
+		"comment": "Desarrollo de un tema: uno por tema (spec: ThemeDevelopment).",
+		"columns": [
+			{
+				"name": "cn_id",
+				"comment": "Clave primaria.",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true,
+					"autoincrement": true
+				}
+			},
+			{
+				"name": "cn_theme",
+				"comment": "constel_theme.ct_id",
+				"type": "integer",
+				"options": {
+					"unsigned": true,
+					"notnull": true
+				}
+			},
+			{
+				"name": "cn_text",
+				"comment": "Texto del desarrollo.",
+				"type": "blob",
+				"options": {
+					"notnull": true,
+					"length": 16777215
+				}
+			},
+			{
+				"name": "cn_updated",
+				"comment": "Última edición.",
+				"type": "mwtimestamp",
+				"options": {
+					"notnull": true
+				}
+			}
+		],
+		"indexes": [
+			{
+				"name": "cn_theme_unique",
+				"columns": [
+					"cn_theme"
+				],
+				"unique": true
+			}
+		],
+		"pk": [
+			"cn_id"
+		]
+	}
+}

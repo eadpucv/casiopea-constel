@@ -6,8 +6,8 @@ activa y análisis temático de la e[ad] PUCV.
 
 Al seleccionar un texto de una página aparece **§**. Con él el lector crea una
 **sección** y le asigna conceptos de un vocabulario compartido, más una glosa
-opcional. Después agrupa esos conceptos en temas personales y escribe notas de
-desarrollo. La página especial *Constelación* reúne los conceptos de todos los
+opcional. Después agrupa esos conceptos en temas personales y escribe el
+desarrollo de cada tema. La página especial *Constelación* reúne los conceptos de todos los
 lectores en un mapa 3D: los conceptos quedan unidos cuando están en una misma
 sección, cuando secciones de lectores distintos se solapan y cuando se anotaron
 en la misma página.

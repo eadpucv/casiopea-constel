@@ -358,7 +358,7 @@
 	},
 	{
 		"name": "constel_note",
-		"comment": "Nota de desarrollo de un tema (spec: ThemeNote).",
+		"comment": "Desarrollo de un tema: uno por tema (spec: ThemeDevelopment).",
 		"columns": [
 			{
 				"name": "cn_id",
@@ -381,7 +381,7 @@
 			},
 			{
 				"name": "cn_text",
-				"comment": "Texto de la nota.",
+				"comment": "Texto del desarrollo.",
 				"type": "blob",
 				"options": {
 					"notnull": true,
@@ -399,11 +399,11 @@
 		],
 		"indexes": [
 			{
-				"name": "cn_theme",
+				"name": "cn_theme_unique",
 				"columns": [
 					"cn_theme"
 				],
-				"unique": false
+				"unique": true
 			}
 		],
 		"pk": [

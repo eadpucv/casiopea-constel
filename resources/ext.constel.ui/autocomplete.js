@@ -25,8 +25,8 @@ function conceptSource( typed ) {
 /**
  * @param {HTMLInputElement} input
  * @param {Object} [opts]
- * @param {Function} [opts.onPick] (label) => void
- * @param {Function} [opts.source] (typed) => Promise<Array<{label, hint?}>>
+ * @param {Function} [opts.onPick] (label, item) => void
+ * @param {Function} [opts.source] (typed) => Promise<Array<{label, value?, hint?}>>
  * @return {{isOpen: Function, close: Function}}
  */
 function attach( input, opts = {} ) {
@@ -62,15 +62,17 @@ function attach( input, opts = {} ) {
 		input.setAttribute( 'aria-expanded', 'false' );
 		setActive( -1 );
 	};
-	const pick = ( label ) => {
-		input.value = label;
+	let current = [];
+	const pick = ( item ) => {
+		input.value = item.label;
 		closeList();
 		if ( opts.onPick ) {
-			opts.onPick( label );
+			opts.onPick( item.label, item );
 		}
 	};
 	const source = opts.source || conceptSource;
 	const render = ( items ) => {
+		current = items;
 		list.textContent = '';
 		items.forEach( ( c, i ) => {
 			const li = document.createElement( 'li' );
@@ -88,7 +90,7 @@ function attach( input, opts = {} ) {
 			}
 			li.addEventListener( 'mousedown', ( e ) => {
 				e.preventDefault();
-				pick( c.label );
+				pick( c );
 			} );
 			list.appendChild( li );
 		} );
@@ -127,7 +129,7 @@ function attach( input, opts = {} ) {
 		} else if ( e.key === 'Enter' && active >= 0 ) {
 			e.preventDefault();
 			e.stopPropagation();
-			pick( options()[ active ].firstChild.textContent );
+			pick( current[ active ] );
 		} else if ( e.key === 'Escape' ) {
 			e.preventDefault();
 			e.stopPropagation();

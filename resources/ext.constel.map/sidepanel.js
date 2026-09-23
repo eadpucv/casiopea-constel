@@ -36,8 +36,9 @@ function feedbackBox() {
 }
 
 /**
- * Detalle de un concepto: §§ agrupados por página (los propios primero en
- * cada página), temas que lo contienen y, para quien anota, agruparlo.
+ * Detalle de un concepto: sus §§ (los propios primero), cada uno con su
+ * página de procedencia al pie; temas que lo contienen y, para quien anota,
+ * agruparlo. La moderación va aparte, bajo el mapa (ver moderation()).
  *
  * @param {HTMLElement} box
  * @param {Object} node del grafo
@@ -45,55 +46,45 @@ function feedbackBox() {
  */
 function conceptDetail( box, node, ctx ) {
 	box.textContent = '';
-	const head = el( 'h2', 'constel-side__title' );
-	head.append( el( 'span', 'constel-sign', '§' ), ' ', node.label );
-	box.append( head, el( 'p', 'constel-side__meta',
-		mw.msg( 'constellation-counts', mw.language.convertNumber( node.excerpts ),
-			mw.language.convertNumber( node.pages ) ) ) );
+	box.append(
+		el( 'h4', 'constel-side__title', node.label ),
+		el( 'p', 'constel-side__meta',
+			mw.msg( 'constellation-counts', mw.language.convertNumber( node.excerpts ),
+				mw.language.convertNumber( node.pages ) ) )
+	);
 	const list = el( 'div', 'constel-side__excerpts', mw.msg( 'constellation-loading' ) );
 	const themesBox = el( 'div', 'constel-side__themes' );
 	box.append( list, themesBox );
 
 	api.excerptsOfConcept( node.id ).then( ( excerpts ) => {
 		list.textContent = '';
-		const byPage = new Map();
+		excerpts.sort( ( a, b ) => ( b.author === ctx.me ) - ( a.author === ctx.me ) );
 		excerpts.forEach( ( e ) => {
-			const key = e.title || String( e.pageid );
-			byPage.set( key, ( byPage.get( key ) || [] ).concat( e ) );
-		} );
-		byPage.forEach( ( pageExcerpts, title ) => {
-			const section = el( 'section', 'constel-side__page' );
-			const link = el( 'a', 'constel-link', title );
-			link.href = mw.util.getUrl( title );
-			section.appendChild( el( 'h3', null ) ).appendChild( link );
-			pageExcerpts.sort( ( a, b ) => ( b.author === ctx.me ) - ( a.author === ctx.me ) );
-			pageExcerpts.forEach( ( e ) => {
-				const item = el( 'figure', 'constel-side__excerpt' + ( e.status === 'lost' ? ' constel-side__excerpt--lost' : '' ) );
-				item.append( el( 'blockquote', 'constel-quote', e.exact ) );
-				if ( e.gloss ) {
-					item.append( el( 'p', 'constel-gloss-text', e.gloss ) );
-				}
-				const cap = el( 'figcaption', 'constel-side__by' );
-				cap.textContent = e.author === ctx.me ? mw.msg( 'constel-detail-mine' ) :
-					e.author === null ? mw.msg( 'constel-detail-hidden-user' ) :
-						mw.msg( 'constel-detail-by', e.author );
-				if ( e.status === 'lost' ) {
-					cap.append( ' · ', el( 'span', 'constel-status--lost', mw.msg( 'myconstel-status-lost' ) ) );
-				}
-				item.append( cap );
-				section.append( item );
-			} );
-			list.append( section );
+			const item = el( 'figure', 'constel-side__excerpt' + ( e.status === 'lost' ? ' constel-side__excerpt--lost' : '' ) );
+			item.append( el( 'blockquote', 'constel-quote', e.exact ) );
+			if ( e.gloss ) {
+				item.append( el( 'p', 'constel-gloss-text', e.gloss ) );
+			}
+			const cap = el( 'figcaption', 'constel-side__by' );
+			cap.textContent = e.author === ctx.me ? mw.msg( 'constel-detail-mine' ) :
+				e.author === null ? mw.msg( 'constel-detail-hidden-user' ) :
+					mw.msg( 'constel-detail-by', e.author );
+			if ( e.title ) {
+				const link = el( 'a', 'constel-side__source', e.title );
+				link.href = mw.util.getUrl( e.title );
+				cap.append( ' · ', link );
+			}
+			if ( e.status === 'lost' ) {
+				cap.append( ' · ', el( 'span', 'constel-status--lost', mw.msg( 'myconstel-status-lost' ) ) );
+			}
+			item.append( cap );
+			list.append( item );
 		} );
 	} );
 
-	if ( ctx.canModerate ) {
-		box.append( moderation( node, ctx ) );
-	}
-
 	api.conceptThemes( node.id ).then( ( themes ) => {
 		themesBox.textContent = '';
-		themesBox.append( el( 'h3', null, mw.msg( 'constellation-in-themes' ) ) );
+		themesBox.append( el( 'h5', null, mw.msg( 'constellation-in-themes' ) ) );
 		if ( !themes.length ) {
 			themesBox.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-in-no-theme' ) ) );
 		} else {
@@ -135,8 +126,8 @@ function conceptDetail( box, node, ctx ) {
  * @return {HTMLElement}
  */
 function moderation( node, ctx ) {
-	const section = el( 'section', 'constel-side__moderation' );
-	section.append( el( 'h3', null, mw.msg( 'constellation-moderate' ) ) );
+	const section = el( 'section', 'constel-ui constel-map__moderation' );
+	section.append( el( 'h4', null, mw.msg( 'constellation-moderate-concept', node.label ) ) );
 	const fb = feedbackBox();
 	const fail = ( code, r ) => {
 		fb.innerHTML = api.describeError( code, r ).html;
@@ -189,7 +180,7 @@ function moderation( node, ctx ) {
 }
 
 /**
- * Temas de un lector, con sus conceptos y notas.
+ * Temas de un lector, con sus conceptos y su desarrollo (uno por tema).
  *
  * @param {HTMLElement} box
  * @param {Array} themes de list=constelthemes
@@ -197,7 +188,7 @@ function moderation( node, ctx ) {
  */
 function themesPanel( box, themes, ctx ) {
 	box.textContent = '';
-	box.append( el( 'h2', 'constel-side__title', ctx.ownerLabel ) );
+	box.append( el( 'h4', 'constel-side__title', ctx.ownerLabel ) );
 	if ( !themes.length && !ctx.editable ) {
 		box.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-no-themes' ) ) );
 	}
@@ -210,9 +201,8 @@ function themesPanel( box, themes, ctx ) {
 		const color = ( ( ctx.colorOffset || 0 ) + index ) % 8;
 		const section = el( 'section', 'constel-theme constel-theme--cat-' + color );
 		const fb = feedbackBox();
-		const title = el( 'h3', 'constel-theme__title' );
-		title.append( el( 'span', 'constel-theme__swatch' ), theme.label );
-		section.append( title );
+		// El color del tema (el mismo del grafo) va en el título, sin viñeta.
+		section.append( el( 'h5', 'constel-theme__title', theme.label ) );
 
 		const chips = el( 'ul', 'constel-chips' );
 		theme.concepts.forEach( ( c ) => {
@@ -237,54 +227,38 @@ function themesPanel( box, themes, ctx ) {
 		}
 		section.append( chips );
 
-		theme.notes.forEach( ( note ) => {
-			if ( !ctx.editable ) {
-				section.append( el( 'p', 'constel-note', note.text ) );
-				return;
+		if ( !ctx.editable ) {
+			if ( theme.development ) {
+				section.append( el( 'p', 'constel-development', theme.development ) );
 			}
-			const area = el( 'textarea', 'constel-input constel-note__edit' );
-			area.value = note.text;
+		} else {
+			const area = el( 'textarea', 'constel-input constel-development__edit' );
+			area.value = theme.development || '';
 			area.rows = 4;
-			area.setAttribute( 'aria-label', mw.msg( 'constellation-note-label', theme.label ) );
-			const noteActions = el( 'div', 'constel-actions' );
-			section.append( area, noteActions );
-			noteActions.append(
-				button( mw.msg( 'constel-detail-delete-yes' ), 'constel-button--danger', () => api.write( { action: 'constel-themenote', op: 'delete', note: note.id } ).then( ctx.onChanged, fail( fb ) ) ),
-				button( mw.msg( 'constellation-save' ), 'constel-button--primary', () => api.write( { action: 'constel-themenote', op: 'edit', note: note.id, text: area.value } )
-					.then( ctx.onChanged, fail( fb ) ) )
-			);
-		} );
+			area.placeholder = mw.msg( 'constellation-development-placeholder' );
+			area.setAttribute( 'aria-label', mw.msg( 'constellation-development-label', theme.label ) );
+			const save = button( mw.msg( 'constellation-development-save' ), 'constel-button--primary', () => api.write( { action: 'constel-themenote', theme: theme.id, text: area.value } )
+				.then( ctx.onChanged, fail( fb ) ) );
+			const saveRow = el( 'div', 'constel-actions' );
+			saveRow.append( save );
 
-		if ( ctx.editable ) {
-			const newNote = el( 'textarea', 'constel-input' );
-			newNote.rows = 3;
-			newNote.placeholder = mw.msg( 'constellation-note-new' );
-			newNote.setAttribute( 'aria-label', mw.msg( 'constellation-note-new' ) );
 			const rename = el( 'input', 'constel-input' );
 			rename.value = theme.label;
 			rename.setAttribute( 'aria-label', mw.msg( 'constellation-theme-rename' ) );
+			const renameRow = el( 'div', 'constel-add' );
+			renameRow.append( rename, button( mw.msg( 'constellation-theme-rename' ), '', () => api.write( { action: 'constel-theme', op: 'rename', theme: theme.id, label: rename.value } )
+				.then( ctx.onChanged, fail( fb ) ) ) );
+
 			const confirmRow = el( 'div', 'constel-actions' );
-			const del = button( mw.msg( 'constellation-theme-delete' ), 'constel-button--danger', () => {
+			confirmRow.append( button( mw.msg( 'constellation-theme-delete' ), 'constel-button--danger', () => {
 				confirmRow.textContent = '';
 				confirmRow.append(
 					el( 'span', null, mw.msg( 'constellation-theme-delete-confirm' ) ),
 					button( mw.msg( 'constel-detail-delete-no' ), '', () => ctx.onChanged() ),
 					button( mw.msg( 'constel-detail-delete-yes' ), 'constel-button--danger', () => api.write( { action: 'constel-theme', op: 'delete', theme: theme.id } ).then( ctx.onChanged, fail( fb ) ) )
 				);
-			} );
-			confirmRow.append(
-				button( mw.msg( 'constellation-note-add' ), '', () => {
-					if ( newNote.value.trim() ) {
-						api.write( { action: 'constel-themenote', op: 'create', theme: theme.id, text: newNote.value } )
-							.then( ctx.onChanged, fail( fb ) );
-					}
-				} ),
-				del
-			);
-			const renameRow = el( 'div', 'constel-add' );
-			renameRow.append( rename, button( mw.msg( 'constellation-theme-rename' ), '', () => api.write( { action: 'constel-theme', op: 'rename', theme: theme.id, label: rename.value } )
-				.then( ctx.onChanged, fail( fb ) ) ) );
-			section.append( newNote, confirmRow, renameRow );
+			} ) );
+			section.append( area, saveRow, renameRow, confirmRow );
 		}
 		section.append( fb );
 		box.append( section );
@@ -308,4 +282,4 @@ function themesPanel( box, themes, ctx ) {
 	}
 }
 
-module.exports = { conceptDetail, themesPanel };
+module.exports = { conceptDetail, themesPanel, moderation };

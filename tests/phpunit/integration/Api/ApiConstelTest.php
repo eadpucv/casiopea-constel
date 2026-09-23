@@ -195,13 +195,18 @@ class ApiConstelTest extends ApiTestCase {
 			'action' => 'constel-groupconcept', 'op' => 'group', 'concept' => $concept, 'theme' => $theme,
 		] );
 		$this->assertSame( $theme, $grouped['theme'] );
-		$note = $this->write( $user, [
-			'action' => 'constel-themenote', 'op' => 'create', 'theme' => $theme, 'text' => 'Síntesis',
-		] )['note'];
+		$written = $this->write( $user, [
+			'action' => 'constel-themenote', 'theme' => $theme, 'text' => 'Síntesis',
+		] );
+		$this->assertSame( 'Síntesis', $written['development'] );
+		$listed = $this->doApiRequest( [
+			'action' => 'query', 'list' => 'constelthemes', 'ctids' => $theme,
+		] )[0]['query']['constelthemes'][0];
+		$this->assertSame( 'Síntesis', $listed['development'] );
 
 		foreach ( [
 			[ 'action' => 'constel-theme', 'op' => 'rename', 'theme' => $theme, 'label' => 'Otro' ],
-			[ 'action' => 'constel-themenote', 'op' => 'edit', 'note' => $note, 'text' => 'Ajeno' ],
+			[ 'action' => 'constel-themenote', 'theme' => $theme, 'text' => 'Ajeno' ],
 			[ 'action' => 'constel-groupconcept', 'op' => 'group', 'concept' => $concept, 'theme' => $theme ],
 		] as $params ) {
 			try {

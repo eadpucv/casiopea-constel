@@ -125,7 +125,7 @@ flowchart LR
 Las entidades del spec y cómo se relacionan. `User`, `WikiPage` y `Revision`
 son de MediaWiki; el resto es de con§tel. El modelo es **fiel a constel**: el
 § se relaciona N:M con conceptos a través de la codificación, los conceptos
-son globales, y los temas y sus notas son de cada lector.
+son globales, y los temas y su desarrollo son de cada lector.
 
 ```mermaid
 classDiagram
@@ -175,7 +175,7 @@ classDiagram
         created_at
     }
     class ThemeMembership
-    class ThemeNote {
+    class ThemeDevelopment {
         text
         updated_at
     }
@@ -189,7 +189,7 @@ classDiagram
     User "1" --> "0..*" Theme : owner
     Theme "1" *-- "0..*" ThemeMembership
     Concept "1" --> "0..*" ThemeMembership
-    Theme "1" *-- "0..*" ThemeNote : notes
+    Theme "1" *-- "0..1" ThemeDevelopment : development
 ```
 
 Reglas que el diagrama no alcanza a mostrar:
@@ -279,7 +279,7 @@ erDiagram
     }
     constel_note {
         int cn_id PK
-        int cn_theme
+        int cn_theme UK
         mediumblob cn_text
         mwtimestamp cn_updated
     }
@@ -288,7 +288,7 @@ erDiagram
     constel_concept ||--o{ constel_coding : "codifica"
     constel_theme ||--o{ constel_membership : "agrupa"
     constel_concept ||--o{ constel_membership : "pertenece"
-    constel_theme ||--o{ constel_note : "tiene"
+    constel_theme ||--o| constel_note : "se desarrolla en"
 ```
 
 | Tabla | Entidad | Índices |
@@ -298,7 +298,7 @@ erDiagram
 | `constel_coding` | Coding | PK (`ccd_excerpt`, `ccd_concept`); `ccd_concept` |
 | `constel_theme` | Theme | `ct_actor` |
 | `constel_membership` | ThemeMembership | PK (`cm_actor`, `cm_concept`); `cm_theme`; `cm_concept` |
-| `constel_note` | ThemeNote | `cn_theme` |
+| `constel_note` | ThemeDevelopment | único `cn_theme` (uno por tema; 0.4.0 funde las notas previas) |
 
 `cm_actor` repite el dueño del tema para que la unicidad «un tema por concepto
 y por lector» la garantice la clave primaria.
@@ -477,7 +477,7 @@ sequenceDiagram
     M->>API: list=constelexcerpts&ceconcept · list=constelconcepts&ccthemes
     M-->>V: detalle: §§ por página, glosas, temas
     opt cuenta registrada
-        V->>M: agrupar, crear tema, notas
+        V->>M: agrupar, crear tema, desarrollo
         M->>API: constel-groupconcept · constel-theme · constel-themenote
     end
     opt moderador
@@ -675,10 +675,15 @@ frecuencia (respaldo sin JS). `ext.constel.map` dibuja encima:
   continuas (co_excerpt), rayadas (overlap) y punteadas tenues (co_page).
   Zoom con botones o Ctrl+rueda. Cada nodo es texto SVG enfocable (Enter lo
   abre).
-- `sidepanel.js`: el detalle de un concepto (§§ por página con sus glosas,
-  temas que lo contienen, agruparlo, moderarlo) y el panel de temas (crear,
-  renombrar, borrar, desagrupar, notas). Los temas de otro lector (la
-  **lente**) se muestran en solo lectura.
+- `sidepanel.js`: el detalle de un concepto (título sin «§»: el § es de la
+  sección; sus §§ con glosa y, al pie en texto pequeño, la página de
+  procedencia enlazada; temas que lo contienen; agruparlo) y el panel de temas
+  (crear, renombrar, borrar, desagrupar y **un desarrollo por tema**, que se
+  guarda entero). Títulos h4 (concepto, «Mis temas») y h5 (cada tema, «En
+  temas»); el tema lleva su color del grafo en el título, sin viñeta. Los
+  temas de otro lector (la **lente**) se muestran en solo lectura. La
+  moderación del concepto seleccionado (renombrar, fusionar) se dibuja **bajo
+  el mapa**, no en el panel.
 - `map.js`: la barra de herramientas en dos filas y la lista navegable
   (`AccessibleAlternative`). Fila 1: vista 2D/3D con «Girar solo» al lado
   (solo en 3D); «Mostrar aristas», que muestra u oculta el peso mínimo (1 a 4);
@@ -689,11 +694,19 @@ frecuencia (respaldo sin JS). `ext.constel.map` dibuja encima:
   `rgb()` (para Inkscape o Illustrator), con fondo, `<title>` y `<desc>`
   (filtros y fecha).
   Fila 2: tres campos de píldoras con autocompletado (`pills.js`):
-  **Secciones de** (lectores, `list=allusers`; vacío = todas), **Páginas**
+  **Secciones de** (lectores; por defecto quien mira, se suman otros; un
+  interruptor fuera de la caja lo apaga y entonces son todas), **Páginas**
   (títulos, `list=prefixsearch` en los namespaces de contenido; vacío =
   todas; también `?page=`) y **Temas de** (la lente; por defecto quien mira,
   nunca vacía para una cuenta registrada). El panel de temas muestra un
   bloque por lector de la lente; solo los propios se editan.
+  Los lectores se buscan y se muestran por su **nombre real**
+  (Preferencias › Nombre real), con el nombre de usuario como respaldo y como
+  valor que viaja a la API: `list=constelreaders` (`ReaderDirectory`). Solo
+  lista lectores de con§tel (quienes tienen §§ o temas), no toda la wiki; si
+  el sitio oculta el nombre real (`$wgHiddenPrefs[] = 'realname'`) se usa el
+  de usuario, y los usuarios ocultos (`hideuser`) no aparecen salvo para
+  quien puede verlos.
 
 **Especial:MiConstel** (`SpecialMyConstel`, cuentas registradas): tabla de
 §§ propios, anclados y perdidos, con sus glosas. Cada § perdido enlaza al
@@ -723,7 +736,7 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 - el derecho `constel-annotate` (o `constel-moderate` para moderar);
 - que no haya un bloqueo sitewide y, en los módulos que tocan una página,
   tampoco uno parcial (`checkTitleUserPermissions`);
-- que el pasaje, tema o nota pertenezca a quien lo modifica.
+- que el pasaje o tema pertenezca a quien lo modifica.
 
 | Módulo | Spec |
 |---|---|
@@ -734,7 +747,7 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 | `constel-deleteexcerpt` | ReaderDeletesExcerpt (el ajeno, solo moderadores, con registro) |
 | `constel-theme` (`op=create\|rename\|delete`) | ReaderCreates/Renames/DeletesTheme |
 | `constel-groupconcept` (`op=group\|ungroup`) | ReaderGroups/UngroupsConcept |
-| `constel-themenote` (`op=create\|edit\|delete`) | ReaderWrites/Edits/DeletesThemeNote |
+| `constel-themenote` (`theme`, `text`; vacío = borrar) | ReaderWritesThemeDevelopment |
 | `constel-moderate` (`op=rename\|merge`) | ModeratorRenamesConcept, ModeratorMergesConcepts |
 
 **Lectura** (públicas; los anónimos las usan para el mapa):
@@ -743,8 +756,9 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 |---|---|
 | `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto) |
 | `list=constelconcepts` | `ccsearch` (autocompletado tolerante, por uso), `ccvariantsof`, `ccids`, `ccthemes` (temas que lo contienen) |
-| `list=constelthemes` | `ctuser` (uno o varios), `ctids` (con conceptos y notas) |
+| `list=constelthemes` | `ctuser` (uno o varios), `ctids` (con conceptos y `development`) |
 | `list=constelgraph` | `cgusers` (lectores), `cgpageids` (páginas); vacío = todos |
+| `list=constelreaders` | `crsearch` (nombre real o de usuario, sin tildes) o `crnames` (describe); devuelve `{name, display}` |
 
 El nombre de un autor oculto (`hideuser`) solo se muestra a quien tiene
 `hideuser`; por eso esas respuestas son `anon-public-user-private`. Los
@@ -832,7 +846,7 @@ tokens. Al mismo tiempo, la extensión tiene que funcionar con cualquier skin
 
 ## Privacidad
 
-Pasajes, glosas, codificaciones, temas y notas son **públicos** en la wiki
+Pasajes, glosas, codificaciones, temas y desarrollos son **públicos** en la wiki
 (`ReadingIsPublicData`). La primera vez que el lector anota, la interfaz se lo
 advierte. Los autores se muestran por nombre, salvo que el core los tenga
 suprimidos (`hideuser`); en ese caso se muestra como en el resto de MediaWiki.

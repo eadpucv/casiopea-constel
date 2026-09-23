@@ -13,7 +13,7 @@
 --   página wiki (source) ──1:N──▸ § excerpt   (pasaje de un lector)
 --   excerpt ◂──N:M──▸ concept                   (vía Coding)
 --   concept ──N:1──▸ theme    POR LECTOR        (vía ThemeMembership)
---   theme   ──1:N──▸ note
+--   theme   ──1:0..1──▸ development          (su desarrollo: un texto)
 --
 -- Diferencias con el constel standalone, todas por pasar a multiusuario:
 --   · Un excerpt pertenece a su autor; sólo él lo codifica.
@@ -207,7 +207,7 @@ entity Theme {
     created_at: Timestamp
 
     memberships: ThemeMembership with theme = this
-    notes: ThemeNote with theme = this
+    development: ThemeDevelopment with theme = this   -- a lo sumo uno
 
     concepts: memberships.concept
 }
@@ -220,8 +220,10 @@ entity ThemeMembership {
     owner: theme.owner
 }
 
--- Nota de desarrollo: la destilación, el texto propio del lector.
-entity ThemeNote {
+-- Desarrollo del tema: la destilación, el texto propio del lector. UNO por
+-- tema (decisión 2026-09-22: un tema no acumula notas, se desarrolla). En el
+-- export a constel viaja como la única «note» del tema.
+entity ThemeDevelopment {
     theme: Theme
     text: String
     updated_at: Timestamp
@@ -240,10 +242,10 @@ entity ReadingExport {
 ------------------------------------------------------------
 
 config {
-    extension_version: String = "0.3.0"          -- debe coincidir con extension.json
+    extension_version: String = "0.4.0"          -- debe coincidir con extension.json
     concept_max_length: Integer = 80             -- caracteres
     theme_label_max_length: Integer = 80
-    note_max_length: Integer = 20000             -- nota de desarrollo de un tema
+    note_max_length: Integer = 20000             -- desarrollo de un tema
     selection_min_length: Integer = 3            -- como constel (popup.js)
     selection_max_length: Integer = 2000
     gloss_max_length: Integer = 5000             -- caracteres de la glosa de un §
@@ -484,8 +486,8 @@ rule ReaderDeletesTheme {
     ensures:
         for m in theme.memberships:
             not exists m
-        for n in theme.notes:
-            not exists n
+        if exists theme.development:
+            not exists theme.development
         not exists theme
 }
 
@@ -511,31 +513,22 @@ rule ReaderUngroupsConcept {
     ensures: not exists membership
 }
 
-rule ReaderWritesThemeNote {
-    when: ReaderWritesThemeNote(actor, theme, text)
+-- Escribir el desarrollo lo crea o lo reemplaza; dejarlo en blanco lo borra.
+rule ReaderWritesThemeDevelopment {
+    when: ReaderWritesThemeDevelopment(actor, theme, text)
     requires: actor = theme.owner
     requires: not actor.is_blocked
-    requires: not is_blank(text)
-    requires: length(text) <= config.note_max_length
-    ensures: ThemeNote.created(theme: theme, text: text, updated_at: now)
-}
-
-rule ReaderEditsThemeNote {
-    when: ReaderEditsThemeNote(actor, note, text)
-    requires: actor = note.author
-    requires: not actor.is_blocked
-    requires: not is_blank(text)
     requires: length(text) <= config.note_max_length
     ensures:
-        note.text = text
-        note.updated_at = now
-}
-
-rule ReaderDeletesThemeNote {
-    when: ReaderDeletesThemeNote(actor, note)
-    requires: actor = note.author
-    requires: not actor.is_blocked
-    ensures: not exists note
+        if is_blank(text):
+            if exists theme.development:
+                not exists theme.development
+        else:
+            if exists theme.development:
+                theme.development.text = text
+                theme.development.updated_at = now
+            else:
+                ThemeDevelopment.created(theme: theme, text: text, updated_at: now)
 }
 
 ------------------------------------------------------------
@@ -555,7 +548,8 @@ rule ReaderExportsReading {
         -- donde ubicarse; tampoco los conceptos que sólo ellos usaban.
         -- Mapeo: página→source, §→excerpt (start/end del ancla),
         -- conceptos usados por el owner→concepts, temas propios→themes
-        -- (concept.themeId desde su ThemeMembership), notas→notes.
+        -- (concept.themeId desde su ThemeMembership), desarrollo→una note
+        -- por tema.
 }
 
 ------------------------------------------------------------
@@ -749,6 +743,15 @@ surface ConceptDetail {
     related:
         ConceptMap(viewer)
 
+    @guarantee SectionProvenance
+        -- El concepto se titula sin «§» (el § es de la sección, no del
+        -- concepto). Cada § lleva al pie, en texto pequeño, su página de
+        -- procedencia enlazada; no se agrupan bajo el título de la página.
+
+    @guarantee ModerationBelowMap
+        -- Renombrar y fusionar el concepto seleccionado se ofrecen bajo el
+        -- mapa, no en el panel del concepto.
+
     @guarantee HereAndElsewhere
         -- Separa los §§ de la página actual ("§ en esta página") de los
         -- de otras páginas ("en otras páginas"), y los del viewer de los
@@ -778,8 +781,15 @@ surface ConceptMap {
 
     @guarantee ReaderAndPageFilters
         -- El mapa se filtra por lectores ("Secciones de") y por páginas,
-        -- cada filtro con uno o varios valores; un filtro vacío significa
-        -- TODOS (decisión 2026-09-22; reemplaza el alcance mine/everyone).
+        -- cada filtro con uno o varios valores. Páginas vacío = TODAS.
+        -- Lectores: por defecto el viewer (como la lente); un interruptor
+        -- fuera del filtro lo desactiva y entonces son TODOS (decisión
+        -- 2026-09-22; reemplaza el alcance mine/everyone). Para un visitante
+        -- anónimo el interruptor parte apagado.
+        -- Los lectores se nombran por su nombre real (preferencia del
+        -- usuario) con el nombre de usuario como respaldo; si el sitio oculta
+        -- el nombre real, sólo el de usuario. Sólo se listan lectores de
+        -- con§tel, y nunca usuarios ocultos a quien no puede verlos.
         -- Distingue visualmente los conceptos a los que el viewer aportó.
 
     @guarantee TopologyCoExcerptOverlapAndPage
@@ -832,9 +842,8 @@ surface ThemesPanel {
         theme.label
         theme.owner
         theme.concepts
-        for n in theme.notes:
-            n.text
-            n.updated_at
+        theme.development.text
+        theme.development.updated_at
         for c in theme.concepts:
             c.excerpts
 
@@ -847,15 +856,11 @@ surface ThemesPanel {
             when theme.owner = viewer
         ReaderUngroupsConcept(viewer, membership)
             when theme.owner = viewer
-        ReaderWritesThemeNote(viewer, theme, text)
-            when theme.owner = viewer
-        ReaderEditsThemeNote(viewer, note, text)
-            when theme.owner = viewer
-        ReaderDeletesThemeNote(viewer, note)
+        ReaderWritesThemeDevelopment(viewer, theme, text)
             when theme.owner = viewer
 
     @guarantee OthersReadOnly
-        -- Los temas y notas de otros lectores se pueden leer, nunca
+        -- Los temas y desarrollos de otros lectores se pueden leer, nunca
         -- editar.
 
     @guarantee ThemeSections

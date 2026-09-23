@@ -31,18 +31,30 @@ class ThemeStoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $theirs->id, $themes->themeOf( 2, 7 ) );
 	}
 
-	public function testDeletingThemeUngroupsAndDeletesNotes(): void {
+	public function testDevelopmentIsOnePerTheme(): void {
+		$themes = $this->constel()->getThemeStore();
+		$t = $themes->create( 1, 'Lugar' );
+		$this->assertNull( $themes->getDevelopment( $t->id ) );
+
+		$first = $themes->setDevelopment( $t->id, 'primera' );
+		$second = $themes->setDevelopment( $t->id, 'segunda' );
+
+		$this->assertSame( $first->id, $second->id );
+		$this->assertSame( 'segunda', $themes->getDevelopment( $t->id )->text );
+		$this->assertNull( $themes->setDevelopment( $t->id, '  ' ) );
+		$this->assertNull( $themes->getDevelopment( $t->id ) );
+	}
+
+	public function testDeletingThemeUngroupsAndDeletesDevelopment(): void {
 		$themes = $this->constel()->getThemeStore();
 		$t = $themes->create( 1, 'Lugar' );
 		$themes->group( 1, 7, $t->id );
-		$note = $themes->addNote( $t->id, 'primera' );
-		$themes->editNote( $note->id, 'segunda' );
-		$this->assertSame( 'segunda', $themes->getNote( $note->id )->text );
+		$themes->setDevelopment( $t->id, 'síntesis' );
 
 		$themes->delete( $t->id );
 
 		$this->assertNull( $themes->get( $t->id ) );
 		$this->assertNull( $themes->themeOf( 1, 7 ) );
-		$this->assertNull( $themes->getNote( $note->id ) );
+		$this->assertNull( $themes->getDevelopment( $t->id ) );
 	}
 }

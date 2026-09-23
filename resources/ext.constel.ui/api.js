@@ -79,19 +79,6 @@ function conceptByLabel( label ) {
 }
 
 /**
- * Usuarios cuyo nombre empieza como el texto (primera letra en mayúscula,
- * como los títulos).
- *
- * @param {string} typed
- * @return {Promise<string[]>}
- */
-function searchUsers( typed ) {
-	const prefix = typed.charAt( 0 ).toUpperCase() + typed.slice( 1 );
-	return get().get( { action: 'query', list: 'allusers', auprefix: prefix, aulimit: 8 } )
-		.then( ( r ) => r.query.allusers.map( ( u ) => u.name ), () => [] );
-}
-
-/**
  * Páginas de contenido cuyo título empieza como el texto.
  *
  * @param {string} typed
@@ -121,6 +108,38 @@ function pageIds( titles ) {
 		.then( ( r ) => r.query.pages.filter( ( p ) => !p.missing ).map( ( p ) => p.pageid ) );
 }
 
+/**
+ * Lectores de con§tel cuyo nombre real o de usuario contiene el texto.
+ *
+ * @param {string} typed
+ * @return {Promise<Array<{value: string, label: string, hint: string}>>}
+ */
+function searchReaders( typed ) {
+	return get().get( { action: 'query', list: 'constelreaders', crsearch: typed } )
+		.then( ( r ) => r.query.constelreaders.map( ( u ) => ( {
+			value: u.name,
+			label: u.display,
+			hint: u.display !== u.name ? u.name : ''
+		} ) ), () => [] );
+}
+
+/**
+ * Nombre visible de cada usuario (nombre real o de usuario).
+ *
+ * @param {string[]} names
+ * @return {Promise<Map<string,string>>}
+ */
+function describeReaders( names ) {
+	if ( !names.length ) {
+		return Promise.resolve( new Map() );
+	}
+	return get().get( { action: 'query', list: 'constelreaders', crnames: names } )
+		.then(
+			( r ) => new Map( r.query.constelreaders.map( ( u ) => [ u.name, u.display ] ) ),
+			() => new Map()
+		);
+}
+
 function saveAck() {
 	return get().saveOption( 'constel-public-ack', '1' );
 }
@@ -128,5 +147,6 @@ function saveAck() {
 module.exports = {
 	listExcerpts, searchConcepts, write, describeError, saveAck,
 	graph, excerptsOfConcept, conceptThemes, themesOf, excerptsOf,
-	pageId: pageIdOf, conceptByLabel, searchUsers, searchPages, pageIds
+	pageId: pageIdOf, conceptByLabel, searchPages, pageIds,
+	searchReaders, describeReaders
 };
