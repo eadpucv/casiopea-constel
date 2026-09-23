@@ -64,6 +64,7 @@
 	"constellation-in-themes": "Heading: themes that contain the concept.",
 	"constellation-in-no-theme": "The concept is in no theme.",
 	"constellation-theme-of": "A theme and its owner. Parameters:\n* $1 - theme\n* $2 - username",
+	"constellation-list-themes": "In the text list of Special:Constellation (the accessible alternative to the graph), the themes of the current lens that contain a concept; in the graph this is shown by colour.\n\nParameters:\n* $1 - list of themes, each formatted with {{msg-mw|constellation-theme-of}}\n* $2 - number of themes, for PLURAL",
 	"constellation-group-into": "Accessible name of the theme selector.",
 	"constellation-group": "Button that puts the concept into the chosen theme.",
 	"constellation-ungroup": "Button label. Parameters:\n* $1 - concept",

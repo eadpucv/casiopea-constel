@@ -959,3 +959,17 @@ docs/ARCHITECTURE.md          este archivo
 | | D6 | Moderación: renombrar/fusionar, `Special:Log/constel` |
 | 0.2.0 | Ajustes | Glosa, preferencia, menú de usuario, un solo «Guardar», páginas anchas, mapa 3D, arista de misma página |
 | 0.3.0 | Constelación | Desactivada por defecto (pestaña de preferencias propia), barra del mapa con píldoras (lectores, páginas, lente), íconos Feather, exportar SVG, terminología «sección» |
+
+### Ideas para más adelante
+
+- **Envolventes de tema en el mapa** (propuesta del 2026-09-23). Hoy un tema
+  se ve sólo por el color de sus conceptos (`ThemeLens`), y en la lista
+  textual se nombra junto a cada uno (`AccessibleAlternative`). La idea es
+  dibujar, además, una envolvente por tema: una mancha suave (casco convexo
+  o contorno redondeado) bajo sus conceptos, del color del tema, con su
+  nombre. Preguntas abiertas antes de especificarla: qué pasa cuando la
+  lente suma varios lectores y un mismo concepto cae en temas de ambos
+  (envolventes que se cruzan), si la envolvente también atrae a sus
+  conceptos en el layout (una fuerza más, como las de proximidad) o sólo
+  se dibuja, y cómo se lee en 3D. No está en la spec: es rediseño del mapa,
+  no una divergencia.

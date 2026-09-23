@@ -64,6 +64,7 @@
 	"constellation-in-themes": "In themes",
 	"constellation-in-no-theme": "No reader has grouped it in a theme yet.",
 	"constellation-theme-of": "$1 ($2)",
+	"constellation-list-themes": "{{PLURAL:$2|theme|themes}}: $1",
 	"constellation-group-into": "Group into one of my themes",
 	"constellation-group": "Group",
 	"constellation-ungroup": "Take \"$1\" out of the theme",

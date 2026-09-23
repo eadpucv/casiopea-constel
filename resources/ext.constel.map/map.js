@@ -522,6 +522,14 @@ function main( root ) {
 				near.set( a, ( near.get( a ) || [] ).concat( entry ) );
 			} );
 		} );
+		// Los temas de la lente que contienen cada concepto: lo que en el
+		// grafo dice el color (spec: ConceptMap.AccessibleAlternative).
+		const themesOf = new Map();
+		state.themes.forEach( ( t ) => t.concepts.forEach( ( c ) => {
+			themesOf.set( c.id, ( themesOf.get( c.id ) || [] ).concat(
+				mw.msg( 'constellation-theme-of', t.label, lens.labelOf( t.author ) )
+			) );
+		} ) );
 		const byFrequency = ( a, b ) => b.excerpts - a.excerpts || a.label.localeCompare( b.label );
 		state.data.nodes.slice().sort( byFrequency )
 			.forEach( ( n ) => {
@@ -532,6 +540,12 @@ function main( root ) {
 				const counts = mw.msg( 'constellation-counts',
 					mw.language.convertNumber( n.excerpts ), mw.language.convertNumber( n.pages ) );
 				li.append( open, ' ', el( 'span', 'constel-map__count', counts ) );
+				const inThemes = themesOf.get( n.id ) || [];
+				if ( inThemes.length ) {
+					li.append( el( 'span', 'constel-map__in-themes', ' — ' + mw.msg(
+						'constellation-list-themes', mw.language.listToText( inThemes ), inThemes.length
+					) ) );
+				}
 				const links = ( near.get( n.id ) || [] ).sort( ( a, b ) => b.weight - a.weight );
 				if ( links.length ) {
 					const kinds = {

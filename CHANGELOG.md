@@ -2,6 +2,11 @@
 
 ## Sin publicar
 
+- **La lista del mapa nombra los temas.** «Ver como lista», la alternativa
+  textual del grafo, dice ahora en qué temas de la lente está cada concepto
+  («tema: el desastre (Herbert Spencer)»): lo que en el grafo dice el color
+  ya no se pierde para quien usa lector de pantalla. Queda anotada, en
+  ARCHITECTURE.md, la idea de dibujar envolventes de tema en el mapa.
 - **Borrar una página congela sus secciones.** Ya no se pierden: quedan en
   un estado nuevo, `frozen`, en el que sólo se pueden borrar. Su pasaje y su
   glosa los ven sólo su autor y quien tiene `deletedtext`, y no cuentan en el

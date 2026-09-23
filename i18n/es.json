@@ -64,6 +64,7 @@
 	"constellation-in-themes": "En temas",
 	"constellation-in-no-theme": "Ningún lector lo ha agrupado todavía en un tema.",
 	"constellation-theme-of": "$1 ($2)",
+	"constellation-list-themes": "{{PLURAL:$2|tema|temas}}: $1",
 	"constellation-group-into": "Agrupar en uno de mis temas",
 	"constellation-group": "Agrupar",
 	"constellation-ungroup": "Sacar «$1» del tema",
