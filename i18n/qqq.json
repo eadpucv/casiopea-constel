@@ -43,7 +43,6 @@
 	"constellation-node-label": "Accessible name of a concept in the graph. Parameters:\n* $1 - concept\n* $2 - sections\n* $3 - pages",
 	"constellation-loading": "Shown while loading.\n{{Identical|Loading}}",
 	"constellation-as-list": "Summary of the text alternative of the graph.",
-	"constellation-threshold": "Label of the minimum link weight (1 to 4).",
 	"constellation-edges": "Label of the checkbox that shows the links.",
 	"constellation-proximity": "Accessible name of the group of sliders that set the strength (0–100 %) of each proximity degree in the concept map.",
 	"constellation-force-coexcerpt": "Label of the slider for the strength of links between concepts coded in the same section.",
@@ -53,6 +52,8 @@
 	"constellation-zoom-in": "Zoom button.",
 	"constellation-zoom-out": "Zoom button.",
 	"constellation-zoom-reset": "Zoom reset button.",
+	"constellation-fullscreen": "Accessible name and tooltip of the button in the top-right corner of the concept map that shows only the map in full screen.",
+	"constellation-fullscreen-exit": "Accessible name and tooltip of the same button while the map is in full screen.",
 	"constellation-link-coexcerpt": "Link in the text list. Parameters:\n* $1 - concept\n* $2 - weight",
 	"constellation-link-overlap": "Link in the text list. Parameters:\n* $1 - concept\n* $2 - weight",
 	"constellation-back-to-themes": "Button that returns from a concept to the themes panel.",
@@ -95,7 +96,6 @@
 	"logentry-constel-merge": "{{Logentry}}\nParameters:\n* $4 - absorbed concept\n* $5 - kept concept",
 	"logentry-constel-delete": "{{Logentry}}\nParameters:\n* $4 - author of the section\n* $5 - the quoted section",
 	"constellation-moderate": "Heading of the moderation tools in the concept detail.",
-	"constellation-rename-concept": "Button.",
 	"constellation-merge-into": "Placeholder of the merge target field.",
 	"constellation-merge": "Button.",
 	"constellation-merge-confirm": "Confirmation. Parameters:\n* $1 - absorbed concept\n* $2 - kept concept",
@@ -136,5 +136,8 @@
 	"constellation-development-label": "Accessible label of a theme's development text area. Parameters:\n* $1 - theme label",
 	"constellation-development-placeholder": "Placeholder of the development text area of a theme.",
 	"constellation-development-save": "Button: saves the development of a theme (one text per theme).",
-	"constellation-moderate-concept": "Heading of the moderation tools shown under the map for the selected concept. Parameters:\n* $1 - concept label"
+	"constellation-moderate-concept": "Accessible name of the merge tool shown under the map for the selected concept. Parameters:\n* $1 - concept label",
+	"constellation-concept-name": "Accessible name and tooltip of the concept title, editable by moderators. $1: current concept label.",
+	"constellation-merge-concept": "Accessible name and tooltip of the merge field under the map. $1: concept label.",
+	"constellation-unpin": "Tooltip of the 2D map button that releases the concepts pinned by dragging and recomputes the layout."
 }

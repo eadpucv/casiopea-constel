@@ -1,6 +1,6 @@
 {
 	"name": "Casiopea-Con§tel",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"author": [
 		"[https://herbertspencer.net Herbert Spencer González]",
 		".:TIG:. Taller de Investigaciones Gráficas, e[ad] Escuela de Arquitectura y Diseño, Pontificia Universidad Católica de Valparaíso"
@@ -389,7 +389,6 @@
 				"constellation-loading",
 				"constellation-empty",
 				"constellation-as-list",
-				"constellation-threshold",
 				"constellation-edges",
 				"constellation-proximity",
 				"constellation-force-coexcerpt",
@@ -399,6 +398,8 @@
 				"constellation-zoom-in",
 				"constellation-zoom-out",
 				"constellation-zoom-reset",
+				"constellation-fullscreen",
+				"constellation-fullscreen-exit",
 				"constellation-link-overlap",
 				"constellation-link-coexcerpt",
 				"constellation-back-to-themes",
@@ -421,7 +422,6 @@
 				"constellation-theme-create",
 				"myconstel-status-lost",
 				"constellation-moderate",
-				"constellation-rename-concept",
 				"constellation-merge-into",
 				"constellation-merge",
 				"constellation-merge-confirm",
@@ -450,7 +450,10 @@
 				"constellation-development-label",
 				"constellation-development-placeholder",
 				"constellation-development-save",
-				"constellation-moderate-concept"
+				"constellation-moderate-concept",
+				"constellation-concept-name",
+				"constellation-merge-concept",
+				"constellation-unpin"
 			],
 			"dependencies": [
 				"ext.constel.ui",

@@ -1,5 +1,5 @@
 /**
- * El grafo de conceptos, en 3D (default) o 2D, dibujado en SVG sin
+ * El grafo de conceptos, en 2D (default) o 3D, dibujado en SVG sin
  * dependencias.
  *
  * Layout de fuerzas propio en tres dimensiones: repulsión entre todos,
@@ -13,6 +13,11 @@
  * En 2D los rótulos chocan y nunca se traslapan: cada uno ocupa su caja de
  * tinta (el alto y ancho reales de las letras) más un margen PAD igual por
  * los cuatro lados, y las cajas que se tocan se separan (separate()).
+ * Además, en 2D cada concepto se puede arrastrar (o mover con Alt+flechas)
+ * con la simulación en vivo: sus aristas tiran de los vecinos y las cajas
+ * chocan y se empujan mientras se mueve. Queda fijado donde se suelta
+ * (node.pin) y el layout lo respeta al recalcularse, hasta volver al orden
+ * automático.
  *
  * Presentación, no comportamiento: el spec sólo fija qué se expone
  * (ConceptMap); tamaños, fuerzas y colores son del lado del diseño.
@@ -25,6 +30,10 @@ const HEIGHT = 500;
 const RADIUS = 210;
 /** Distancia de la cámara (perspectiva). */
 const CAMERA = 900;
+/** Gravedad al centro del layout (ver layout()). */
+const GRAVITY = 1.5;
+/** 2D: largo ideal de una arista, en anchos medios de rótulo. */
+const EDGE_IN_LABELS = 1.3;
 /** Margen de la caja de cada rótulo en 2D: igual por los cuatro lados. */
 const PAD = 3;
 
@@ -57,12 +66,22 @@ function sizer( nodes ) {
  * @param {Map<number,number>} themeOf concepto → índice de tema
  * @param {number} dims 2 o 3
  * @param {Object} [forces] fuerza de cada grado de proximidad (0–1)
+ * @param {number} [unit] 2D: a cuánto equivale el largo ideal de una arista
+ *  (en unidades del lienzo). Sin él, el mapa se normaliza a una esfera de
+ *  radio RADIUS; con él, la escala no depende de las fuerzas y bajar una
+ *  fuerza abre de verdad a sus conceptos respecto de sus rótulos.
  */
-function layout( nodes, links, themeOf, dims, forces ) {
+function layout( nodes, links, themeOf, dims, forces, unit ) {
 	const byId = new Map( nodes.map( ( node ) => [ node.id, node ] ) );
 	const n = nodes.length;
 	const k = Math.sqrt( ( 600 * 600 ) / Math.max( 1, n ) );
+	const scale = dims === 2 && unit ? unit / k : 0;
 	nodes.forEach( ( node, i ) => {
+		if ( node.x !== undefined && scale ) {
+			// Semilla: la posición anterior, de vuelta a unidades del layout.
+			node.x /= scale;
+			node.y /= scale;
+		}
 		if ( node.x === undefined ) {
 			// Espiral de Fibonacci: el mismo mapa cae igual cada vez.
 			const t = ( i + 0.5 ) / Math.max( 1, n );
@@ -75,14 +94,22 @@ function layout( nodes, links, themeOf, dims, forces ) {
 		}
 		if ( dims === 2 ) {
 			node.z = 0;
+			if ( node.pin ) {
+				node.x = node.pin.x / ( scale || 1 );
+				node.y = node.pin.y / ( scale || 1 );
+			}
 		}
 	} );
+	// En 2D, los fijados a mano no se mueven: el resto se acomoda a ellos.
+	const held = ( node ) => dims === 2 && !!node.pin;
 	let temperature = k * 2;
 	for ( let it = 0; it < 300; it++ ) {
 		for ( const a of nodes ) {
-			a.dx = -a.x * 0.05;
-			a.dy = -a.y * 0.05;
-			a.dz = -a.z * 0.05;
+			// Gravedad al centro: con la repulsión k²/d, el mapa ocupa un
+			// área del orden de n·k² (la de Fruchterman-Reingold).
+			a.dx = -a.x * GRAVITY;
+			a.dy = -a.y * GRAVITY;
+			a.dz = -a.z * GRAVITY;
 		}
 		for ( let i = 0; i < n; i++ ) {
 			const a = nodes[ i ];
@@ -107,8 +134,10 @@ function layout( nodes, links, themeOf, dims, forces ) {
 			const dy = a.y - b.y;
 			const dz = a.z - b.z;
 			const d = Math.max( 0.1, Math.sqrt( dx * dx + dy * dy + dz * dz ) );
-			// Cada grado de proximidad atrae con su propia fuerza (0–1).
-			const force = d * Math.log2( 1 + l.weight ) / k * forceOf( forces, l.kind );
+			// Resorte de Fruchterman-Reingold (d²/k frente a la repulsión k²/d):
+			// cada grado de proximidad atrae con su propia fuerza (0–1), así
+			// que bajarla abre de verdad a sus conceptos.
+			const force = d * d * Math.log2( 1 + l.weight ) / k * forceOf( forces, l.kind );
 			a.dx -= dx / d * force;
 			a.dy -= dy / d * force;
 			a.dz -= dz / d * force;
@@ -139,6 +168,9 @@ function layout( nodes, links, themeOf, dims, forces ) {
 			}
 		}
 		for ( const node of nodes ) {
+			if ( held( node ) ) {
+				continue;
+			}
 			const d = Math.max( 0.01, Math.hypot( node.dx, node.dy, node.dz ) );
 			const step = Math.min( d, temperature ) / d;
 			node.x += node.dx * step;
@@ -146,6 +178,14 @@ function layout( nodes, links, themeOf, dims, forces ) {
 			node.z = dims === 2 ? 0 : node.z + node.dz * step;
 		}
 		temperature *= 0.97;
+	}
+	if ( scale ) {
+		// 2D: escala fija (el centrado y el encuadre los hace draw()).
+		for ( const node of nodes ) {
+			node.x *= scale;
+			node.y *= scale;
+		}
+		return;
 	}
 	// Normalizar a una esfera de radio RADIUS centrada en el origen.
 	const cx = nodes.reduce( ( s, v ) => s + v.x, 0 ) / Math.max( 1, n );
@@ -191,51 +231,72 @@ function inkBoxes( nodes, nodeEls, size ) {
 }
 
 /**
- * Separa las cajas que se traslapan: cada par se aparta, mitad y mitad, por
- * el eje donde se pisan menos. Si en una zona densa los empujones no bastan,
- * se abre todo el mapa un poco (alejar puntos nunca crea choques nuevos) y se
- * vuelve a intentar, hasta que ninguna caja toque a otra.
+ * Una pasada de choques entre cajas: cada par que se pisa se aparta por el
+ * eje donde se pisa menos, en la fracción `k` del traslape. Un concepto fijo
+ * (node.pin, o `hold`, el que se arrastra) no se aparta: el otro se mueve
+ * entero; `hold` tiene prioridad incluso sobre otro fijado.
  *
  * @param {Array} nodes (mutan x, y)
  * @param {Map<number,Object>} boxes de inkBoxes()
+ * @param {Object|null} hold
+ * @param {number} k 1 = separar del todo; menos, un empujón blando
+ * @return {boolean} si alguna caja se movió
  */
-function separate( nodes, boxes ) {
+function collide( nodes, boxes, hold, k ) {
 	const n = nodes.length;
 	// Sin dirección (mismo punto): una fija según el orden, así el mapa cae
 	// igual cada vez.
 	const sign = ( d, i, j ) => d > 0 || ( d === 0 && ( i + j ) % 2 === 0 ) ? 1 : -1;
-	const pass = () => {
-		let moved = false;
-		for ( let i = 0; i < n; i++ ) {
-			const a = nodes[ i ];
-			const ba = boxes.get( a.id );
-			for ( let j = i + 1; j < n; j++ ) {
-				const b = nodes[ j ];
-				const bb = boxes.get( b.id );
-				const dx = b.x - a.x;
-				const dy = b.y - a.y;
-				const overX = ba.w + bb.w - Math.abs( dx );
-				const overY = ba.h + bb.h - Math.abs( dy );
-				if ( overX <= 0 || overY <= 0 ) {
-					continue;
-				}
-				moved = true;
-				if ( overX < overY ) {
-					const push = ( overX / 2 + 0.01 ) * sign( dx, i, j );
-					a.x -= push;
-					b.x += push;
-				} else {
-					const push = ( overY / 2 + 0.01 ) * sign( dy, i, j );
-					a.y -= push;
-					b.y += push;
-				}
+	// Cuánto le toca moverse a cada uno del par (suman 1).
+	const share = ( a, b ) => {
+		const ma = a === hold ? 0 : a.pin ? 0.1 : 1;
+		const mb = b === hold ? 0 : b.pin ? 0.1 : 1;
+		return ma + mb ? [ ma / ( ma + mb ), mb / ( ma + mb ) ] : [ 0.5, 0.5 ];
+	};
+	let moved = false;
+	for ( let i = 0; i < n; i++ ) {
+		const a = nodes[ i ];
+		const ba = boxes.get( a.id );
+		for ( let j = i + 1; j < n; j++ ) {
+			const b = nodes[ j ];
+			const bb = boxes.get( b.id );
+			const dx = b.x - a.x;
+			const dy = b.y - a.y;
+			const overX = ba.w + bb.w - Math.abs( dx );
+			const overY = ba.h + bb.h - Math.abs( dy );
+			if ( overX <= 0 || overY <= 0 ) {
+				continue;
+			}
+			moved = true;
+			const [ sa, sb ] = share( a, b );
+			if ( overX < overY ) {
+				const push = ( overX + 0.02 ) * k * sign( dx, i, j );
+				a.x -= push * sa;
+				b.x += push * sb;
+			} else {
+				const push = ( overY + 0.02 ) * k * sign( dy, i, j );
+				a.y -= push * sa;
+				b.y += push * sb;
 			}
 		}
-		return moved;
-	};
+	}
+	return moved;
+}
+
+/**
+ * Separa las cajas que se traslapan (collide() hasta que no quede choque).
+ * Si en una zona densa los empujones no bastan, se abre todo el mapa un poco
+ * (alejar puntos nunca crea choques nuevos) y se vuelve a intentar, hasta que
+ * ninguna caja toque a otra.
+ *
+ * @param {Array} nodes (mutan x, y)
+ * @param {Map<number,Object>} boxes de inkBoxes()
+ * @param {Object} [hold] nodo que no se mueve
+ */
+function separate( nodes, boxes, hold ) {
 	for ( let round = 0; round < 100; round++ ) {
 		for ( let it = 0; it < 60; it++ ) {
-			if ( !pass() ) {
+			if ( !collide( nodes, boxes, hold || null, 1 ) ) {
 				return;
 			}
 		}
@@ -263,6 +324,11 @@ const FORCES = { co_excerpt: 1, overlap: 0.6, co_page: 0.35 };
 // eslint-disable-next-line camelcase
 const OPACITY = { co_excerpt: 0.85, overlap: 0.6, co_page: 0.4 };
 
+/** Flechas del teclado → dirección (x, y). */
+const ARROWS = {
+	ArrowLeft: [ -1, 0 ], ArrowRight: [ 1, 0 ], ArrowUp: [ 0, -1 ], ArrowDown: [ 0, 1 ]
+};
+
 function forceOf( forces, kind ) {
 	const f = forces && forces[ kind ];
 	return typeof f === 'number' ? f : ( FORCES[ kind ] !== undefined ? FORCES[ kind ] : 1 );
@@ -273,7 +339,7 @@ function forceOf( forces, kind ) {
  *
  * @param {HTMLElement} container
  * @param {Object} data {nodes, links}
- * @param {Object} view {mode: '3d'|'2d', threshold, edges, autorotate, fill,
+ * @param {Object} view {mode: '3d'|'2d', edges, autorotate, fill,
  *  forces: {co_excerpt, overlap, co_page} (0–1; 0 = sin arista ni atracción),
  *  themeOf: Map, onSelect}
  * @return {Object} controles: zoomIn, zoomOut, reset, select, setAutorotate, destroy
@@ -281,15 +347,16 @@ function forceOf( forces, kind ) {
 function draw( container, data, view ) {
 	container.textContent = '';
 	const nodes = data.nodes;
-	const links = data.links.filter( ( l ) => l.weight >= view.threshold &&
-		forceOf( view.forces, l.kind ) > 0 );
+	const links = data.links.filter( ( l ) => forceOf( view.forces, l.kind ) > 0 );
 	const is3d = view.mode !== '2d';
 	nodes.forEach( ( node ) => {
 		if ( !is3d ) {
 			node.z = 0;
 		}
 	} );
-	layout( nodes, links, view.themeOf, is3d ? 3 : 2, view.forces );
+	if ( is3d ) {
+		layout( nodes, links, view.themeOf, 3, view.forces );
+	}
 
 	// ── Cámara ────────────────────────────────────────────────────────────
 	const reduce = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
@@ -298,6 +365,9 @@ function draw( container, data, view ) {
 	let zoom = 1;
 	let hovering = false;
 	let dragging = null;
+	// 2D: el concepto que se arrastra, y el recién soltado (su clic no elige).
+	let grab = null;
+	let moved = null;
 	let frame = null;
 	let lastSort = 0;
 	let autorotate = !!view.autorotate;
@@ -358,6 +428,9 @@ function draw( container, data, view ) {
 		if ( node.mine ) {
 			classes.push( 'constel-graph__node--mine' );
 		}
+		if ( !is3d && node.pin ) {
+			classes.push( 'constel-graph__node--pinned' );
+		}
 		if ( theme !== undefined ) {
 			// Clases: constel-graph__node--cat-0 … constel-graph__node--cat-7
 			classes.push( 'constel-graph__node--cat-' + ( theme % CATEGORIES ) );
@@ -374,13 +447,75 @@ function draw( container, data, view ) {
 		} );
 		text.textContent = node.label;
 		const activate = () => view.onSelect( node );
-		text.addEventListener( 'click', activate );
+		text.addEventListener( 'click', ( e ) => {
+			// Soltar después de arrastrar no es elegir.
+			if ( moved === node ) {
+				moved = null;
+				e.stopPropagation();
+				return;
+			}
+			activate();
+		} );
 		text.addEventListener( 'keydown', ( e ) => {
 			if ( e.key === 'Enter' || e.key === ' ' ) {
 				e.preventDefault();
 				activate();
+			} else if ( !is3d && e.altKey && ARROWS[ e.key ] ) {
+				// Alternativa de teclado al arrastre (WCAG 2.5.7): el mismo
+				// empujón, con la simulación reaccionando.
+				e.preventDefault();
+				hold( node );
+				node.x += ARROWS[ e.key ][ 0 ] * 12 / zoom;
+				node.y += ARROWS[ e.key ][ 1 ] * 12 / zoom;
+				release( node );
 			}
 		} );
+		if ( !is3d ) {
+			text.addEventListener( 'pointerdown', ( e ) => {
+				if ( e.button !== 0 ) {
+					return;
+				}
+				e.preventDefault();
+				grab = { node, x: e.clientX, y: e.clientY, nx: node.x, ny: node.y, far: false };
+				text.setPointerCapture( e.pointerId );
+			} );
+			text.addEventListener( 'pointermove', ( e ) => {
+				if ( !grab || grab.node !== node ) {
+					return;
+				}
+				const s = W / root.clientWidth / zoom;
+				const dx = ( e.clientX - grab.x ) * s;
+				const dy = ( e.clientY - grab.y ) * s;
+				if ( !grab.far && Math.hypot( e.clientX - grab.x, e.clientY - grab.y ) < 4 ) {
+					return;
+				}
+				if ( !grab.far ) {
+					grab.far = true;
+					root.classList.add( 'constel-graph--dragging' );
+					hold( node );
+				}
+				node.x = grab.nx + dx;
+				node.y = grab.ny + dy;
+				if ( reduce ) {
+					render();
+				} else {
+					resume();
+				}
+			} );
+			const letGo = () => {
+				if ( !grab || grab.node !== node ) {
+					return;
+				}
+				root.classList.remove( 'constel-graph--dragging' );
+				if ( grab.far ) {
+					moved = node;
+					release( node );
+				}
+				grab = null;
+			};
+			text.addEventListener( 'pointerup', letGo );
+			text.addEventListener( 'pointercancel', letGo );
+		}
 		const focus = ( on ) => {
 			hovering = on;
 			root.classList.toggle( 'constel-graph--focus', on );
@@ -400,6 +535,18 @@ function draw( container, data, view ) {
 	} );
 	stage.appendChild( nodeLayer );
 	container.appendChild( root );
+
+	// 2D: el layout se hace a la escala de los rótulos (ya medibles en la
+	// página): una arista ideal mide EDGE_IN_LABELS anchos medios de rótulo.
+	if ( !is3d && nodes.length ) {
+		const measured0 = inkBoxes( nodes, nodeEls, size );
+		let wide = 0;
+		measured0.forEach( ( b ) => {
+			wide += 2 * b.w;
+		} );
+		layout( nodes, links, view.themeOf, 2, view.forces,
+			EDGE_IN_LABELS * wide / measured0.size );
+	}
 
 	// 2D: rótulos sin traslapes, centrados y encuadrados en el lienzo.
 	let boxes = null;
@@ -423,6 +570,10 @@ function draw( container, data, view ) {
 		for ( const node of nodes ) {
 			node.x -= midX;
 			node.y -= midY;
+			// Los fijados siguen en su lugar relativo, en el marco nuevo.
+			if ( node.pin ) {
+				node.pin = { x: node.x, y: node.y };
+			}
 		}
 		// El zoom escala posiciones y letras por igual: no reabre traslapes.
 		fit = Math.min( 1, 0.96 * W / Math.max( 1, maxX - minX ),
@@ -500,6 +651,14 @@ function draw( container, data, view ) {
 			}
 			again = true;
 		}
+		if ( !is3d && boxes && warm() ) {
+			if ( reduce ) {
+				render();
+			} else {
+				simStep();
+				again = warm();
+			}
+		}
 		const idle = !hovering && !dragging;
 		if ( is3d && autorotate && !reduce && idle ) {
 			yaw += 0.0025;
@@ -510,11 +669,11 @@ function draw( container, data, view ) {
 			frame = requestAnimationFrame( tick );
 		}
 	}
-	const resume = () => {
+	function resume() {
 		if ( !frame ) {
 			frame = requestAnimationFrame( tick );
 		}
-	};
+	}
 	// Lleva el centro del mapa al concepto (o, con null, al origen).
 	const aim = ( node ) => {
 		target.x = node ? node.x : 0;
@@ -527,6 +686,124 @@ function draw( container, data, view ) {
 			resume();
 		}
 	};
+
+	// ── 2D: simulación en vivo ────────────────────────────────────────────
+	// Al tomar un concepto el layout se recalienta (como d3-force): cada
+	// arista es un resorte con el largo que tenía al empezar y la fuerza de
+	// su grado, las cajas chocan y se empujan, y cada concepto tiende
+	// suavemente a su lugar de partida para que el mapa no se vaya entero
+	// detrás del puntero. El que se arrastra y los ya fijados no se mueven
+	// por la simulación. Al soltar, el arrastrado queda fijado (node.pin) y
+	// el resto se enfría donde quedó.
+	const sim = { alpha: 0, target: 0, held: null, last: null, springs: [] };
+	const DECAY = 0.03;
+	// Tendencia de cada concepto a su lugar de partida.
+	const ANCHOR = 0.01;
+	function warm() {
+		return sim.alpha > 0.004 || sim.target > 0;
+	}
+	const still = ( n ) => n === sim.held || !!n.pin;
+	function heatUp() {
+		if ( warm() ) {
+			return;
+		}
+		// En frío: los lugares de partida y los largos de reposo son los de ahora.
+		// Cuántos vecinos distintos tiene cada uno (un par puede tener hasta
+		// tres aristas, una por grado): los muy conectados se reparten el tirón.
+		const near = new Map( nodes.map( ( n ) => [ n.id, new Set() ] ) );
+		links.forEach( ( l ) => {
+			near.get( l.source ).add( l.target );
+			near.get( l.target ).add( l.source );
+		} );
+		const count = new Map( [ ...near ].map( ( [ id, set ] ) => [ id, set.size ] ) );
+		sim.springs = links.map( ( l ) => {
+			const a = byId.get( l.source );
+			const b = byId.get( l.target );
+			const ca = count.get( l.source );
+			const cb = count.get( l.target );
+			return {
+				a,
+				b,
+				rest: Math.hypot( b.x - a.x, b.y - a.y ),
+				k: forceOf( view.forces, l.kind ) / Math.min( ca, cb ),
+				bias: ca / ( ca + cb )
+			};
+		} );
+		for ( const n of nodes ) {
+			n.hx = n.x;
+			n.hy = n.y;
+			n.vx = 0;
+			n.vy = 0;
+		}
+	}
+	function simStep() {
+		sim.alpha += ( sim.target - sim.alpha ) * DECAY;
+		const alpha = sim.alpha;
+		for ( const s of sim.springs ) {
+			let dx = s.b.x + s.b.vx - s.a.x - s.a.vx;
+			let dy = s.b.y + s.b.vy - s.a.y - s.a.vy;
+			const l = Math.hypot( dx, dy ) || 0.01;
+			const f = ( l - s.rest ) / l * alpha * s.k;
+			dx *= f;
+			dy *= f;
+			s.b.vx -= dx * s.bias;
+			s.b.vy -= dy * s.bias;
+			s.a.vx += dx * ( 1 - s.bias );
+			s.a.vy += dy * ( 1 - s.bias );
+		}
+		for ( const n of nodes ) {
+			if ( still( n ) ) {
+				n.vx = 0;
+				n.vy = 0;
+				continue;
+			}
+			n.vx = ( n.vx + ( n.hx - n.x ) * ANCHOR * alpha ) * 0.6;
+			n.vy = ( n.vy + ( n.hy - n.y ) * ANCHOR * alpha ) * 0.6;
+			n.x += n.vx;
+			n.y += n.vy;
+		}
+		// Choques en vivo, blandos (el arrastrado empuja, nunca cede).
+		collide( nodes, boxes, sim.held || sim.last, 0.5 );
+		if ( !warm() ) {
+			cool();
+		}
+	}
+	// Enfriado: ninguna caja queda pisando a otra (LabelsNeverOverlapIn2D) y
+	// los fijados guardan su lugar en este marco.
+	function cool() {
+		sim.alpha = 0;
+		separate( nodes, boxes, sim.last );
+		for ( const n of nodes ) {
+			if ( n.pin ) {
+				n.pin = { x: n.x, y: n.y };
+			}
+		}
+		render();
+		if ( view.onArrange ) {
+			view.onArrange();
+		}
+	}
+	function hold( node ) {
+		heatUp();
+		sim.held = node;
+		sim.target = 0.3;
+		sim.alpha = Math.max( sim.alpha, 0.3 );
+	}
+	function release( node ) {
+		node.pin = { x: node.x, y: node.y };
+		nodeEls.get( node.id ).classList.add( 'constel-graph__node--pinned' );
+		sim.held = null;
+		sim.last = node;
+		sim.target = 0;
+		if ( reduce ) {
+			// Sin animación: la simulación corre de una vez.
+			while ( warm() ) {
+				simStep();
+			}
+		} else {
+			resume();
+		}
+	}
 
 	// Arrastrar: orbitar en 3D, panear en 2D.
 	let pan = { x: 0, y: 0 };
@@ -576,10 +853,7 @@ function draw( container, data, view ) {
 	}, { passive: false } );
 	// Teclado: flechas orbitan (3D) o panean (2D) con el foco en el grafo.
 	root.addEventListener( 'keydown', ( e ) => {
-		const arrows = {
-			ArrowLeft: [ -1, 0 ], ArrowRight: [ 1, 0 ], ArrowUp: [ 0, -1 ], ArrowDown: [ 0, 1 ]
-		};
-		const step = arrows[ e.key ];
+		const step = ARROWS[ e.key ];
 		if ( !step || e.target !== root ) {
 			return;
 		}

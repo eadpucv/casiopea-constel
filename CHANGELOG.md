@@ -1,5 +1,55 @@
 # Changelog — Casiopea-Con§tel
 
+## 0.6.0 — 2026-09-23
+
+- **El mapa abre en 2D.** Es la vista por defecto de Especial:Constelación
+  (3D queda en el selector «Vista»): se lee de un vistazo y se arregla a
+  mano.
+- **README: marginalia compartida y suelo común.** El README abre con el
+  sentido de con§tel, leído en sus textos de Casiopea: la marginalia
+  compartida, el suelo común (textos y léxico) para que haya pueblo, los
+  gestos § · [a] · [n], el mapa como figura de todos y los antecedentes
+  (2005–2006).
+- **Pantalla completa del puro mapa.** Un botón en la esquina superior
+  derecha del mapa (`maximize`) lo lleva a pantalla completa y ahí cambia a
+  `minimize` para salir (también con Esc); el lienzo llena la pantalla y
+  sigue su tamaño. «Encuadrar todo el mapa» pasa al ícono `crosshair`.
+- **Marca en la barra del mapa.** «CON§TEL» en versales pequeñas y con aire
+  entre letras, como isotipo, al inicio de la barra y centrada en su altura.
+- **Sin «Peso mínimo» en la barra del mapa.** El umbral global mezclaba
+  escalas que no se comparan (§§ compartidos, pares traslapados, páginas
+  compartidas) y se pisaba con la fuerza de cada grado, sobre todo con
+  «Mismo texto». Cuánto se ve de cada relación lo deciden ahora sólo las
+  tres fuerzas; el peso sigue modulando el resorte y el grosor. Los íconos
+  de la barra toman más aire respecto de su control.
+- **Arreglar el mapa 2D a mano, con el layout en vivo.** En 2D cada
+  concepto se arrastra (o se mueve con Alt+flechas sobre él) y el mapa
+  reacciona mientras se mueve: sus aristas tiran de los vecinos con la
+  fuerza de su grado y los rótulos chocan y se empujan. Queda fijado donde
+  se suelta, el resto se enfría sin traslapes y el layout lo respeta al
+  cambiar fuerzas, filtros o ir y volver de 3D. Un clic sin arrastrar sigue
+  eligiendo el concepto. «Volver al orden automático» (`rotate-ccw`, en la
+  barra, sólo en 2D y si hay fijados) los suelta a todos.
+- **Las fuerzas ahora se ven en el mapa 2D.** El resorte de cada arista era
+  demasiado débil frente a la repulsión (faltaba un factor d) y el layout se
+  normalizaba por el concepto más lejano, así que los tres sliders casi no
+  cambiaban nada. Ahora el resorte es d²/k, la gravedad sostiene un área
+  razonable y en 2D la escala se mide en rótulos: al 100 % el grupo se
+  aprieta y al 5 % se abre.
+- **Moderación más liviana.** Renombrar un concepto se hace en su título,
+  en el panel, con el mismo patrón que el título de un tema (Intro o salir
+  guarda, Esc cancela). Bajo el mapa queda sólo fusionar, en una línea
+  (ícono `git-merge`, campo y botón) y sin el encabezado «Moderar».
+- **Botones del panel más tenues.** «Guardar desarrollo», «Crear tema» y
+  «Agrupar» dejan el fondo oscuro sólido: van contorneados como «Fusionar»,
+  con borde y texto en `--sn-ink-faint`.
+- **Botones de verdad en Especial:MiConstel.** «Exportar (ZIP para con§tel)»
+  y «Ver la constelación» son enlaces con clase `constel-button`, y el
+  `.sn-body a` del skin les ganaba en especificidad: se veían subrayados y
+  en color de enlace. `a.constel-button:is( :link, :visited, … )` les
+  devuelve el color del botón (claro sobre oscuro en el primario) y les
+  quita el subrayado.
+
 ## 0.5.0 — 2026-09-23
 
 - **Especial:Constelación a pantalla completa.** El mapa posee el viewport,

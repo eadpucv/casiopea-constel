@@ -676,7 +676,7 @@ llamamos **ante-dentro** (ante, el grafo; dentro, el panel): la división es un
 título e introducción sólo para lectores de pantalla, y la primera fila de la
 barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
 
-- `graph.js`: layout de fuerzas propio en **3D** (por defecto) o 2D, sin
+- `graph.js`: layout de fuerzas propio en **2D** (por defecto) o 3D, sin
   dependencias: repulsión, resortes según peso y clase de arista, gravedad y
   atracción al centroide del tema. Se normaliza a una esfera y se proyecta en
   perspectiva sobre SVG; lo lejano se atenúa y lo cercano se pinta encima. Se
@@ -685,7 +685,8 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   actúa con `prefers-reduced-motion`. Los rótulos miden entre 11 y 31 px
   (0.6·§§ + 0.4·páginas, como constel) y escalan con la perspectiva. Aristas
   con grosor constante en pantalla (`vector-effect: non-scaling-stroke`):
-  continuas (co_excerpt), rayadas (overlap) y punteadas tenues (co_page).
+  siempre continuas; el grado (co_excerpt, overlap, co_page) se lee en su
+  opacidad, que crece con la fuerza del grado.
   **En 2D los rótulos chocan y nunca se traslapan:** cada uno ocupa su caja
   de tinta (ancho y alto reales de las letras, medidos en un canvas con la
   tipografía del skin) más un margen igual por los cuatro lados (`PAD`); la
@@ -693,7 +694,19 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   pisan por el eje de menor traslape y, si una zona densa no cede, abre el
   mapa un 15 % y reintenta; al final se encuadra con el zoom, que escala
   posiciones y letras por igual. Si la tipografía web llega tarde, se mide de
-  nuevo.
+  nuevo. En 2D el layout se hace a la escala de los rótulos (una arista ideal
+  mide `EDGE_IN_LABELS` anchos medios de rótulo) en vez de normalizarse por
+  el concepto más lejano, para que bajar o subir una fuerza se vea. El resorte
+  es el de Fruchterman-Reingold (d²/k) y la gravedad (`GRAVITY`) mantiene el
+  área del orden de n·k². **En 2D los conceptos se arrastran** (o se mueven
+  con Alt+flechas) con una simulación en vivo, al estilo de d3-force:
+  resortes por arista con el largo que tenían y la fuerza de su grado,
+  choques blandos entre cajas (`collide()`) y un ancla suave a su lugar de
+  partida. El que se suelta queda fijado (`node.pin`); al enfriarse,
+  `separate()` asegura que nada se traslape y `layout()` lo mantiene quieto
+  al recalcular; el botón
+  `rotate-ccw` de la barra (sólo en 2D y con fijados) vuelve al orden
+  automático.
   Zoom con botones o Ctrl+rueda. Cada nodo es texto SVG enfocable (Enter lo
   abre).
 - `sidepanel.js`: el detalle de un concepto (título sin «§» —el § es de la
@@ -703,12 +716,13 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   (crear, renombrar, borrar, desagrupar y **un desarrollo por tema**, que se
   guarda entero). Títulos h4 (concepto, «Mis temas») y h5 (cada tema, «En
   temas»); el tema lleva su color del grafo en el título, sin viñeta. Los
-  temas de otro lector (la **lente**) se muestran en solo lectura. La
-  moderación del concepto seleccionado (renombrar, fusionar) se dibuja **bajo
-  el mapa**, no en el panel.
+  temas de otro lector (la **lente**) se muestran en solo lectura. Quien
+  modera **renombra** el concepto en su título, que se edita en su lugar como
+  el de un tema (`inlineName()`); **fusionar** va bajo el mapa, en una sola
+  línea (`git-merge`, campo con autocompletado, botón), sin encabezado.
 - `map.js`: la barra de herramientas en dos filas y la lista navegable
   (`AccessibleAlternative`). Fila 1: vista 2D/3D con «Girar solo» al lado
-  (solo en 3D); «Mostrar aristas», que muestra u oculta el peso mínimo (1 a 4);
+  (solo en 3D); «Mostrar aristas» y la fuerza de cada grado de proximidad;
   navegación con íconos Feather: acercar, alejar, encuadrar y **exportar
   SVG**. La exportación baja el grafo tal como se ve (vista, filtros y
   proyección 3D actuales) como SVG autónomo: los colores y tipografías, que

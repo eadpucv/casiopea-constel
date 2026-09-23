@@ -41,10 +41,25 @@
 	align-items: center;
 }
 
+/* La marca: CON§TEL en versales pequeñas, con aire entre letras, centrada
+ * en la altura de la barra. */
+.constel-map__brand {
+	flex: none;
+	align-self: center;
+	color: var( --constel-ink );
+	font-family: var( --constel-font-ui );
+	font-size: 0.87rem;
+	font-weight: 382;
+	letter-spacing: 0.12ex;
+	line-height: 1;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
 /* Control con ícono en vez de rótulo: ícono · control, en una línea. */
 .constel-map__field--icon {
 	display: inline-flex;
-	gap: var( --constel-s-1 );
+	gap: var( --constel-s-2 );
 	align-items: center;
 }
 
@@ -97,10 +112,6 @@
 	min-width: 3.5ch;
 	color: var( --constel-ink-soft );
 	font-variant-numeric: tabular-nums;
-}
-
-.constel-map__threshold {
-	width: 4.5rem;
 }
 
 .constel-map__zoom {
@@ -300,6 +311,19 @@
 	stroke-width: 3px;
 }
 
+/* 2D: los conceptos se arrastran para arreglar el layout a mano. */
+/* :where() = misma especificidad que la regla base: gana por orden. */
+:where( .constel-graph:not( .constel-graph--3d ) ) .constel-graph__node {
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+
+.constel-graph--dragging,
+:where( .constel-graph--dragging ) .constel-graph__node {
+	cursor: grabbing;
+}
+
 .constel-graph__node--mine {
 	fill: var( --constel-ink );
 }
@@ -355,8 +379,7 @@
 
 /* Títulos h4/h5 propios: sin mayúsculas ni color de acento del skin
  * (Stella Nova estiliza .sn-body h5; hace falta una clase más). */
-.constel-map .constel-map__side :is( h4, h5 ),
-.constel-map .constel-map__below h4 {
+.constel-map .constel-map__side :is( h4, h5 ) {
 	letter-spacing: normal;
 	text-transform: none;
 	color: var( --constel-ink );
@@ -400,23 +423,24 @@
 }
 
 .constel-map__moderation {
-	margin-top: var( --constel-s-3 );
-	padding: var( --constel-s-3 );
-	border: 1px solid var( --constel-hairline-soft );
-	border-radius: var( --constel-radius-l );
+	margin-top: var( --constel-s-2 );
 	font-family: var( --constel-font-ui );
 	font-size: var( --constel-fs-sm );
 }
 
-.constel-map .constel-map__moderation h4 {
-	margin: 0 0 var( --constel-s-2 );
-	font-family: var( --constel-font-ui );
-	font-size: var( --constel-fs-sm );
-	font-weight: 600;
+/* Fusionar: ícono, campo y botón en una sola línea. */
+.constel-map__moderation .constel-map__merge {
+	flex-wrap: nowrap;
+	max-width: 28rem;
+	margin-top: 0;
 }
 
-.constel-map__moderation .constel-add {
-	max-width: 32rem;
+.constel-map__moderation .constel-map__merge .constel-button {
+	flex: none;
+}
+
+.constel-map__moderation .constel-confirm {
+	margin-top: var( --constel-s-2 );
 }
 
 .constel-side__excerpt {
@@ -712,7 +736,7 @@
 .constel-map--full .constel-map__below:not( :empty ) {
 	flex: none;
 	max-height: 40%;
-	padding: 0 var( --constel-s-3 ) var( --constel-s-3 );
+	padding: 0 var( --constel-s-3 ) var( --constel-s-2 );
 	overflow-y: auto;
 }
 
@@ -765,4 +789,83 @@
 .constel-pills--icon .constel-pills__box {
 	flex: 1;
 	min-width: 0;
+}
+
+/* ── Visor del mapa y su pantalla completa ───────────────────────────────
+ * El botón maximize/minimize flota en la esquina superior derecha del
+ * lienzo. En pantalla completa, el visor ocupa toda la pantalla y el lienzo
+ * lo llena (el viewBox lo sigue: graph.js, ResizeObserver). */
+.constel-map__viewport {
+	position: relative;
+	min-width: 0;
+}
+
+.constel-map .constel-map__fullscreen {
+	position: absolute;
+	top: var( --constel-s-2 );
+	right: var( --constel-s-2 );
+	z-index: 1;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var( --constel-icon );
+}
+
+/* Sin bordes: sólo el ícono, que se acentúa al pasar o enfocar. */
+.constel-map .constel-map__fullscreen:hover {
+	background: transparent;
+	color: var( --constel-icon-active );
+}
+
+.constel-map .constel-map__fullscreen:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-map--full .constel-map__viewport {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.constel-map__viewport:fullscreen {
+	display: flex;
+	flex-direction: column;
+	background: var( --constel-surface-sunk );
+}
+
+.constel-map__viewport:fullscreen .constel-map__canvas {
+	flex: 1;
+	min-height: 0;
+	border: 0;
+	border-radius: 0;
+}
+
+.constel-map__viewport:fullscreen .constel-graph {
+	height: 100%;
+	aspect-ratio: auto;
+}
+
+@media ( max-width: 50rem ) {
+	.constel-map--full .constel-map__viewport {
+		flex: none;
+	}
+}
+
+.constel-map__zoom .constel-button[ hidden ] {
+	display: none;
+}
+
+/* Botones de acción del panel (Guardar desarrollo, Crear tema, Agrupar):
+ * contorneados como «Fusionar», en tinta tenue en vez de sólidos. */
+.constel-map__side .constel-button--primary {
+	border-color: var( --constel-ink-faint );
+	background: var( --constel-btn-bg );
+	color: var( --constel-ink-faint );
+}
+
+.constel-map__side .constel-button--primary:hover {
+	border-color: var( --constel-ink-soft );
+	color: var( --constel-ink-soft );
 }

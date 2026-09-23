@@ -38,23 +38,35 @@ function feedbackBox() {
 /**
  * Detalle de un concepto: sus §§ (los propios primero), cada uno con su
  * página de procedencia al pie; temas que lo contienen y, para quien anota,
- * agruparlo. La moderación va aparte, bajo el mapa (ver moderation()).
+ * agruparlo. Quien modera renombra el concepto en el título; fusionar va
+ * aparte, bajo el mapa (ver moderation()).
  *
  * @param {HTMLElement} box
  * @param {Object} node del grafo
- * @param {Object} ctx {me, canAnnotate, myThemes: Array, onChanged}
+ * @param {Object} ctx {me, canAnnotate, canModerate, myThemes: Array, onChanged,
+ *  onModerated: (keepId) => void}
  */
 function conceptDetail( box, node, ctx ) {
 	box.textContent = '';
 	// «[a]»: el concepto en la nomenclatura de con§tel (ancla, p[a]labra,
 	// nombre), antepuesto como signo; como el «§» de la sección. Es un signo,
 	// no parte del nombre: los lectores de pantalla no lo leen.
+	// Quien modera lo renombra ahí mismo, como el título de un tema.
 	const title = el( 'h4', 'constel-side__title' );
 	const sign = el( 'span', 'constel-side__sign', '[a]' );
 	sign.setAttribute( 'aria-hidden', 'true' );
-	title.append( sign, node.label );
+	const renameFb = feedbackBox();
+	title.append( sign, ctx.canModerate ?
+		inlineName( node.label, mw.msg( 'constellation-concept-name', node.label ),
+			( label ) => api.write( { action: 'constel-moderate', op: 'rename', concept: node.id, label } )
+				.then( () => ctx.onModerated( node.id ), ( code, r ) => {
+					renameFb.innerHTML = api.describeError( code, r ).html;
+					return $.Deferred().reject();
+				} ) ) :
+		node.label );
 	box.append(
 		title,
+		renameFb,
 		el( 'p', 'constel-side__meta',
 			mw.msg( 'constellation-counts', mw.language.convertNumber( node.excerpts ),
 				mw.language.convertNumber( node.pages ) ) )
@@ -124,9 +136,9 @@ function conceptDetail( box, node, ctx ) {
 }
 
 /**
- * Moderación del vocabulario (spec: ModeratorRenamesConcept,
- * ModeratorMergesConcepts): renombrar, o fusionar en otro concepto con
- * confirmación. Todo queda en Special:Log/constel.
+ * Fusionar el concepto en otro (spec: ModeratorMergesConcepts), en una
+ * línea bajo el mapa, con confirmación. Renombrar va en el título del
+ * detalle (ModeratorRenamesConcept). Todo queda en Special:Log/constel.
  *
  * @param {Object} node
  * @param {Object} ctx {onModerated: (keepId) => void}
@@ -134,31 +146,23 @@ function conceptDetail( box, node, ctx ) {
  */
 function moderation( node, ctx ) {
 	const section = el( 'section', 'constel-ui constel-map__moderation' );
-	section.append( el( 'h4', null, mw.msg( 'constellation-moderate-concept', node.label ) ) );
+	section.setAttribute( 'aria-label', mw.msg( 'constellation-moderate-concept', node.label ) );
 	const fb = feedbackBox();
 	const fail = ( code, r ) => {
 		fb.innerHTML = api.describeError( code, r ).html;
 	};
 
-	const renameForm = el( 'form', 'constel-add' );
-	const rename = el( 'input', 'constel-input' );
-	rename.value = node.label;
-	rename.setAttribute( 'aria-label', mw.msg( 'constellation-rename-concept' ) );
-	renameForm.append( rename, submitButton( mw.msg( 'constellation-rename-concept' ) ) );
-	renameForm.addEventListener( 'submit', ( e ) => {
-		e.preventDefault();
-		api.write( { action: 'constel-moderate', op: 'rename', concept: node.id, label: rename.value } )
-			.then( () => ctx.onModerated( node.id ), fail );
-	} );
-
-	const mergeForm = el( 'form', 'constel-add' );
+	const mergeForm = el( 'form', 'constel-add constel-map__merge' );
+	const mark = el( 'span', 'constel-map__icon' );
+	mark.title = mw.msg( 'constellation-merge-concept', node.label );
+	mark.append( icons.icon( 'git-merge' ) );
 	const field = el( 'div', 'constel-field' );
 	const into = el( 'input', 'constel-input' );
 	into.placeholder = mw.msg( 'constellation-merge-into' );
-	into.setAttribute( 'aria-label', mw.msg( 'constellation-merge-into' ) );
+	into.setAttribute( 'aria-label', mw.msg( 'constellation-merge-concept', node.label ) );
 	field.append( into );
 	const combo = autocomplete.attach( into );
-	mergeForm.append( field, submitButton( mw.msg( 'constellation-merge' ), 'constel-button--danger' ) );
+	mergeForm.append( mark, field, submitButton( mw.msg( 'constellation-merge' ), 'constel-button--danger' ) );
 	mergeForm.addEventListener( 'submit', ( e ) => {
 		e.preventDefault();
 		const label = into.value.trim();
@@ -182,30 +186,27 @@ function moderation( node, ctx ) {
 		} );
 	} );
 
-	section.append( renameForm, mergeForm, fb );
+	section.append( mergeForm, fb );
 	return section;
 }
 
 /**
- * Título de un tema propio, que se edita en su lugar: se reescribe y se
- * guarda con Intro o al salir (Esc vuelve al nombre anterior; vacío no
- * renombra). La «x» a su lado borra el tema, previa confirmación bajo el
- * título.
+ * Un nombre que se edita en su lugar (título de un tema propio, o de un
+ * concepto para quien modera): se reescribe y se guarda con Intro o al salir;
+ * Esc vuelve al nombre anterior y vacío no renombra. El campo mide lo que su
+ * texto, para que lo que va a su lado quede junto al nombre.
  *
- * @param {Object} theme
- * @param {HTMLElement} section del tema (la confirmación va dentro)
- * @param {HTMLElement} fb caja de errores
- * @param {Object} ctx {onChanged}
- * @param {Function} fail (fb) => manejador de error
- * @return {HTMLElement[]} el campo y la «x»
+ * @param {string} value nombre actual
+ * @param {string} label nombre accesible y tooltip
+ * @param {Function} save (nuevo nombre) => promesa; si falla, vuelve al actual
+ * @return {HTMLInputElement}
  */
-function themeTitle( theme, section, fb, ctx, fail ) {
+function inlineName( value, label, save ) {
 	const name = el( 'input', 'constel-theme__name' );
-	name.value = theme.label;
-	name.setAttribute( 'aria-label', mw.msg( 'constellation-theme-name', theme.label ) );
-	name.title = mw.msg( 'constellation-theme-name', theme.label );
-	// El campo mide lo que su texto (medido con su tipografía), para que la
-	// «x» quede junto al nombre.
+	name.value = value;
+	name.setAttribute( 'aria-label', label );
+	name.title = label;
+	// Ancho medido con su tipografía.
 	const fit = () => {
 		const style = getComputedStyle( name );
 		const ctx2d = fit.ctx || ( fit.ctx = document.createElement( 'canvas' ).getContext( '2d' ) );
@@ -220,31 +221,51 @@ function themeTitle( theme, section, fb, ctx, fail ) {
 	requestAnimationFrame( fit );
 	let done = false;
 	const commit = () => {
-		const label = name.value.trim();
-		if ( done || !label || label === theme.label ) {
-			name.value = label ? name.value : theme.label;
+		const next = name.value.trim();
+		if ( done || !next || next === value ) {
+			name.value = next ? name.value : value;
 			fit();
 			return;
 		}
 		done = true;
-		api.write( { action: 'constel-theme', op: 'rename', theme: theme.id, label } )
-			.then( ctx.onChanged, ( code, r ) => {
-				done = false;
-				name.value = theme.label;
-				fail( fb )( code, r );
-			} );
+		save( next ).then( null, () => {
+			done = false;
+			name.value = value;
+			fit();
+		} );
 	};
 	name.addEventListener( 'keydown', ( e ) => {
 		if ( e.key === 'Enter' ) {
 			e.preventDefault();
 			name.blur();
 		} else if ( e.key === 'Escape' ) {
-			name.value = theme.label;
+			name.value = value;
 			fit();
 			name.blur();
 		}
 	} );
 	name.addEventListener( 'blur', commit );
+	return name;
+}
+
+/**
+ * Título de un tema propio, editable en su lugar (ver inlineName()). La «x»
+ * a su lado borra el tema, previa confirmación bajo el título.
+ *
+ * @param {Object} theme
+ * @param {HTMLElement} section del tema (la confirmación va dentro)
+ * @param {HTMLElement} fb caja de errores
+ * @param {Object} ctx {onChanged}
+ * @param {Function} fail (fb) => manejador de error
+ * @return {HTMLElement[]} el campo y la «x»
+ */
+function themeTitle( theme, section, fb, ctx, fail ) {
+	const name = inlineName( theme.label, mw.msg( 'constellation-theme-name', theme.label ),
+		( label ) => api.write( { action: 'constel-theme', op: 'rename', theme: theme.id, label } )
+			.then( ctx.onChanged, ( code, r ) => {
+				fail( fb )( code, r );
+				return $.Deferred().reject();
+			} ) );
 
 	const remove = icons.iconButton(
 		'x', mw.msg( 'constellation-theme-delete', theme.label ), 'constel-theme__delete'

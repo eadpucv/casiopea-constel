@@ -2,8 +2,9 @@
  * Especial:Constelación — el mapa de conceptos (spec: ConceptMap).
  *
  * Barra de herramientas en dos filas:
- *  1. Vista 2D/3D (+ «Girar solo» sólo en 3D) · Mostrar aristas (+ peso
- *     mínimo, 1–4, visible sólo con aristas) · zoom.
+ *  1. Vista 2D/3D (+ «Girar solo» sólo en 3D) · Mostrar aristas · fuerza de
+ *     cada grado de proximidad · zoom (+ «volver al orden automático» en 2D,
+ *     si hay conceptos fijados a mano).
  *  2. Píldoras con autocompletado: «Secciones de» (lectores; por defecto
  *     quien mira; un interruptor fuera de la caja lo desactiva = todas),
  *     «Páginas» (vacío = todas) y «Temas de» (la lente; por defecto quien
@@ -26,7 +27,6 @@ const pills = require( './pills.js' );
 
 const cfg = mw.config.get( 'wgConstelMap' );
 const me = mw.user.isNamed() ? mw.config.get( 'wgUserName' ) : null;
-const THRESHOLD_MAX = 4;
 const full = !!cfg.full;
 /** Proporción de ante (el grafo) en el par ante-dentro, en %. */
 const ANTE_MIN = 20;
@@ -128,9 +128,9 @@ function divider( layout ) {
 function main( root ) {
 	const pageParam = mw.util.getParamValue( 'page' );
 	const state = {
-		mode: '3d',
+		// 2D por defecto: se lee de un vistazo y se arregla a mano.
+		mode: '2d',
 		autorotate: !!prefs().autorotate,
-		threshold: 1,
 		edges: true,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
 		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
@@ -157,7 +157,32 @@ function main( root ) {
 	const canvas = el( 'div', 'constel-map__canvas' );
 	// Moderación del concepto seleccionado: bajo el mapa, no en el panel.
 	const below = el( 'div', 'constel-map__below' );
-	stage.append( canvas, below );
+	// El lienzo va dentro de un visor que lleva, en su esquina superior
+	// derecha, el botón de pantalla completa del puro mapa (maximize ↔
+	// minimize). Se pone en pantalla completa el visor, no el lienzo, para que
+	// el botón siga a mano; Esc también sale.
+	const viewport = el( 'div', 'constel-map__viewport' );
+	viewport.append( canvas );
+	if ( viewport.requestFullscreen ) {
+		const fullscreen = icons.iconButton( 'maximize', mw.msg( 'constellation-fullscreen' ),
+			'constel-button constel-button--icon constel-map__fullscreen' );
+		fullscreen.addEventListener( 'click', () => {
+			if ( document.fullscreenElement ) {
+				document.exitFullscreen();
+			} else {
+				viewport.requestFullscreen().catch( () => {} );
+			}
+		} );
+		document.addEventListener( 'fullscreenchange', () => {
+			const on = document.fullscreenElement === viewport;
+			const label = mw.msg( on ? 'constellation-fullscreen-exit' : 'constellation-fullscreen' );
+			fullscreen.replaceChildren( icons.icon( on ? 'minimize' : 'maximize' ) );
+			fullscreen.setAttribute( 'aria-label', label );
+			fullscreen.title = label;
+		} );
+		viewport.append( fullscreen );
+	}
+	stage.append( viewport, below );
 	const aside = el( 'aside', 'constel-map__side' );
 	// Lo que cambia con la selección; la lista (a pantalla completa) queda.
 	const sideBody = el( 'div', 'constel-map__side-body' );
@@ -203,11 +228,12 @@ function main( root ) {
 
 	// ── Fila 1: vista ─────────────────────────────────────────────────────
 	const mode = el( 'select', 'constel-input' );
-	[ [ '3d', 'constellation-mode-3d' ], [ '2d', 'constellation-mode-2d' ] ].forEach( ( [ v, m ] ) => {
+	[ [ '2d', 'constellation-mode-2d' ], [ '3d', 'constellation-mode-3d' ] ].forEach( ( [ v, m ] ) => {
 		const o = el( 'option', null, mw.msg( m ) );
 		o.value = v;
 		mode.append( o );
 	} );
+	mode.value = state.mode;
 	// Girar solo: junto a la vista, sólo en 3D; apagado por defecto.
 	const spin = checkbox( 'rotate-cw', 'constellation-autorotate', state.autorotate, ( on ) => {
 		state.autorotate = on;
@@ -216,6 +242,7 @@ function main( root ) {
 			state.view.setAutorotate( on );
 		}
 	} );
+	spin.label.hidden = state.mode !== '3d';
 	mode.addEventListener( 'change', () => {
 		state.mode = mode.value;
 		spin.label.hidden = state.mode !== '3d';
@@ -228,28 +255,12 @@ function main( root ) {
 	const viewGroup = el( 'div', 'constel-map__group' );
 	viewGroup.append( field( 'eye', 'constellation-mode', mode ), spin.label );
 
-	// Mostrar aristas condiciona el peso mínimo (1–4).
-	const threshold = el( 'input', 'constel-input constel-map__threshold' );
-	threshold.type = 'number';
-	threshold.min = '1';
-	threshold.max = String( THRESHOLD_MAX );
-	threshold.step = '1';
-	threshold.value = '1';
-	threshold.addEventListener( 'change', () => {
-		const n = Math.round( Number( threshold.value ) ) || 1;
-		state.threshold = Math.min( THRESHOLD_MAX, Math.max( 1, n ) );
-		threshold.value = String( state.threshold );
-		render();
-	} );
-	const thresholdField = field( 'filter', 'constellation-threshold', threshold );
 	const edges = checkbox( 'share-2', 'constellation-edges', state.edges, ( on ) => {
 		state.edges = on;
-		// Sin aristas, el peso no tiene sentido: desaparece.
-		thresholdField.hidden = !on;
 		render();
 	} );
 	const edgesGroup = el( 'div', 'constel-map__group' );
-	edgesGroup.append( edges.label, thresholdField );
+	edgesGroup.append( edges.label );
 
 	// Proximidad: cada grado con su fuerza (0 = ni arista ni atracción).
 	const forces = el( 'div', 'constel-map__forces' );
@@ -290,17 +301,33 @@ function main( root ) {
 
 	// Navegación del mapa: íconos Feather con nombre accesible.
 	const zoom = el( 'div', 'constel-map__zoom' );
+	let unpin = null;
 	zoom.setAttribute( 'role', 'group' );
 	zoom.setAttribute( 'aria-label', mw.msg( 'constellation-navigation' ) );
 	[ [ 'zoom-in', 'constellation-zoom-in', () => state.view && state.view.zoomIn() ],
 		[ 'zoom-out', 'constellation-zoom-out', () => state.view && state.view.zoomOut() ],
-		[ 'maximize', 'constellation-zoom-reset', () => state.view && state.view.reset() ],
+		[ 'crosshair', 'constellation-zoom-reset', () => state.view && state.view.reset() ],
+		// 2D: suelta los conceptos fijados a mano y rehace el layout.
+		[ 'rotate-ccw', 'constellation-unpin', () => {
+			state.data.nodes.forEach( ( n ) => {
+				delete n.pin;
+				delete n.x;
+			} );
+			render();
+		} ],
 		[ 'download', 'constellation-export-svg', () => state.view && exportSvg() ]
 	].forEach( ( [ name, msg, fn ] ) => {
 		const b = icons.iconButton( name, mw.msg( msg ) );
 		b.addEventListener( 'click', fn );
 		zoom.append( b );
+		if ( name === 'rotate-ccw' ) {
+			unpin = b;
+			unpin.hidden = true;
+		}
 	} );
+	const syncUnpin = () => {
+		unpin.hidden = state.mode !== '2d' || !state.data.nodes.some( ( n ) => n.pin );
+	};
 
 	/**
 	 * Parte segura para un nombre de archivo: minúsculas, sin tildes ni §,
@@ -369,7 +396,11 @@ function main( root ) {
 		form.submit();
 		form.remove();
 	}
-	rowView.append( viewGroup, edgesGroup, forces, zoom );
+	// La marca, como isotipo al inicio de la barra (decorativa: la página ya
+	// se llama Constelación).
+	const brand = el( 'span', 'constel-map__brand', 'con§tel' );
+	brand.setAttribute( 'aria-hidden', 'true' );
+	rowView.append( brand, viewGroup, edgesGroup, forces, zoom );
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
 	// Secciones: como la lente (por defecto quien mira; se suman lectores).
@@ -466,17 +497,18 @@ function main( root ) {
 			state.view = graph.draw( canvas, state.data, {
 				mode: state.mode,
 				autorotate: state.autorotate,
-				threshold: state.threshold,
 				edges: state.edges,
 				forces: state.forces,
 				fill: full,
 				themeOf: themeIndex(),
-				onSelect: select
+				onSelect: select,
+				onArrange: syncUnpin
 			} );
 			if ( state.selected ) {
 				state.view.select( state.selected.id );
 			}
 		}
+		syncUnpin();
 		renderList();
 	}
 
@@ -484,8 +516,7 @@ function main( root ) {
 		altList.textContent = '';
 		const byId = new Map( state.data.nodes.map( ( n ) => [ n.id, n ] ) );
 		const near = new Map();
-		state.data.links.filter( ( l ) => l.weight >= state.threshold &&
-			state.forces[ l.kind ] > 0 ).forEach( ( l ) => {
+		state.data.links.filter( ( l ) => state.forces[ l.kind ] > 0 ).forEach( ( l ) => {
 			[ [ l.source, l.target ], [ l.target, l.source ] ].forEach( ( [ a, b ] ) => {
 				const entry = { id: b, kind: l.kind, weight: l.weight };
 				near.set( a, ( near.get( a ) || [] ).concat( entry ) );
@@ -534,26 +565,27 @@ function main( root ) {
 			}
 			renderThemes();
 		} );
+		// Tras renombrar o fusionar, el grafo cambia: recargar y abrir el que queda.
+		const onModerated = ( keepId ) => loadGraph().then( loadThemes ).then( () => {
+			const kept = state.data.nodes.find( ( n ) => n.id === keepId );
+			if ( kept ) {
+				select( kept );
+			}
+		} );
 		const box = el( 'div' );
 		sideBody.textContent = '';
 		sideBody.append( back, box );
 		side.conceptDetail( box, node, {
 			me,
 			canAnnotate: cfg.canAnnotate,
+			canModerate: cfg.canModerate,
 			myThemes: state.myThemes,
-			onChanged: () => loadThemes().then( () => select( node ) )
+			onChanged: () => loadThemes().then( () => select( node ) ),
+			onModerated
 		} );
 		below.textContent = '';
 		if ( cfg.canModerate ) {
-			below.append( side.moderation( node, {
-				// Tras renombrar o fusionar, el grafo cambia: recargar y abrir el que queda.
-				onModerated: ( keepId ) => loadGraph().then( loadThemes ).then( () => {
-					const kept = state.data.nodes.find( ( n ) => n.id === keepId );
-					if ( kept ) {
-						select( kept );
-					}
-				} )
-			} ) );
+			below.append( side.moderation( node, { onModerated } ) );
 		}
 	}
 

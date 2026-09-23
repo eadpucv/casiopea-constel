@@ -750,9 +750,11 @@ surface ConceptDetail {
         -- concepto). Cada § lleva al pie, en texto pequeño, su página de
         -- procedencia enlazada; no se agrupan bajo el título de la página.
 
-    @guarantee ModerationBelowMap
-        -- Renombrar y fusionar el concepto seleccionado se ofrecen bajo el
-        -- mapa, no en el panel del concepto.
+    @guarantee ModerationInPlace
+        -- Quien modera renombra el concepto seleccionado en su propio
+        -- título del panel, que se edita en su lugar como el de un tema
+        -- (Intro o salir guarda, Esc cancela). Fusionar se ofrece bajo el
+        -- mapa, en una sola línea (ícono, campo, botón) y sin encabezado.
 
     @guarantee HereAndElsewhere
         -- Separa los §§ de la página actual ("§ en esta página") de los
@@ -780,6 +782,17 @@ surface ConceptMap {
         -- En la vista 2D ningún rótulo pisa a otro: cada uno ocupa una caja
         -- ajustada a su texto con un margen breve e igual por los cuatro
         -- lados, y las cajas chocan en vez de traslaparse.
+
+    @guarantee ArrangeByHandIn2D
+        -- En la vista 2D quien mira puede mover cada concepto (arrastrándolo,
+        -- o con Alt+flechas cuando tiene el foco) y el layout reacciona en
+        -- vivo: sus aristas tiran de los vecinos con la fuerza de su grado y
+        -- los rótulos chocan y se empujan. Queda fijado donde se suelta; al
+        -- enfriarse nada se traslapa y el layout lo respeta al recalcularse
+        -- (fuerzas, filtros, ida y vuelta a 3D),
+        -- hasta que se pide volver al orden automático. Un clic sin
+        -- arrastrar sigue eligiendo el concepto. Es sólo presentación: no
+        -- se guarda ni cambia nada del vocabulario.
 
     @guarantee ReadOnlyForAnonymous
         -- Anónimos y cuentas temporales ven el mapa (alcance everyone) y
@@ -821,7 +834,9 @@ surface ConceptMap {
         -- traslape; co_page: mismo texto) tiene su propia fuerza, de 0 a
         -- 100 %, que quien mira ajusta: con qué intensidad atrae a sus
         -- conceptos en el layout y cuán visible es su arista. En 0 el grado
-        -- no dibuja arista ni atrae. Se recuerda por navegador.
+        -- no dibuja arista ni atrae. Se recuerda por navegador. El efecto se
+        -- ve también en 2D: allí la escala del layout se mide en rótulos, no
+        -- se normaliza por el concepto más lejano.
 
     @guarantee OverlapNeverConverges
         -- Que dos §§ solapados tengan conceptos distintos es criterio de
@@ -833,9 +848,12 @@ surface ConceptMap {
         -- El tamaño del rótulo refleja frecuencia: nº de §§ y nº de
         -- páginas (constel: 0.6·excerpts + 0.4·sources, normalizados).
 
-    @guarantee ThresholdFilter
-        -- Las aristas pueden ocultarse; mientras se muestran, un peso
-        -- mínimo N (1 a 4) oculta las de peso menor.
+    @guarantee EdgesToggle
+        -- Las aristas pueden ocultarse. No hay un peso mínimo global: el
+        -- peso no es comparable entre grados (§§, pares traslapados,
+        -- páginas), así que cuánto se ve de cada grado lo decide su fuerza
+        -- (ProximityDegreesAreParametric); el peso sólo modula el resorte
+        -- y el grosor de su arista.
 
     @guarantee ThemeLens
         -- Los conceptos se agrupan/colorean por los temas de uno o varios

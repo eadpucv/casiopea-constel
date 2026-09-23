@@ -172,6 +172,21 @@ a.constel-button--primary:visited {
 	color: var( --constel-btn-primary-fg );
 }
 
+/* Enlaces con aspecto de botón (p. ej. «Exportar» en Especial:MiConstel):
+ * los estilos de enlace del skin (.sn-body a …) tienen la misma
+ * especificidad que a.constel-button y cargan después; con los estados de
+ * enlace se gana sin !important: color de botón, sin subrayado. */
+a.constel-button:is( :link, :visited, :hover, :active ) {
+	display: inline-flex;
+	align-items: center;
+	color: var( --constel-btn-fg );
+	text-decoration: none;
+}
+
+a.constel-button--primary:is( :link, :visited, :hover, :active ) {
+	color: var( --constel-btn-primary-fg );
+}
+
 .constel-button--danger {
 	border-color: var( --constel-danger );
 	color: var( --constel-danger );

@@ -1,20 +1,102 @@
 # Casiopea-Con§tel
 
-**con§tel** en MediaWiki: la aplicación a [Casiopea](https://wiki.ead.pucv.cl)
-de [con§tel](https://github.com/hspencer/constel), la herramienta de lectura
-activa y análisis temático de la e[ad] PUCV.
+**Marginalia compartida** para [Casiopea](https://wiki.ead.pucv.cl), la wiki de
+la e[ad] PUCV. Es la aplicación a MediaWiki de
+[con§tel](https://github.com/hspencer/constel), un proyecto de la Escuela que
+nació entre 2004 y 2006.
 
-Al seleccionar un texto de una página aparece **§**. Con él el lector crea una
-**sección** y le asigna conceptos de un vocabulario compartido, más una glosa
-opcional. Después agrupa esos conceptos en temas personales y escribe el
-desarrollo de cada tema. La página especial *Constelación* reúne los conceptos de todos los
-lectores en un mapa 3D: los conceptos quedan unidos cuando están en una misma
-sección, cuando secciones de lectores distintos se solapan y cuando se anotaron
-en la misma página.
+> Allí donde haya lector estaré yo.
 
-Estado: **versión 0.3.0**. Extensión para
-MediaWiki 1.43 LTS. La GUI se diseña sobre los tokens de
-[Stella Nova](https://github.com/hspencer/stella-nova) y funciona con cualquier skin.
+## Marginalia compartida
+
+Quien estudia lee con lápiz. Subraya, pone títulos al margen, anota y le
+responde al autor en el blanco de la página. Esa marginalia ha sido siempre
+íntima: queda en el ejemplar de cada uno y se pierde con él.
+
+con§tel lleva ese gesto a un lugar común. Las lecturas de cada lector, sus
+pasajes, títulos y notas, quedan junto a las de los demás sobre los mismos
+textos. La relación entre autor y lector, privada y asimétrica, se vuelve un
+diálogo entre pares. El lector, sin darse cuenta, se vuelve autor y ve cómo
+su pequeño aporte modifica el mapa de todos. La idea es la de la ponencia de
+2006: pasar *desde la marginalia compartida hacia una conformación de la figura
+de pueblo*.
+
+## Un suelo común para que haya pueblo
+
+Una comunidad no nace de anotaciones sueltas. Etiquetas personales dispersas no
+hacen pueblo, porque cada una significa algo distinto para cada quien. Para que
+haya pueblo hace falta un **suelo común**, y con§tel lo ofrece en dos capas:
+
+- **Textos comunes.** Todos leen y anotan sobre el mismo cuerpo de textos.
+  El estudio original partió de los 28 textos fundamentales de Amereida, la
+  vértebra de la Escuela. Esa visión le da a la comunidad *«a solid ground
+  for dialogue»*, como dice *Con§tel: Sharing Marginalia*. En Casiopea ese
+  cuerpo es la wiki misma: la [Biblioteca Con§tel](https://wiki.ead.pucv.cl/Biblioteca_Con%C2%A7tel)
+  reúne los *Textos Fundamentales* y las *Publicaciones de Apertura*. Por
+  eso, como dice la página del proyecto, «Casiopea es un intento de Con§tel».
+- **Un léxico común.** Los conceptos no son etiquetas privadas. Cada concepto
+  es uno solo para todos, y cada lector lo encuentra ya nombrado por otros
+  cuando lo asigna. Sobre ese léxico compartido las lecturas convergen y los
+  conceptos se vuelven, a fuerza de conversación, referencias comunes.
+
+El suelo común no borra la diferencia. Cada sección es de su lector, y cada
+tema con su desarrollo es la lectura propia de quien lo escribe. Cuando dos
+lectores marcan pasajes que se solapan, el mapa muestra que se encontraron,
+pero no funde sus conceptos: cada uno leyó a su manera. El pueblo aparece como
+figura de muchas lecturas singulares sobre un suelo compartido.
+
+## Los gestos del lector
+
+Como en el scriptorium de los glosadores, el lector hace tres cosas sobre el
+texto:
+
+| Gesto | Signo | En la extensión |
+|---|---|---|
+| Distinguir un pasaje | **§** | Al seleccionar texto aparece **§**, y el pasaje se vuelve una *sección* anclada a la página. |
+| Titularlo | **[a]** | Se le asignan conceptos del léxico común. El **[a]**, de *ancla*, *p[a]labra* o *nombre*, es la unidad del mapa. |
+| Anotarlo | **[n]** | Se le agrega una *glosa*, que es opcional. |
+
+Después, cada lector agrupa sus conceptos en **temas** y escribe el
+**desarrollo** de cada tema: el paso de la marginalia al texto propio.
+
+## El mapa: la figura de todos
+
+`Especial:Constelación` reúne los conceptos de todos los lectores en un mapa.
+El mapa no es obra de un solo autor. Es la imagen que refleja el estado actual
+del diálogo y ayuda a cada uno a ubicar su aporte entre los de sus pares.
+
+- **Tres grados de proximidad** unen los conceptos: la *misma sección*, el
+  *traslape* entre secciones de lectores distintos y el *mismo texto*. Cada
+  grado tiene su propia fuerza (0–100 %), y en 0 no se dibuja.
+- **Vista 2D (por defecto) o 3D.** En 2D los rótulos nunca se pisan y cada
+  concepto se arrastra con el mapa reaccionando en vivo: sus aristas tiran
+  de los vecinos y los rótulos se empujan. El concepto elegido pasa a ser el
+  centro del mapa, y en 3D «Girar solo» orbita en torno a él.
+- **Pantalla completa.** El mapa (*ante*) y el panel de lectura (*dentro*)
+  se reparten la pantalla, y la división entre ambos se arrastra.
+- **Filtros** por lectores y por páginas, y una **lente** para leer los temas
+  de uno o varios lectores. El mapa se exporta como SVG.
+
+En cada página, el menú de usuario ofrece la lectura en tres posiciones:
+**−** sin marcas, **§** solo las propias, **§\*** las de todos.
+`Especial:MiConstel` reúne la lectura propia y la exporta.
+
+Estado: **versión 0.6.0**. Extensión para MediaWiki 1.43 LTS. La GUI se
+diseña sobre los tokens de [Stella Nova](https://github.com/hspencer/stella-nova)
+y funciona con cualquier skin.
+
+## Antecedentes
+
+- *con§tel, Redes Abiertas de Conocimiento*. Spencer, Sanfuentes, con
+  Barahona, Abad, Vera y Tapia. MX Design Conference, Universidad
+  Iberoamericana, Ciudad de México, 2005.
+- *Desde la Marginalia Compartida hacia una Conformación de la Figura de
+  Pueblo*. Spencer, Sanfuentes, Barahona. Universidad de Palermo, 2006.
+- *Con§tel: Sharing Marginalia*. Spencer. Pittsburgh, 2006.
+- Proyecto de investigación *Con§tel* (PUCV DII, 2004–2006) y el proyecto de
+  titulación *Red Abierta de Conocimiento Académico Con§tel* (Abad, Vera,
+  Tapia; 2004–2005). Ver la página
+  [Con§tel](https://wiki.ead.pucv.cl/Con%C2%A7tel) en Casiopea.
 
 ## Especificación primero
 
