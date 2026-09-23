@@ -12,13 +12,14 @@ use MediaWiki\Revision\RevisionLookup;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
- * Re-ancla los §§ de una página tras una revisión nueva
- * (spec: PageRevisedReanchorsExcerpts).
+ * Re-ancla los §§ de una página tras una revisión nueva o una restauración
+ * (spec: PageRevisedReanchorsExcerpts, PageRestoredReanchorsExcerpts).
  *
  * Idempotente y deduplicado por página: siempre trabaja contra la revisión
  * vigente al correr, aunque haya llegado tarde y la página haya cambiado
- * varias veces. Cada § anclado a una revisión anterior se ubica en el texto
- * canónico nuevo; si se encuentra sin ambigüedad se traslada, si no se pierde.
+ * varias veces. Cada § anclado a una revisión anterior, y cada § congelado,
+ * se ubica en el texto canónico vigente; si se encuentra sin ambigüedad se
+ * traslada (y queda anclado), si no se pierde.
  */
 class ReanchorJob extends Job {
 
@@ -42,8 +43,8 @@ class ReanchorJob extends Job {
 		$pageId = (int)$this->params['pageId'];
 		$page = $this->pageStore->getPageById( $pageId, IDBAccessObject::READ_LATEST );
 		if ( !$page ) {
-			// La página ya no existe: nada que ubicar.
-			$this->excerpts->markLostForPage( $pageId );
+			// La página se borró antes de correr el job: nada que ubicar.
+			$this->excerpts->freezeForPage( $pageId );
 			return true;
 		}
 		$revision = $this->revisionLookup->getRevisionById( $page->getLatest(), IDBAccessObject::READ_LATEST );
@@ -55,8 +56,10 @@ class ReanchorJob extends Job {
 		}
 
 		$lost = [];
-		foreach ( $this->excerpts->listAnchoredForPage( $pageId, true ) as $excerpt ) {
-			if ( $excerpt->revId === $revision->getId() ) {
+		foreach ( $this->excerpts->listReanchorableForPage( $pageId ) as $excerpt ) {
+			// Un congelado se ubica siempre: la restauración suele devolver
+			// justo la revisión que tenía, pero hay que descongelarlo igual.
+			if ( !$excerpt->isFrozen() && $excerpt->revId === $revision->getId() ) {
 				continue;
 			}
 			$anchor = $this->locator->locate( $excerpt->anchor, $text );

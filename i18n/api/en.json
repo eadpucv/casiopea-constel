@@ -87,6 +87,7 @@
 	"apihelp-constel-moderate-example-merge": "Merge concept 3 into concept 2.",
 	"apierror-constel-labeltaken": "The label \"$1\" already belongs to another concept: merge them instead.",
 	"apierror-constel-mergeself": "A concept cannot be merged into itself.",
+	"apierror-constel-frozen": "The page of this section was deleted: the section can only be deleted.",
 	"apihelp-constel-glossexcerpt-summary": "Write, change or clear (empty) the gloss of one of your sections (§): a comment or clarification.",
 	"apihelp-constel-glossexcerpt-param-excerpt": "ID of the section.",
 	"apihelp-constel-glossexcerpt-param-gloss": "The gloss. Empty removes it.",

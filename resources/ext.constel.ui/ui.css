@@ -345,12 +345,22 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 	resize: vertical;
 }
 
+/* La nota comenta su sección: va pegada a la cita, más adentro que su texto
+ * (la cita sangra su filete + s-3; la nota, además, s-3) y en letra menor,
+ * con un filete tenue propio que la ata a ella. */
 .constel-gloss-text {
-	margin: var( --constel-s-1 ) 0 var( --constel-s-2 );
+	margin: 0 0 var( --constel-s-3 ) calc( 2px + var( --constel-s-3 ) * 2 );
+	padding-left: var( --constel-s-2 );
+	border-left: 1px solid var( --constel-hairline-soft );
 	color: var( --constel-ink-soft );
-	font-size: var( --constel-fs-sm );
+	font-size: var( --constel-fs-xs );
 	font-style: italic;
+	line-height: 1.4;
 	white-space: pre-wrap;
+}
+
+.constel-quote:has( + .constel-gloss-text ) {
+	margin-bottom: var( --constel-s-1 );
 }
 
 .constel-panel .constel-label + .constel-gloss,

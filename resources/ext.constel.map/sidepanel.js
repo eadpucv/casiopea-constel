@@ -79,10 +79,11 @@ function conceptDetail( box, node, ctx ) {
 		list.textContent = '';
 		excerpts.sort( ( a, b ) => ( b.author === ctx.me ) - ( a.author === ctx.me ) );
 		excerpts.forEach( ( e ) => {
-			const item = el( 'figure', 'constel-side__excerpt' + ( e.status === 'lost' ? ' constel-side__excerpt--lost' : '' ) );
+			// Clases: constel-side__excerpt--lost, constel-side__excerpt--frozen
+			const item = el( 'figure', 'constel-side__excerpt' + ( e.status !== 'anchored' ? ' constel-side__excerpt--' + e.status : '' ) );
 			item.append( el( 'blockquote', 'constel-quote', e.exact ) );
 			if ( e.gloss ) {
-				item.append( el( 'p', 'constel-gloss-text', e.gloss ) );
+				item.append( el( 'div', 'constel-gloss-text', e.gloss ) );
 			}
 			const cap = el( 'figcaption', 'constel-side__by' );
 			cap.textContent = e.author === ctx.me ? mw.msg( 'constel-detail-mine' ) :
@@ -93,8 +94,14 @@ function conceptDetail( box, node, ctx ) {
 				link.href = mw.util.getUrl( e.title );
 				cap.append( ' · ', link );
 			}
-			if ( e.status === 'lost' ) {
-				cap.append( ' · ', el( 'span', 'constel-status--lost', mw.msg( 'myconstel-status-lost' ) ) );
+			if ( e.status !== 'anchored' ) {
+				// Clases: constel-status--lost, constel-status--frozen
+				const status = el( 'span', 'constel-status--' + e.status );
+				// The following messages are used here:
+				// * myconstel-status-lost
+				// * myconstel-status-frozen
+				status.textContent = mw.msg( 'myconstel-status-' + e.status );
+				cap.append( ' · ', status );
 			}
 			item.append( cap );
 			list.append( item );

@@ -87,6 +87,7 @@
 	"apihelp-constel-moderate-example-merge": "{{doc-apihelp-example|constel-moderate}}",
 	"apierror-constel-labeltaken": "{{doc-apierror}}\nParameters:\n* $1 - label",
 	"apierror-constel-mergeself": "{{doc-apierror}}",
+	"apierror-constel-frozen": "{{doc-apierror}}\n\nError when trying to code, uncode or gloss a section (§) whose page was deleted (a frozen section).",
 	"apihelp-constel-glossexcerpt-summary": "{{doc-apihelp-summary|constel-glossexcerpt}}",
 	"apihelp-constel-glossexcerpt-param-excerpt": "{{doc-apihelp-param|constel-glossexcerpt|excerpt}}",
 	"apihelp-constel-glossexcerpt-param-gloss": "{{doc-apihelp-param|constel-glossexcerpt|gloss}}",

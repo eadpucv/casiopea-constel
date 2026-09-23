@@ -24,7 +24,9 @@
 --     distintos) pero VISIBLES para todos; sólo su dueño los edita.
 --   · Las páginas cambian. El ancla se re-ubica tras cada revisión; si
 --     no se puede, el excerpt queda PERDIDO (desanclado): deja de verse
---     sobre el texto, pero conserva sus conceptos y sigue en el mapa.
+--     sobre el texto, pero conserva sus conceptos y sigue en el mapa. Si
+--     la página se BORRA, sus §§ quedan CONGELADOS: en reserva, sólo
+--     borrables, y se re-anclan si la página se restaura.
 --   · El mapa une conceptos por co-excerpt (mismo §) Y por solapamiento
 --     de §§ de lectores distintos sobre el mismo pasaje.
 --
@@ -46,7 +48,8 @@
 
 external entity User {
     identity: UserIdentity
-    is_blocked: Boolean             -- bloqueo sitewide o parcial sobre la página
+    is_blocked: Boolean             -- bloqueo sitewide
+    blocked_pages: Set<WikiPage>    -- bloqueos parciales (por página)
     rights: Set<String>             -- derechos efectivos ($wgGroupPermissions)
     constel_enabled: Boolean        -- preferencia del lector; DESACTIVADA por defecto (ver PageReading)
 }
@@ -56,7 +59,12 @@ external entity User {
 --
 -- is_annotatable = existe, está en un namespace de contenido
 -- ($wgContentNamespaces), no es redirección y tiene revisión. Todas las
--- páginas de contenido son anotables (decisión 2026-09-22), sin opt-in.
+-- páginas de contenido son anotables (decisión 2026-09-22), sin opt-in, y
+-- también las PROTEGIDAS (decisión 2026-09-23): anotar no es editar.
+--
+-- Una página borrada conserva su identidad (page_id): la restauración de
+-- MediaWiki la devuelve con el mismo id, o funde su historial en la página
+-- que se haya recreado con ese título (sus §§ pasan a ésa).
 external entity WikiPage {
     is_annotatable: Boolean
     latest_revision: Revision?
@@ -91,6 +99,13 @@ contract MediaWikiExtensionConformance {
         -- (config.annotate_right, config.moderate_right), asignables por
         -- grupo; nunca comprobaciones de grupo cableadas.
 
+    @invariant AnnotatingIsNotEditing
+        -- Anotar una página se autoriza con config.annotate_right sobre ESA
+        -- página: cuentan los bloqueos (sitewide y parciales), no la
+        -- protección de página ni la protección en cascada, que restringen
+        -- editar el wikitexto (decisión 2026-09-23). La preferencia
+        -- constel_enabled es sólo de presentación: no autoriza nada.
+
     @invariant FullyLocalised
         -- Todo texto de interfaz es mensaje i18n (es + en + qqq). El
         -- signo "§" es contenido; su nombre accesible es mensaje.
@@ -120,9 +135,18 @@ contract MediaWikiExtensionConformance {
 
     @invariant ReadingIsPublicData
         -- Excerpts, codificaciones, temas y notas son públicos dentro de
-        -- la wiki (decisión 2026-09-22). La interfaz lo advierte al
-        -- anotar por primera vez. Se atribuyen al nombre de usuario;
-        -- respetan la supresión de nombres (hideuser) del core.
+        -- la wiki (decisión 2026-09-22), salvo los §§ congelados
+        -- (FrozenIsPrivate). La interfaz lo advierte al anotar por primera
+        -- vez. Se atribuyen al nombre de usuario; respetan la supresión de
+        -- nombres (hideuser) del core.
+
+    @invariant FrozenIsPrivate
+        -- Un § congelado cita una página borrada. Su pasaje y su glosa sólo
+        -- los ven su autor y quienes pueden ver texto borrado (derecho
+        -- deletedtext del core), y mientras dure el congelamiento no cuenta
+        -- para nadie en el mapa: ni frecuencia ni aristas; un concepto que
+        -- sólo vive en §§ congelados sale del mapa (sin borrarse) y vuelve
+        -- si la página se restaura (decisión 2026-09-23).
 }
 
 ------------------------------------------------------------
@@ -181,15 +205,23 @@ entity Excerpt {
     codings: Coding with excerpt = this
     concepts: codings.concept
 
-    anchor_status: anchored | lost
+    -- lost: una edición dejó el pasaje sin ubicación (definitivo mientras
+    --   la página exista). frozen: la página se borró; sólo se puede borrar
+    --   el §, y restaurar la página intenta re-anclarlo.
+    anchor_status: anchored | lost | frozen
     lost_at: Timestamp when anchor_status = lost
+    frozen_at: Timestamp when anchor_status = frozen
 
     transitions anchor_status {
         anchored -> lost
-        terminal: lost
+        anchored -> frozen
+        lost -> frozen
+        frozen -> anchored
+        frozen -> lost
     }
 
     is_drawn_on_page: anchor_status = anchored
+    is_frozen: anchor_status = frozen
     is_uncoded: codings.count = 0
 }
 
@@ -263,6 +295,7 @@ rule ReaderCreatesExcerpt {
     requires: author.identity = registered
     requires: config.annotate_right in author.rights
     requires: not author.is_blocked
+    requires: page not in author.blocked_pages
     requires: page.is_annotatable
     requires: revision = page.latest_revision
     requires: length(trim(anchor.exact)) >= config.selection_min_length
@@ -296,7 +329,10 @@ rule ReaderCreatesExcerpt {
         -- envía el revid que muestra; si no es el último, error
         -- recuperable ("la página cambió; recarga") sin perder lo escrito.
         -- Los §§ del mismo autor pueden solaparse entre sí (constel los
-        -- aplana al pintar; aquí sólo es presentación).
+        -- aplana al pintar; aquí sólo es presentación), pero no repetirse:
+        -- si el autor ya tiene un § anclado sobre exactamente el mismo
+        -- pasaje, el concepto se suma a ése (como ReaderCodesExcerpt) y la
+        -- glosa sólo se toma si aquél no tenía (decisión 2026-09-23).
         -- Ortografía canónica (decisión 2026-09-22): la identidad es
         -- estricta como un título de MediaWiki, así que "Diseno" y "Diseño"
         -- serían conceptos distintos. La convergencia a la forma bien
@@ -309,6 +345,8 @@ rule ReaderCodesExcerpt {
     when: ReaderCodesExcerpt(actor, excerpt, concept_label)
     requires: actor = excerpt.author
     requires: not actor.is_blocked
+    requires: excerpt.page not in actor.blocked_pages
+    requires: not excerpt.is_frozen
     requires: not is_blank(concept_label)
     requires: length(trim(concept_label)) <= config.concept_max_length
     let existing = Concept{key: normalize_concept(concept_label)}
@@ -323,7 +361,8 @@ rule ReaderCodesExcerpt {
         Coding.created(excerpt: excerpt, concept: concept, coded_at: now)
     @guidance
         -- Aplica también a §§ perdidos: siguen siendo codificables (su
-        -- pasaje citado se conserva), aunque no se dibujen.
+        -- pasaje citado se conserva), aunque no se dibujen. No a los
+        -- congelados: su página se borró y sólo se pueden borrar.
 }
 
 -- La glosa: un comentario o aclaración propia sobre el pasaje, además de
@@ -332,6 +371,8 @@ rule ReaderGlossesExcerpt {
     when: ReaderGlossesExcerpt(actor, excerpt, gloss)
     requires: actor = excerpt.author
     requires: not actor.is_blocked
+    requires: excerpt.page not in actor.blocked_pages
+    requires: not excerpt.is_frozen
     requires: gloss = null or length(gloss) <= config.gloss_max_length
     ensures: excerpt.gloss = gloss
     @guidance
@@ -343,6 +384,8 @@ rule ReaderUncodesExcerpt {
     when: ReaderUncodesExcerpt(actor, coding)
     requires: actor = coding.excerpt.author
     requires: not actor.is_blocked
+    requires: coding.excerpt.page not in actor.blocked_pages
+    requires: not coding.excerpt.is_frozen
     ensures: not exists coding
 }
 
@@ -356,20 +399,23 @@ rule ReaderDeletesExcerpt {
     when: ReaderDeletesExcerpt(actor, excerpt)
     requires: actor = excerpt.author or config.moderate_right in actor.rights
     requires: not actor.is_blocked
+    requires: excerpt.is_frozen or excerpt.page not in actor.blocked_pages
     ensures:
         for c in excerpt.codings:
             not exists c
         not exists excerpt
     @guidance
         -- Si quien borra no es el autor (moderación), queda en
-        -- Special:Log/constel con el autor y el pasaje citado.
+        -- Special:Log/constel con el autor y el pasaje citado. Es lo único
+        -- que admite un § congelado; como su página ya no existe, ahí sólo
+        -- cuenta el bloqueo sitewide.
 }
 
 ------------------------------------------------------------
 -- Rules — anclaje frente a cambios de la página
 ------------------------------------------------------------
 
--- Nueva revisión guardada (edición, revert, restauración).
+-- Nueva revisión guardada (edición, revert).
 rule PageRevisedReanchorsExcerpts {
     when: PageRevised(page, revision)
     requires: revision = page.latest_revision
@@ -391,13 +437,37 @@ rule PageRevisedReanchorsExcerpts {
         -- es el actual: los intenta ubicar igual y omite los que fallen.
 }
 
--- Borrar la página pierde sus §§. Restaurarla NO los re-ancla.
-rule PageDeletedLosesExcerpts {
+-- Borrar la página CONGELA sus §§, anclados y perdidos (decisión
+-- 2026-09-23): no se borran —un borrado de MediaWiki es reversible— pero
+-- quedan en reserva (FrozenIsPrivate) y sólo se pueden borrar.
+rule PageDeletedFreezesExcerpts {
     when: PageDeleted(page)
-    for excerpt in page_excerpts(page) where anchor_status = anchored:
+    for excerpt in page_excerpts(page) where anchor_status != frozen:
         ensures:
-            excerpt.anchor_status = lost
-            excerpt.lost_at = now
+            excerpt.anchor_status = frozen
+            excerpt.frozen_at = now
+}
+
+-- Restaurar la página intenta re-anclar sus §§ congelados (decisión
+-- 2026-09-23): los que ubican su pasaje vuelven a la página; los demás
+-- quedan perdidos.
+rule PageRestoredReanchorsExcerpts {
+    when: PageRestored(page, revision)
+    requires: revision = page.latest_revision
+    for excerpt in page_excerpts(page) where anchor_status = frozen:
+        ensures:
+            if anchor_resolves(excerpt.anchor, revision):
+                excerpt.anchor = relocate(excerpt.anchor, revision)
+                excerpt.revision = revision
+                excerpt.anchor_status = anchored
+            else:
+                excerpt.anchor_status = lost
+                excerpt.lost_at = now
+    @guidance
+        -- Mismo job diferido que PageRevisedReanchorsExcerpts, tras
+        -- PageUndeleteComplete. Si el título se había recreado, la
+        -- restauración funde el historial en esa página: antes de re-anclar,
+        -- sus §§ congelados pasan a ella.
 }
 
 ------------------------------------------------------------
@@ -609,6 +679,7 @@ surface SelectionPopup {
             when viewer.identity = registered
                 and config.annotate_right in viewer.rights
                 and not viewer.is_blocked
+                and page not in viewer.blocked_pages
                 and viewer.constel_enabled
 
     @guarantee AppearsOnSelection
@@ -638,9 +709,10 @@ surface SelectionPopup {
         -- la afordancia.
 
     @guarantee HiddenFromIneligible
-        -- Anónimos, cuentas temporales, bloqueados, usuarios sin
-        -- config.annotate_right y quienes desactivaron con§tel en sus
-        -- preferencias no ven la afordancia.
+        -- Anónimos, cuentas temporales, bloqueados (sitewide o sobre esta
+        -- página), usuarios sin config.annotate_right y quienes desactivaron
+        -- con§tel en sus preferencias no ven la afordancia. Una página
+        -- protegida sí la muestra (AnnotatingIsNotEditing).
 
     @guarantee KeyboardOperable
         -- Afordancia alcanzable por teclado, nombre accesible ("con§tel");
@@ -724,7 +796,8 @@ surface ConceptDetail {
 
     exposes:
         concept.label
-        for e in concept.excerpts:
+        for e in concept.excerpts
+            where not e.is_frozen or e.author = viewer or "deletedtext" in viewer.rights:
             e.anchor.exact
             e.gloss
             e.page
@@ -749,6 +822,12 @@ surface ConceptDetail {
         -- El concepto se titula sin «§» (el § es de la sección, no del
         -- concepto). Cada § lleva al pie, en texto pequeño, su página de
         -- procedencia enlazada; no se agrupan bajo el título de la página.
+
+    @guarantee GlossBesideItsSection
+        -- La nota (glosa) de un § se muestra junto a él, pegada a su cita,
+        -- más sangrada que ella y en letra menor: se lee como comentario de
+        -- ESA sección (decisión 2026-09-23). Igual en el detalle sobre la
+        -- página y en MyReading. En la interfaz se nombra «Nota (o glosa)».
 
     @guarantee ModerationInPlace
         -- Quien modera renombra el concepto seleccionado en su propio
@@ -824,7 +903,8 @@ surface ConceptMap {
         --     (decisión 2026-09-22: un mapa de §§ de un solo concepto
         --     también debe mostrar su constelación).
         -- Los §§ perdidos aportan co_excerpt y co_page, pero no overlap (no
-        -- tienen posición vigente). Las tres clases de arista se
+        -- tienen posición vigente); los congelados no aportan nada
+        -- (FrozenIsPrivate). Las tres clases de arista se
         -- distinguen visualmente sólo por su transparencia (siempre
         -- continuas, nunca punteadas); co_page es la más tenue, porque no
         -- es una decisión explícita del lector.
@@ -916,7 +996,9 @@ surface MyReading {
 
     provides:
         ReaderCodesExcerpt(viewer, excerpt, concept_label)
+            when not excerpt.is_frozen
         ReaderGlossesExcerpt(viewer, excerpt, gloss)
+            when not excerpt.is_frozen
         ReaderDeletesExcerpt(viewer, excerpt)
         ReaderExportsReading(viewer)
 
@@ -926,16 +1008,24 @@ surface MyReading {
     @guarantee LostFlagged
         -- Los §§ perdidos se listan marcados, con su pasaje citado y la
         -- revisión donde fueron válidos (enlace a ese oldid).
+
+    @guarantee FrozenFlagged
+        -- Un § congelado se lista con un aviso de alarma («Texto borrado
+        -- por un administrador»), el motivo del borrado y el título de la
+        -- página si el registro de borrados deja verlos a quien mira, y
+        -- una sola acción: borrar la sección (decisión 2026-09-23).
 }
 
 -- Eventos del ciclo de vida de páginas que MediaWiki core entrega a la
--- extensión (hooks PageSaveComplete / PageDeleteComplete).
+-- extensión (hooks PageSaveComplete / PageDeleteComplete /
+-- PageUndeleteComplete).
 surface PageLifecycle {
     facing page: WikiPage
 
     provides:
         PageRevised(page, page.latest_revision)
         PageDeleted(page)
+        PageRestored(page, page.latest_revision)
 }
 
 surface MediaWikiIntegration {

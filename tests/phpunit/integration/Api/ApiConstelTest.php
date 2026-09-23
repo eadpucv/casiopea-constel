@@ -9,6 +9,7 @@ use MediaWiki\MainConfigNames;
 use MediaWiki\Tests\Api\ApiTestCase;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * La API es la autoridad (spec: WritesAreTokenProtected): estos tests fijan
@@ -83,6 +84,31 @@ class ApiConstelTest extends ApiTestCase {
 		$this->assertSame( 3, $out['start'], 'la posición la fija el servidor' );
 		$this->assertSame( 11, $out['end'] );
 		$this->assertSame( 'Travesía', $out['concept']['label'] );
+	}
+
+	public function testSamePassageTwiceAddsToTheSameExcerpt(): void {
+		$user = $this->reader();
+		$first = $this->create( $user, [ 'gloss' => 'primera' ] );
+		$again = $this->create( $user, [ 'concept' => 'Acto', 'gloss' => 'segunda' ] );
+		$this->assertSame( $first['excerpt'], $again['excerpt'], 'no nace un § duplicado' );
+		$this->assertFalse( $first['merged'] );
+		$this->assertTrue( $again['merged'] );
+
+		$list = $this->doApiRequest( [
+			'action' => 'query', 'list' => 'constelexcerpts', 'cepageid' => $this->page->getArticleID(),
+		] )[0]['query']['constelexcerpts'];
+		$this->assertCount( 1, $list );
+		$this->assertSame( [ 'Acto', 'Travesía' ], $this->sortedLabels( $list[0] ) );
+		$this->assertSame( 'primera', $list[0]['gloss'], 'la glosa previa no se pisa' );
+
+		$other = $this->create( $this->reader( 'other' ) );
+		$this->assertNotSame( $first['excerpt'], $other['excerpt'], 'otro lector tiene su propio §' );
+	}
+
+	private function sortedLabels( array $excerpt ): array {
+		$labels = array_column( $excerpt['concepts'], 'label' );
+		sort( $labels );
+		return $labels;
 	}
 
 	public function testAnonymousCannotAnnotate(): void {
@@ -173,8 +199,7 @@ class ApiConstelTest extends ApiTestCase {
 		$this->write( $user, [ 'action' => 'constel-theme', 'op' => 'create', 'label' => 'Lugar' ] );
 	}
 
-	public function testPartialBlockOnThePageStopsExcerpts(): void {
-		$user = $this->reader();
+	private function blockOnThePage( User $user ): void {
 		$block = new DatabaseBlock( [
 			'address' => $user,
 			'by' => $this->getTestSysop()->getUser(),
@@ -183,8 +208,84 @@ class ApiConstelTest extends ApiTestCase {
 		] );
 		$block->setRestrictions( [ new PageRestriction( 0, $this->page->getArticleID() ) ] );
 		$this->getServiceContainer()->getDatabaseBlockStore()->insertBlock( $block );
+	}
+
+	public function testPartialBlockOnThePageStopsExcerpts(): void {
+		$user = $this->reader();
+		$this->blockOnThePage( $user );
 		$this->expectApiErrorCode( 'blocked' );
 		$this->create( $user );
+	}
+
+	public static function provideExcerptChanges(): array {
+		return [
+			'codificar' => [ [ 'action' => 'constel-codeexcerpt', 'concept' => 'Acto' ] ],
+			'glosar' => [ [ 'action' => 'constel-glossexcerpt', 'gloss' => 'Eco' ] ],
+			'borrar' => [ [ 'action' => 'constel-deleteexcerpt' ] ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideExcerptChanges
+	 */
+	public function testPartialBlockOnThePageStopsChangesToExistingExcerpts( array $params ): void {
+		$user = $this->reader();
+		$excerpt = $this->create( $user )['excerpt'];
+		$this->blockOnThePage( $user );
+		$this->expectApiErrorCode( 'blocked' );
+		$this->write( $user, $params + [ 'excerpt' => $excerpt ] );
+	}
+
+	public function testProtectedPageCanBeAnnotated(): void {
+		$sysop = $this->getTestSysop()->getUser();
+		$cascade = false;
+		$this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $this->page )->doUpdateRestrictions(
+			[ 'edit' => 'sysop', 'move' => 'sysop' ], [ 'edit' => 'infinity', 'move' => 'infinity' ],
+			$cascade, 'test', $sysop
+		);
+		// Proteger deja una revisión nula: la vista vigente es ésa.
+		$this->revId = $this->page->getLatestRevID( IDBAccessObject::READ_LATEST );
+		$user = $this->reader();
+		$excerpt = $this->create( $user )['excerpt'];
+		$out = $this->write( $user, [ 'action' => 'constel-codeexcerpt', 'excerpt' => $excerpt, 'concept' => 'Acto' ] );
+		$this->assertSame( 'Acto', $out['concept']['label'], 'anotar no es editar: la protección no cuenta' );
+	}
+
+	private function deleteThePage(): void {
+		$this->deletePage( $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $this->page ) );
+	}
+
+	/**
+	 * @dataProvider provideExcerptChanges
+	 */
+	public function testFrozenExcerptCanOnlyBeDeleted( array $params ): void {
+		$user = $this->reader();
+		$excerpt = $this->create( $user )['excerpt'];
+		$this->deleteThePage();
+		if ( $params['action'] !== 'constel-deleteexcerpt' ) {
+			$this->expectApiErrorCode( 'frozen' );
+		}
+		$out = $this->write( $user, $params + [ 'excerpt' => $excerpt ] );
+		$this->assertSame( $excerpt, $out['excerpt'] );
+		$this->assertNull( $this->getServiceContainer()->get( 'CasiopeaConstel.ExcerptStore' )->get( $excerpt, true ) );
+	}
+
+	public function testFrozenExcerptsAreSeenOnlyByTheirAuthorAndWhoCanSeeDeletedText(): void {
+		$user = $this->reader();
+		$created = $this->create( $user );
+		$this->deleteThePage();
+		$query = [
+			'action' => 'query', 'list' => 'constelexcerpts', 'ceconcept' => $created['concept']['id'],
+		];
+		$seenBy = fn ( User $viewer ) => array_column(
+			$this->doApiRequest( $query, null, false, $viewer )[0]['query']['constelexcerpts'], 'status', 'id'
+		);
+
+		$frozen = [ $created['excerpt'] => 'frozen' ];
+		$this->assertSame( $frozen, $seenBy( $user ), 'su autor' );
+		$this->assertSame( $frozen, $seenBy( $this->getTestSysop()->getUser() ), 'deletedtext' );
+		$this->assertSame( [], $seenBy( $this->reader( 'other' ) ), 'otro lector' );
+		$this->assertSame( [], $seenBy( $this->getServiceContainer()->getUserFactory()->newAnonymous() ), 'anónimo' );
 	}
 
 	public function testThemesAreOwnedByTheirReader(): void {

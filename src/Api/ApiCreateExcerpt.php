@@ -22,7 +22,9 @@ use Wikimedia\Rdbms\IConnectionProvider;
  *
  * El cliente propone el pasaje (exact + contexto + posición medidos sobre su
  * DOM); el servidor lo ubica en el texto canónico de la revisión vigente y
- * guarda SU propia medición. Si no lo encuentra, no crea nada.
+ * guarda SU propia medición. Si no lo encuentra, no crea nada. Si el autor
+ * ya tiene un § sobre exactamente ese pasaje, el concepto (y la glosa, si
+ * aquél no tenía) se suman a ése: no nace un § duplicado.
  */
 class ApiCreateExcerpt extends ApiExcerptWriteBase {
 
@@ -88,12 +90,22 @@ class ApiCreateExcerpt extends ApiExcerptWriteBase {
 			$this->dieWithError( 'apierror-constel-anchornotfound', 'anchornotfound' );
 		}
 
-		$excerpt = $this->excerpts->create(
-			$actorId, $page->getId(), $revision->getId(), $anchor, $label, $gloss
-		);
+		$excerpt = $this->excerpts->findAnchoredAt( $actorId, $page->getId(), $anchor->start, $anchor->end );
+		$merged = $excerpt !== null;
+		if ( $merged ) {
+			$this->excerpts->code( $excerpt->id, $label );
+			if ( $gloss !== null && $excerpt->gloss === null ) {
+				$this->excerpts->setGloss( $excerpt->id, $gloss );
+			}
+		} else {
+			$excerpt = $this->excerpts->create(
+				$actorId, $page->getId(), $revision->getId(), $anchor, $label, $gloss
+			);
+		}
 		$concept = $this->concepts->getByLabel( $label );
 		$this->getResult()->addValue( null, $this->getModuleName(), [
 			'excerpt' => $excerpt->id,
+			'merged' => $merged,
 			'pageid' => $page->getId(),
 			'revid' => $revision->getId(),
 			'start' => $anchor->start,

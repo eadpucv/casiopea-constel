@@ -34,7 +34,8 @@ class ApiDeleteExcerpt extends ApiExcerptWriteBase {
 	public function execute() {
 		$params = $this->extractRequestParams();
 		$actorId = $this->requireAnnotator();
-		$excerpt = $this->requireOwnExcerpt( $params['excerpt'], $actorId, true );
+		// Borrar es lo único que admite un § congelado.
+		$excerpt = $this->requireOwnExcerpt( $params['excerpt'], $actorId, true, true );
 		$this->excerpts->delete( $excerpt->id );
 		if ( $excerpt->actorId !== $actorId ) {
 			$this->log->deleteExcerpt( $this->getUser(), $excerpt );

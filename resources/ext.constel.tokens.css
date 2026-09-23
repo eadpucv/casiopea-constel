@@ -39,7 +39,8 @@
 	--constel-accent-wash: var( --sn-nova-wash, var( --background-color-progressive-subtle, #eaf3ff ) );
 	--constel-link: var( --sn-link, var( --color-progressive, #36c ) );
 
-	/* Marcas de pasajes: propios (nova) y ajenos (tinta tenue) */
+	/* Marcas de pasajes: propios (nova) y ajenos (tinta tenue, o el tono
+	   de su autor: ver .constel-mark--hued al final) */
 	--constel-mark-mine: var( --sn-nova, var( --color-progressive, #36c ) );
 	--constel-mark-mine-wash: var( --sn-nova-wash, var( --background-color-progressive-subtle, #eaf3ff ) );
 	--constel-mark-others: var( --sn-ink-faint, var( --color-placeholder, #72777d ) );
@@ -51,6 +52,7 @@
 
 	/* Estados */
 	--constel-danger: var( --sn-danger, var( --color-destructive, #d73333 ) );
+	--constel-danger-wash: var( --sn-danger-wash, var( --background-color-error-subtle, #ffe9e5 ) );
 	--constel-warn-wash: var( --sn-warn-wash, var( --background-color-warning-subtle, #fdf2d5 ) );
 
 	/* Controles (tokens de componente del skin) */
@@ -102,4 +104,14 @@
 	--constel-dur: var( --sn-dur-1, 120ms );
 	--constel-ease: var( --sn-ease, ease-out );
 	--constel-z-popup: var( --sn-z-panel, 920 );
+}
+
+/* Marcas ajenas con color de autor. marks.js pone --constel-hue (un tono
+ * oklch que evita el rojo de la nova) en cada marca; aquí, la luminosidad y
+ * el croma de la línea y del lavado en cada tema. Se declaran en la marca y
+ * no en :root porque dependen de su --constel-hue. Sin light-dark() (skins
+ * sin color-scheme) rige la rama clara. */
+.constel-mark--hued {
+	--constel-mark-others: light-dark( oklch( 0.6 0.12 var( --constel-hue ) ), oklch( 0.74 0.11 var( --constel-hue ) ) );
+	--constel-mark-others-wash: light-dark( oklch( 0.95 0.035 var( --constel-hue ) ), oklch( 0.33 0.05 var( --constel-hue ) ) );
 }

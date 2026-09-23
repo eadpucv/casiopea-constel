@@ -151,9 +151,10 @@ classDiagram
         §
         anchor: TextAnchor
         gloss?
-        anchor_status: anchored · lost
+        anchor_status: anchored · lost · frozen
         created_at
         lost_at?
+        frozen_at?
     }
     class TextAnchor {
         <<value>>
@@ -257,9 +258,9 @@ erDiagram
         int ce_start "code points"
         int ce_end "code points, exclusivo"
         blob ce_gloss "nullable"
-        tinyint ce_status "0 anchored, 1 lost"
+        tinyint ce_status "0 anchored, 1 lost, 2 frozen"
         mwtimestamp ce_created
-        mwtimestamp ce_lost "nullable"
+        mwtimestamp ce_lost "nullable: desde cuándo perdido o congelado"
     }
     constel_coding {
         int ccd_excerpt PK
@@ -423,18 +424,23 @@ sequenceDiagram
     Q->>J: run()
     J->>MW: revisión vigente AL CORRER
     J->>P: su texto canónico
-    loop cada § anclado a una revisión anterior
+    loop cada § anclado a una revisión anterior, y cada § congelado
         J->>Loc: locate(ancla, texto)
         alt se ubica sin ambigüedad
-            J->>S: relocate(nueva revisión, ancla recalculada)
+            J->>S: relocate(nueva revisión, ancla recalculada; queda anclado)
         else no se ubica o es ambiguo
-            J->>S: markLost (terminal)
+            J->>S: markLost
         end
     end
 
     E->>MW: borra la página
     MW->>H: PageDeleteComplete
-    H->>S: markLostForPage (en el acto)
+    H->>S: freezeForPage (en el acto)
+
+    E->>MW: restaura la página
+    MW->>H: PageUndeleteComplete
+    H->>S: adoptFrozen(page_id originales → página vigente)
+    H->>Q: lazyPush(ReanchorJob)
 ```
 
 ### Ciclo de vida de un §
@@ -443,13 +449,23 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> Anclado : ReaderCreatesExcerpt<br/>(con su primer concepto)
     Anclado --> Anclado : revisión nueva y el pasaje se ubica<br/>(relocate)
-    Anclado --> Perdido : revisión nueva y no se ubica,<br/>o la página se borra
+    Anclado --> Perdido : revisión nueva y no se ubica
+    Anclado --> Congelado : la página se borra
+    Perdido --> Congelado : la página se borra
+    Congelado --> Anclado : la página se restaura<br/>y el pasaje se ubica
+    Congelado --> Perdido : la página se restaura<br/>y el pasaje no se ubica
     Anclado --> [*] : su autor lo borra,<br/>o quita su último concepto,<br/>o un moderador lo borra
     Perdido --> [*] : su autor lo borra,<br/>o quita su último concepto
+    Congelado --> [*] : su autor o un moderador lo borra<br/>(lo único que admite)
     note right of Perdido
-        Terminal: no vuelve a anclarse.
-        Sigue en el mapa y en MiConstel;
-        no se dibuja ni se exporta.
+        Mientras la página exista, no vuelve
+        a anclarse. Sigue en el mapa y en
+        MiConstel; no se dibuja ni se exporta.
+    end note
+    note right of Congelado
+        En reserva (FrozenIsPrivate): su pasaje
+        sólo lo ven su autor y quien tiene
+        deletedtext; no cuenta en el mapa.
     end note
 ```
 
@@ -559,8 +575,11 @@ decide: si es ambiguo, el ancla no se resuelve y no se baja al siguiente.
 - `ReanchorJob` trabaja contra la revisión **vigente al correr**, así que es
   idempotente y tolera llegar tarde. Si el render falla, devuelve `false` y la
   cola lo reintenta.
-- `PageDeleteComplete` marca los §§ como perdidos en el acto. Restaurar la
-  página no los revive: `lost` es terminal.
+- `PageDeleteComplete` congela en el acto todos los §§ de la página
+  (anclados y perdidos). `PageUndeleteComplete` los pasa a la página vigente
+  (si el título se había recreado, la restauración funde el historial en esa
+  página, con otro `page_id`) y encola el mismo job, que intenta re-anclarlos:
+  quedan anclados o perdidos. Un § congelado sólo se puede borrar.
 
 Mientras el job no corre, el cliente recibe §§ con un `revid` anterior, y
 `marks.js` los ubica por la cita. Por eso `AnchoredMeansCurrent` se cumple de
@@ -745,9 +764,12 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   quien puede verlos.
 
 **Especial:MiConstel** (`SpecialMyConstel`, cuentas registradas): tabla de
-§§ propios, anclados y perdidos, con sus glosas. Cada § perdido enlaza al
-`oldid` donde era válido. `ext.constel.mine` agrega «Editar», que reutiliza el
-detalle del §.
+§§ propios, anclados, perdidos y congelados, con sus glosas. Cada § perdido
+enlaza al `oldid` donde era válido. Un § congelado lleva un aviso de alarma
+(«Texto borrado por un administrador») con el motivo y el título que el
+registro de borrados deje ver (`DeletionLog`, respeta `log_deleted`; un
+borrado suprimido no figura). `ext.constel.mine` agrega «Editar», que
+reutiliza el detalle del §, o, en uno congelado, sólo «Borrar esta sección».
 
 **Páginas anchas.** Las dos páginas especiales agregan
 `<body class="constel-wide">`. Qué significa lo decide el skin: Stella Nova la
@@ -770,9 +792,13 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 - que sea una cuenta registrada (`isNamed()`): ni anónimos ni cuentas
   temporales;
 - el derecho `constel-annotate` (o `constel-moderate` para moderar);
-- que no haya un bloqueo sitewide y, en los módulos que tocan una página,
-  tampoco uno parcial (`checkTitleUserPermissions`);
-- que el pasaje o tema pertenezca a quien lo modifica.
+- que no haya un bloqueo sitewide y, en los módulos que tocan una página
+  (crear un § y codificar, descodificar, glosar o borrar uno existente),
+  tampoco uno parcial sobre esa página (`checkTitleUserPermissions` con
+  `constel-annotate`). La protección de página no cuenta: sólo restringe
+  acciones como `edit` o `move`, y anotar no es editar;
+- que el pasaje o tema pertenezca a quien lo modifica, y que el § no esté
+  congelado (salvo para borrarlo: responde `frozen`).
 
 | Módulo | Spec |
 |---|---|
@@ -790,7 +816,7 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 
 | Módulo | Parámetros |
 |---|---|
-| `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto) |
+| `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto). Los congelados sólo salen para su autor y para quien tiene `deletedtext` |
 | `list=constelconcepts` | `ccsearch` (autocompletado tolerante, por uso), `ccvariantsof`, `ccids`, `ccthemes` (temas que lo contienen) |
 | `list=constelthemes` | `ctuser` (uno o varios), `ctids` (con conceptos y `development`) |
 | `list=constelgraph` | `cgusers` (lectores), `cgpageids` (páginas); vacío = todos |

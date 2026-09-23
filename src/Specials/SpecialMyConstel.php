@@ -2,7 +2,9 @@
 
 namespace MediaWiki\Extension\CasiopeaConstel\Specials;
 
+use MediaWiki\CommentStore\CommentStore;
 use MediaWiki\Extension\CasiopeaConstel\Export\ExportBuilder;
+use MediaWiki\Extension\CasiopeaConstel\Page\DeletionLog;
 use MediaWiki\Extension\CasiopeaConstel\Store\ConceptStore;
 use MediaWiki\Extension\CasiopeaConstel\Store\ExcerptStore;
 use MediaWiki\Html\Html;
@@ -13,8 +15,8 @@ use MediaWiki\User\ActorNormalization;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
- * Especial:MiConstel — la lectura propia, incluidos los §§ perdidos
- * (spec: MyReading), y su exportación al constel standalone
+ * Especial:MiConstel — la lectura propia, incluidos los §§ perdidos y los
+ * congelados (spec: MyReading), y su exportación al constel standalone
  * (spec: ReaderExportsReading): Especial:MiConstel/export.
  */
 class SpecialMyConstel extends SpecialPage {
@@ -25,7 +27,8 @@ class SpecialMyConstel extends SpecialPage {
 		private readonly PageStore $pageStore,
 		private readonly ExportBuilder $exportBuilder,
 		private readonly ActorNormalization $actorNormalization,
-		private readonly IConnectionProvider $dbProvider
+		private readonly IConnectionProvider $dbProvider,
+		private readonly CommentStore $commentStore
 	) {
 		parent::__construct( 'MyConstel' );
 	}
@@ -86,9 +89,27 @@ class SpecialMyConstel extends SpecialPage {
 			$head .= Html::element( 'th', [ 'scope' => 'col' ], $this->msg( "myconstel-col-$col" )->text() );
 		}
 		$rows = '';
+		$frozen = array_filter( $records, static fn ( $e ) => $e->isFrozen() );
+		$deletions = ( new DeletionLog( $this->dbProvider, $this->commentStore ) )
+			->lastDeletions( array_map( static fn ( $e ) => $e->pageId, $frozen ), $this->getAuthority() );
 		foreach ( $records as $e ) {
 			$title = $pages[$e->pageId] ?? null;
-			if ( !$title ) {
+			$notice = '';
+			if ( $e->isFrozen() ) {
+				// Congelado: la página se borró. El título y el motivo, si el
+				// registro de borrado los deja ver (spec: MyReading.FrozenFlagged).
+				$deletion = $deletions[$e->pageId] ?? null;
+				$pageCell = $deletion && $deletion['title']
+					? $linkRenderer->makeLink( $deletion['title'] )
+					: $this->msg( 'myconstel-page-gone' )->escaped();
+				$notice = Html::rawElement( 'div', [ 'class' => 'constel-frozen', 'role' => 'alert' ],
+					Html::element( 'strong', [], $this->msg( 'myconstel-frozen-notice' )->text() ) .
+					( $deletion && $deletion['reason'] !== null
+						? ' ' . Html::element( 'span', [ 'class' => 'constel-frozen__reason' ],
+							$this->msg( 'myconstel-frozen-reason', $deletion['reason'] )->text() )
+						: '' )
+				);
+			} elseif ( !$title ) {
 				$pageCell = $this->msg( 'myconstel-page-gone' )->escaped();
 			} elseif ( $e->isAnchored() ) {
 				$pageCell = $linkRenderer->makeKnownLink( $title );
@@ -104,18 +125,22 @@ class SpecialMyConstel extends SpecialPage {
 					$chips .= Html::element( 'li', [ 'class' => 'constel-chip' ], $concepts[$conceptId]->label );
 				}
 			}
-			$status = $e->isAnchored() ? 'anchored' : 'lost';
+			$status = $e->statusName();
+			// Clases: constel-mine__row--anchored, --lost, --frozen
 			$rows .= Html::rawElement( 'tr', [
 					'class' => "constel-mine__row constel-mine__row--$status",
 					'data-constel-excerpt' => $e->id,
+					'data-constel-status' => $status,
 				],
 				Html::rawElement( 'td', [],
+					$notice .
 					Html::element( 'blockquote', [ 'class' => 'constel-quote' ], $e->anchor->exact ) .
 					( $e->gloss === null ? '' :
-						Html::element( 'p', [ 'class' => 'constel-gloss-text' ], $e->gloss ) ) ) .
+						Html::element( 'div', [ 'class' => 'constel-gloss-text' ], $e->gloss ) ) ) .
 				Html::rawElement( 'td', [], $pageCell ) .
 				Html::rawElement( 'td', [], Html::rawElement( 'ul', [ 'class' => 'constel-chips' ], $chips ) ) .
-				// Clases: constel-status--anchored, constel-status--lost
+				// Clases: constel-status--anchored, constel-status--lost, constel-status--frozen
+				// Mensajes: myconstel-status-anchored, -lost, -frozen
 				Html::element( 'td', [ 'class' => "constel-status constel-status--$status" ],
 					$this->msg( "myconstel-status-$status" )->text() ) .
 				Html::element( 'td', [], $lang->userDate( $e->created, $this->getUser() ) )

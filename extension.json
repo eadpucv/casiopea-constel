@@ -37,6 +37,7 @@
 		"GetPreferences": "page",
 		"PageSaveComplete": "revision",
 		"PageDeleteComplete": "revision",
+		"PageUndeleteComplete": "revision",
 		"SkinTemplateNavigation::Universal": "page"
 	},
 	"HookHandlers": {
@@ -234,7 +235,8 @@
 				"PageStore",
 				"CasiopeaConstel.ExportBuilder",
 				"ActorNormalization",
-				"ConnectionProvider"
+				"ConnectionProvider",
+				"CommentStore"
 			]
 		}
 	},
@@ -421,6 +423,7 @@
 				"constellation-theme-new",
 				"constellation-theme-create",
 				"myconstel-status-lost",
+				"myconstel-status-frozen",
 				"constellation-moderate",
 				"constellation-merge-into",
 				"constellation-merge",
@@ -466,7 +469,11 @@
 				"ext.constel.mine/mine.js"
 			],
 			"messages": [
-				"myconstel-edit"
+				"myconstel-edit",
+				"constel-detail-delete",
+				"constel-detail-delete-confirm",
+				"constel-detail-delete-yes",
+				"constel-detail-delete-no"
 			],
 			"dependencies": [
 				"ext.constel.ui"

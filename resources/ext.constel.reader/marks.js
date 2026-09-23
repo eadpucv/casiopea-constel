@@ -8,6 +8,24 @@ const { locate } = require( './locate.js' );
 
 const MARK_CLASS = 'constel-mark';
 
+/* Tonos (oklch) para los autores ajenos: saltan la zona del rojo de la nova,
+ * que es de las marcas propias. La luminosidad y el croma, en tokens.css. */
+const AUTHOR_HUES = [ 70, 110, 150, 190, 230, 270, 310 ];
+
+/**
+ * Tono estable de un autor: el mismo nombre da siempre el mismo color.
+ *
+ * @param {string} name
+ * @return {number}
+ */
+function authorHue( name ) {
+	let h = 0;
+	for ( let i = 0; i < name.length; i++ ) {
+		h = ( h * 31 + name.charCodeAt( i ) ) % 1000003;
+	}
+	return AUTHOR_HUES[ h % AUTHOR_HUES.length ];
+}
+
 /**
  * Quita todas las marcas y deja el texto como estaba.
  *
@@ -55,10 +73,16 @@ function draw( root, excerpts, isMine ) {
 				node = node.splitText( piece.from );
 			}
 			const mark = document.createElement( 'mark' );
-			// Clases: constel-mark, constel-mark--mine, constel-mark--others
-			mark.className = isMine( excerpt ) ?
-				'constel-mark constel-mark--mine' :
-				'constel-mark constel-mark--others';
+			// Clases: constel-mark, constel-mark--mine, constel-mark--others,
+			// constel-mark--hued
+			if ( isMine( excerpt ) ) {
+				mark.className = 'constel-mark constel-mark--mine';
+			} else if ( excerpt.author && !excerpt.userhidden ) {
+				mark.className = 'constel-mark constel-mark--others constel-mark--hued';
+				mark.style.setProperty( '--constel-hue', String( authorHue( excerpt.author ) ) );
+			} else {
+				mark.className = 'constel-mark constel-mark--others';
+			}
 			mark.dataset.constelExcerpt = String( excerpt.id );
 			if ( i === 0 ) {
 				// Una sola parada de teclado por §.
@@ -94,4 +118,4 @@ function excerptIdsAt( target, root ) {
 	return ids;
 }
 
-module.exports = { draw, clear, excerptIdsAt, MARK_CLASS };
+module.exports = { draw, clear, excerptIdsAt, authorHue, MARK_CLASS };

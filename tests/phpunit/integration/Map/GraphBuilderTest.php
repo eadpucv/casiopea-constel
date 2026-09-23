@@ -89,6 +89,24 @@ class GraphBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->assertCount( 2, $graph['nodes'], 'el perdido sigue aportando su concepto' );
 	}
 
+	public function testFrozenExcerptsDoNotCount(): void {
+		$this->excerpt( 1, 3, 16, [ 'Travesía', 'Apertura' ], 10 );
+		$this->excerpt( 2, 3, 11, [ 'Travesía', 'Espacio' ], 11 );
+		$this->constel()->getExcerptStore()->freezeForPage( 11 );
+
+		$graph = $this->constel()->getGraphBuilder()->build( null, null, null );
+		$nodes = array_column( $graph['nodes'], null, 'label' );
+		$this->assertSame( [ 'Apertura', 'Travesía' ], $this->sorted( array_keys( $nodes ) ),
+			'un concepto que sólo vive en §§ congelados sale del mapa' );
+		$this->assertSame( 1, $nodes['Travesía']['excerpts'] );
+		$this->assertSame( 1, $nodes['Travesía']['pages'] );
+	}
+
+	private function sorted( array $labels ): array {
+		sort( $labels );
+		return $labels;
+	}
+
 	public function testScopesAndCounts(): void {
 		$this->excerpt( 1, 3, 11, [ 'Travesía' ], 10 );
 		$this->excerpt( 2, 3, 11, [ 'Travesía' ], 11 );

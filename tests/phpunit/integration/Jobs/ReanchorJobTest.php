@@ -8,10 +8,12 @@ use MediaWiki\Extension\CasiopeaConstel\Store\ExcerptRecord;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
- * Las páginas cambian; los §§ las siguen o se pierden
- * (spec: PageRevisedReanchorsExcerpts, PageDeletedLosesExcerpts).
+ * Las páginas cambian; los §§ las siguen, se pierden o se congelan
+ * (spec: PageRevisedReanchorsExcerpts, PageDeletedFreezesExcerpts,
+ * PageRestoredReanchorsExcerpts).
  *
  * @group Database
  * @covers \MediaWiki\Extension\CasiopeaConstel\Jobs\ReanchorJob
@@ -87,11 +89,66 @@ class ReanchorJobTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $this->reload( $excerpt )->isAnchored(), 'lost es terminal' );
 	}
 
-	public function testDeletingThePageLosesItsExcerpts(): void {
-		$excerpt = $this->excerptOnFirstTravesia();
+	private function deleteThePage(): void {
 		$this->deletePage( $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $this->page ) );
+	}
 
-		$this->assertFalse( $this->reload( $excerpt )->isAnchored() );
+	private function restoreThePage(): void {
+		$this->getServiceContainer()->getUndeletePageFactory()
+			->newUndeletePage(
+				$this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $this->page ),
+				$this->getTestSysop()->getAuthority()
+			)
+			->undeleteUnsafe( '' );
+	}
+
+	public function testDeletingThePageFreezesItsExcerpts(): void {
+		$excerpt = $this->excerptOnFirstTravesia();
+		$this->deleteThePage();
+
+		$after = $this->reload( $excerpt );
+		$this->assertTrue( $after->isFrozen() );
+		$this->assertSame( 'travesía', $after->anchor->exact, 'conserva su pasaje' );
+		$this->assertSame( [ $after->id ], array_map(
+			static fn ( $e ) => $e->id, $this->constel()->getExcerptStore()->listForConcept(
+				$this->constel()->getConceptStore()->getByLabel( 'Travesía' )->id
+			)
+		), 'sigue codificado: congelar no borra conceptos' );
+	}
+
+	public function testDeletingThePageFreezesLostExcerptsToo(): void {
+		$excerpt = $this->excerptOnFirstTravesia();
+		$this->editPage( $this->page, 'Otro texto.' );
+		$this->runJobs( [ 'minJobs' => 1 ], [ 'type' => 'constelReanchor' ] );
+		$this->deleteThePage();
+
+		$this->assertTrue( $this->reload( $excerpt )->isFrozen() );
+	}
+
+	public function testRestoringThePageReanchorsFrozenExcerpts(): void {
+		$excerpt = $this->excerptOnFirstTravesia();
+		$this->deleteThePage();
+		$this->restoreThePage();
+		$this->runJobs( [ 'minJobs' => 1 ], [ 'type' => 'constelReanchor' ] );
+
+		$after = $this->reload( $excerpt );
+		$this->assertTrue( $after->isAnchored() );
+		$this->assertNull( $after->lost );
+		$this->assertSame( $this->page->getArticleID( IDBAccessObject::READ_LATEST ), $after->pageId );
+		$this->assertSame( $excerpt->anchor->start, $after->anchor->start );
+	}
+
+	public function testRestoredPageWithoutThePassageLosesFrozenExcerpts(): void {
+		$excerpt = $this->excerptOnFirstTravesia();
+		$this->editPage( $this->page, 'Otro texto.' );
+		$this->runJobs( [ 'minJobs' => 1 ], [ 'type' => 'constelReanchor' ] );
+		$this->deleteThePage();
+		$this->restoreThePage();
+		$this->runJobs( [ 'minJobs' => 1 ], [ 'type' => 'constelReanchor' ] );
+
+		$after = $this->reload( $excerpt );
+		$this->assertFalse( $after->isAnchored() );
+		$this->assertFalse( $after->isFrozen() );
 	}
 
 	public function testPagesWithoutExcerptsQueueNothing(): void {

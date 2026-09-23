@@ -1,5 +1,25 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Borrar una página congela sus secciones.** Ya no se pierden: quedan en
+  un estado nuevo, `frozen`, en el que sólo se pueden borrar. Su pasaje y su
+  glosa los ven sólo su autor y quien tiene `deletedtext`, y no cuentan en el
+  mapa. Restaurar la página las re-ancla (o las deja perdidas si el pasaje ya
+  no está), también cuando el título se había recreado.
+- **MiConstel avisa del borrado.** Una sección congelada lleva el aviso
+  «Texto borrado por un administrador», con el motivo y el título que el
+  registro de borrados deje ver, y una sola acción: borrarla.
+- **Bloqueos parciales en todas las operaciones.** Codificar, descodificar,
+  glosar y borrar una sección existente respetan ahora un bloqueo parcial
+  sobre su página, como ya lo hacía crearla. Las páginas protegidas se
+  siguen pudiendo anotar: anotar no es editar (lo fija un test).
+- **La nota se lee junto a su sección.** En el panel de un concepto (y en el
+  detalle y en MiConstel) la glosa va pegada a la cita, más sangrada, en
+  letra menor y con un filete propio; antes quedaba al margen, menos
+  sangrada que la cita, porque el skin le imponía su estilo de párrafo. El
+  campo del formulario se llama ahora «Nota (o glosa)».
+
 ## 0.6.0 — 2026-09-23
 
 - **El mapa abre en 2D.** Es la vista por defecto de Especial:Constelación

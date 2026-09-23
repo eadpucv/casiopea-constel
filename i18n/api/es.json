@@ -87,6 +87,7 @@
 	"apihelp-constel-moderate-example-merge": "Fusionar el concepto 3 en el concepto 2.",
 	"apierror-constel-labeltaken": "El rótulo «$1» ya es de otro concepto: fusiónalos en vez de renombrar.",
 	"apierror-constel-mergeself": "Un concepto no se puede fusionar consigo mismo.",
+	"apierror-constel-frozen": "La página de esta sección fue borrada: la sección sólo se puede borrar.",
 	"apihelp-constel-glossexcerpt-summary": "Escribir, cambiar o quitar (vacía) la glosa de una de tus secciones (§): un comentario o aclaración.",
 	"apihelp-constel-glossexcerpt-param-excerpt": "ID de la sección.",
 	"apihelp-constel-glossexcerpt-param-gloss": "La glosa. Vacía, la quita.",

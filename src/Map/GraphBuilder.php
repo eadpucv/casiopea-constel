@@ -123,6 +123,9 @@ class GraphBuilder {
 			->select( [ 'ccd_excerpt', 'ccd_concept', 'ce_actor', 'ce_page', 'ce_status', 'ce_start', 'ce_end' ] )
 			->from( 'constel_coding' )
 			->join( 'constel_excerpt', null, 'ce_id = ccd_excerpt' )
+			// Los congelados (página borrada) no cuentan mientras dure el
+			// congelamiento (spec: FrozenIsPrivate).
+			->where( $db->expr( 'ce_status', '!=', ExcerptRecord::STATUS_FROZEN ) )
 			->orderBy( [ 'ccd_excerpt', 'ccd_timestamp' ] );
 		if ( $actors !== null ) {
 			$query->where( [ 'ce_actor' => array_values( $actors ) ] );

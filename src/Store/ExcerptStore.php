@@ -24,6 +24,9 @@ class ExcerptStore {
 		'ce_start', 'ce_end', 'ce_gloss', 'ce_status', 'ce_created', 'ce_lost',
 	];
 
+	/** Estados que el re-anclaje considera: los perdidos no vuelven. */
+	private const REANCHORABLE = [ ExcerptRecord::STATUS_ANCHORED, ExcerptRecord::STATUS_FROZEN ];
+
 	public function __construct(
 		private readonly IConnectionProvider $dbProvider,
 		private readonly ConceptStore $concepts
@@ -135,7 +138,9 @@ class ExcerptStore {
 	}
 
 	/**
-	 * El ancla se ubicó en una revisión nueva (spec: PageRevisedReanchorsExcerpts).
+	 * El ancla se ubicó en una revisión nueva (spec: PageRevisedReanchorsExcerpts)
+	 * o en la página restaurada (spec: PageRestoredReanchorsExcerpts): un §
+	 * congelado vuelve a estar anclado.
 	 */
 	public function relocate( int $excerptId, int $revId, TextAnchor $anchor ): void {
 		$this->primary()->newUpdateQueryBuilder()
@@ -147,13 +152,16 @@ class ExcerptStore {
 				'ce_suffix' => $anchor->suffix,
 				'ce_start' => $anchor->start,
 				'ce_end' => $anchor->end,
+				'ce_status' => ExcerptRecord::STATUS_ANCHORED,
+				'ce_lost' => null,
 			] )
-			->where( [ 'ce_id' => $excerptId, 'ce_status' => ExcerptRecord::STATUS_ANCHORED ] )
+			->where( [ 'ce_id' => $excerptId, 'ce_status' => self::REANCHORABLE ] )
 			->caller( __METHOD__ )->execute();
 	}
 
 	/**
-	 * El § pierde su ancla. `lost` es terminal: sólo afecta §§ anclados.
+	 * El § pierde su ancla. `lost` es terminal: sólo afecta §§ anclados o
+	 * congelados (éstos, cuando la página restaurada ya no tiene su pasaje).
 	 *
 	 * @param int[] $excerptIds
 	 */
@@ -165,33 +173,73 @@ class ExcerptStore {
 		$dbw->newUpdateQueryBuilder()
 			->update( 'constel_excerpt' )
 			->set( [ 'ce_status' => ExcerptRecord::STATUS_LOST, 'ce_lost' => $dbw->timestamp() ] )
-			->where( [ 'ce_id' => $excerptIds, 'ce_status' => ExcerptRecord::STATUS_ANCHORED ] )
+			->where( [ 'ce_id' => $excerptIds, 'ce_status' => self::REANCHORABLE ] )
 			->caller( __METHOD__ )->execute();
 	}
 
 	/**
-	 * ¿La página tiene §§ anclados? Barato: decide si vale la pena re-anclar.
+	 * ¿La página tiene §§ que re-anclar (anclados o congelados)? Barato:
+	 * decide si vale la pena encolar el job.
 	 */
-	public function hasAnchored( int $pageId ): bool {
+	public function hasReanchorable( int $pageId ): bool {
 		return (bool)$this->primary()->newSelectQueryBuilder()
 			->select( 'ce_id' )
 			->from( 'constel_excerpt' )
-			->where( [ 'ce_page' => $pageId, 'ce_status' => ExcerptRecord::STATUS_ANCHORED ] )
+			->where( [ 'ce_page' => $pageId, 'ce_status' => self::REANCHORABLE ] )
 			->limit( 1 )
 			->caller( __METHOD__ )->fetchField();
 	}
 
 	/**
-	 * Todos los §§ anclados de la página pierden el ancla
-	 * (spec: PageDeletedLosesExcerpts).
+	 * Página borrada: todos sus §§ (anclados y perdidos) quedan congelados
+	 * (spec: PageDeletedFreezesExcerpts).
 	 */
-	public function markLostForPage( int $pageId ): void {
+	public function freezeForPage( int $pageId ): void {
 		$dbw = $this->primary();
 		$dbw->newUpdateQueryBuilder()
 			->update( 'constel_excerpt' )
-			->set( [ 'ce_status' => ExcerptRecord::STATUS_LOST, 'ce_lost' => $dbw->timestamp() ] )
-			->where( [ 'ce_page' => $pageId, 'ce_status' => ExcerptRecord::STATUS_ANCHORED ] )
+			->set( [ 'ce_status' => ExcerptRecord::STATUS_FROZEN, 'ce_lost' => $dbw->timestamp() ] )
+			->where( [
+				'ce_page' => $pageId,
+				'ce_status' => [ ExcerptRecord::STATUS_ANCHORED, ExcerptRecord::STATUS_LOST ],
+			] )
 			->caller( __METHOD__ )->execute();
+	}
+
+	/**
+	 * Página restaurada: sus §§ congelados pasan a la página vigente. Si el
+	 * título se había recreado, la restauración funde el historial en esa
+	 * página, que tiene OTRO page_id.
+	 *
+	 * @param int[] $oldPageIds page_id que tenía la página al borrarse
+	 */
+	public function adoptFrozen( array $oldPageIds, int $pageId ): void {
+		if ( !$oldPageIds ) {
+			return;
+		}
+		$this->primary()->newUpdateQueryBuilder()
+			->update( 'constel_excerpt' )
+			->set( [ 'ce_page' => $pageId ] )
+			->where( [ 'ce_page' => array_values( $oldPageIds ), 'ce_status' => ExcerptRecord::STATUS_FROZEN ] )
+			->caller( __METHOD__ )->execute();
+	}
+
+	/**
+	 * El § anclado de un autor exactamente sobre ese pasaje, si ya existe
+	 * (spec: ReaderCreatesExcerpt — no se duplica el mismo §).
+	 */
+	public function findAnchoredAt( int $actorId, int $pageId, int $start, int $end ): ?ExcerptRecord {
+		$row = $this->select( $this->primary() )
+			->where( [
+				'ce_actor' => $actorId,
+				'ce_page' => $pageId,
+				'ce_start' => $start,
+				'ce_end' => $end,
+				'ce_status' => ExcerptRecord::STATUS_ANCHORED,
+			] )
+			->orderBy( 'ce_id' )
+			->caller( __METHOD__ )->fetchRow();
+		return $row ? $this->newRecord( $row ) : null;
 	}
 
 	/**
@@ -207,7 +255,20 @@ class ExcerptStore {
 	}
 
 	/**
-	 * @return ExcerptRecord[] §§ codificados con un concepto (anclados y perdidos).
+	 * @return ExcerptRecord[] §§ anclados y congelados de una página (lo que
+	 *  el re-anclaje debe ubicar).
+	 */
+	public function listReanchorableForPage( int $pageId ): array {
+		$res = $this->select( $this->primary() )
+			->where( [ 'ce_page' => $pageId, 'ce_status' => self::REANCHORABLE ] )
+			->orderBy( [ 'ce_start', 'ce_id' ] )
+			->caller( __METHOD__ )->fetchResultSet();
+		return array_map( [ $this, 'newRecord' ], iterator_to_array( $res ) );
+	}
+
+	/**
+	 * @return ExcerptRecord[] §§ codificados con un concepto (en todo estado;
+	 *  quien consulta filtra los congelados según quién mira).
 	 */
 	public function listForConcept( int $conceptId, int $limit = 500 ): array {
 		$res = $this->select( $this->replica() )

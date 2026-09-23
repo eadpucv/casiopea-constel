@@ -645,6 +645,31 @@
 	border-left-style: dashed;
 }
 
+/* Congelada: su página se borró. Aviso de alarma; sólo se puede borrar. */
+.constel-frozen {
+	margin-bottom: var( --constel-s-2 );
+	padding: var( --constel-s-2 ) var( --constel-s-3 );
+	border-left: 4px solid var( --constel-danger );
+	background: var( --constel-danger-wash );
+	color: var( --constel-ink );
+	font-size: var( --constel-fs-sm );
+}
+
+.constel-frozen strong {
+	color: var( --constel-danger );
+}
+
+.constel-mine__row--frozen .constel-quote,
+.constel-side__excerpt--frozen .constel-quote {
+	border-left-style: dotted;
+	opacity: 0.7;
+}
+
+.constel-status--frozen {
+	color: var( --constel-danger );
+	font-weight: bold;
+}
+
 /* ── Pantalla completa ────────────────────────────────────────────────
  * El mapa posee el viewport: barra arriba de borde a borde y, debajo, el
  * par ante-dentro —ante, el grafo; dentro, el panel—, cada uno con su

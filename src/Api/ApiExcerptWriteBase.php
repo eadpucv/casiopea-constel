@@ -31,8 +31,14 @@ abstract class ApiExcerptWriteBase extends ApiConstelWriteBase {
 	/**
 	 * Carga un § que el lector puede modificar: el propio o, si $allowModerator,
 	 * cualquiera para quien tenga constel-moderate.
+	 *
+	 * Un § congelado (su página fue borrada) sólo admite $allowFrozen (borrar).
+	 * Uno vivo exige además no estar bloqueado sobre SU página: los bloqueos
+	 * parciales cuentan (la protección de página no: anotar no es editar).
 	 */
-	protected function requireOwnExcerpt( int $excerptId, int $actorId, bool $allowModerator = false ): ExcerptRecord {
+	protected function requireOwnExcerpt(
+		int $excerptId, int $actorId, bool $allowModerator = false, bool $allowFrozen = false
+	): ExcerptRecord {
 		$excerpt = $this->excerpts->get( $excerptId, true );
 		if ( !$excerpt ) {
 			$this->dieWithError( [ 'apierror-constel-noexcerpt', $excerptId ], 'noexcerpt' );
@@ -40,6 +46,14 @@ abstract class ApiExcerptWriteBase extends ApiConstelWriteBase {
 		$isModerator = $allowModerator && $this->getAuthority()->isAllowed( self::RIGHT_MODERATE );
 		if ( $excerpt->actorId !== $actorId && !$isModerator ) {
 			$this->dieWithError( 'apierror-constel-notyours', 'notyours' );
+		}
+		if ( $excerpt->isFrozen() ) {
+			if ( !$allowFrozen ) {
+				$this->dieWithError( 'apierror-constel-frozen', 'frozen' );
+			}
+		} else {
+			$page = $this->getTitleOrPageId( [ 'pageid' => $excerpt->pageId ], 'fromdbmaster' );
+			$this->checkTitleUserPermissions( $page, self::RIGHT_ANNOTATE );
 		}
 		return $excerpt;
 	}

@@ -71,7 +71,7 @@ function section( excerpt, ctx ) {
 	excerpt.concepts.forEach( ( c ) => chips.append( el( 'li', 'constel-chip', c.label ) ) );
 	box.append( chips );
 	if ( excerpt.gloss ) {
-		box.append( el( 'p', 'constel-gloss-text', excerpt.gloss ) );
+		box.append( el( 'div', 'constel-gloss-text', excerpt.gloss ) );
 	}
 	if ( ctx.canModerate ) {
 		box.append( moderatorDelete( excerpt, ctx ) );

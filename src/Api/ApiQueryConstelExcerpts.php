@@ -19,7 +19,8 @@ use Wikimedia\Rdbms\IConnectionProvider;
 /**
  * list=constelexcerpts — §§ de una página (sólo anclados: lo que se dibuja
  * sobre el texto, spec: PageReading) o de un lector (incluidos los perdidos,
- * spec: MyReading). Lectura pública (spec: ReadingIsPublicData).
+ * spec: MyReading). Lectura pública (spec: ReadingIsPublicData), salvo los
+ * congelados, que sólo ven su autor y quien puede ver texto borrado.
  */
 class ApiQueryConstelExcerpts extends ApiQueryBase {
 
@@ -51,6 +52,7 @@ class ApiQueryConstelExcerpts extends ApiQueryBase {
 			);
 			$records = $actorId ? $this->excerpts->listForActor( $actorId, $params['limit'] ) : [];
 		}
+		$records = array_values( array_filter( $records, $this->frozenVisibility() ) );
 
 		$codings = $this->excerpts->conceptIdsForMany( array_map( static fn ( $e ) => $e->id, $records ) );
 		$concepts = $this->concepts->getByIds( array_merge( [], ...array_values( $codings ) ) );
@@ -80,6 +82,27 @@ class ApiQueryConstelExcerpts extends ApiQueryBase {
 	}
 
 	/**
+	 * Un § congelado cita una página borrada: su pasaje y su glosa sólo los ven
+	 * su autor y quienes pueden ver texto borrado (spec: FrozenIsPrivate).
+	 *
+	 * @return callable(ExcerptRecord):bool
+	 */
+	private function frozenVisibility(): callable {
+		if ( $this->getAuthority()->isAllowed( 'deletedtext' ) ) {
+			return static function ( ExcerptRecord $e ): bool {
+				return true;
+			};
+		}
+		$user = $this->getUser();
+		$viewer = $user->isRegistered()
+			? $this->actorStore->findActorId( $user, $this->dbProvider->getReplicaDatabase() )
+			: null;
+		return static function ( ExcerptRecord $e ) use ( $viewer ): bool {
+			return !$e->isFrozen() || $e->actorId === $viewer;
+		};
+	}
+
+	/**
 	 * @param ExcerptRecord $e
 	 * @param int[] $conceptIds
 	 * @param array $concepts
@@ -91,7 +114,7 @@ class ApiQueryConstelExcerpts extends ApiQueryBase {
 			'id' => $e->id,
 			'pageid' => $e->pageId,
 			'revid' => $e->revId,
-			'status' => $e->isAnchored() ? 'anchored' : 'lost',
+			'status' => $e->statusName(),
 			'exact' => $e->anchor->exact,
 			'prefix' => $e->anchor->prefix,
 			'suffix' => $e->anchor->suffix,
