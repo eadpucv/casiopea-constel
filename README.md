@@ -67,7 +67,9 @@ del diálogo y ayuda a cada uno a ubicar su aporte entre los de sus pares.
 
 - **Tres grados de proximidad** unen los conceptos: la *misma sección*, el
   *traslape* entre secciones de lectores distintos y el *mismo texto*. Cada
-  grado tiene su propia fuerza (0–100 %), y en 0 no se dibuja.
+  grado tiene su propia fuerza (0–100 %), que reacomoda el mapa en vivo
+  mientras se ajusta, y en 0 no se dibuja. Cómo se calculan las distancias
+  y qué hace cada fuerza: [`docs/MAPA.md`](docs/MAPA.md).
 - **Vista 2D (por defecto) o 3D.** En 2D los rótulos nunca se pisan y cada
   concepto se arrastra con el mapa reaccionando en vivo: sus aristas tiran
   de los vecinos y los rótulos se empujan. El concepto elegido pasa a ser el

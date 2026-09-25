@@ -1,5 +1,16 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Las fuerzas se ven mientras se arrastran.** Mover un control de
+  proximidad recalcula el mapa en vivo (a lo más una vez por cuadro) en vez
+  de al soltarlo, sin redibujarlo: el layout parte tibio del equilibrio
+  anterior y cada concepto se desliza a su lugar nuevo, conservando zoom,
+  desplazamiento y concepto elegido. Se acabó el salto al soltar.
+- **`docs/MAPA.md`** documenta la vista de constelación: cómo se calculan
+  las distancias en 2D y 3D y qué hace cada control de fuerza (rangos,
+  valores por omisión, efecto en el layout y en las aristas).
+
 ## 0.8.0 — 2026-09-23
 
 - **MiConstel se recorre con filtros.** La tabla va paginada (antes cortaba
