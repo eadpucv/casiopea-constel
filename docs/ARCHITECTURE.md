@@ -634,7 +634,7 @@ porque su texto es el de la página.
 **Menú de usuario** (`onSkinTemplateNavigation__Universal`): con con§tel
 activado, agrega entradas al portlet `user-menu`, antes de «Salir». En vistas
 de lectura van los tres controles (sin JS se ocultan con `.client-nojs`); en
-todas partes, los enlaces a Constelación y Mi con§tel. Con la preferencia
+todas partes, los enlaces a Con§tel y Mis anotaciones. Con la preferencia
 apagada, el menú no menciona con§tel. Es el mecanismo estándar de portlets, así
 que funciona igual en Stella Nova y en Vector, y queda al alcance en páginas
 largas porque la cabecera es fija.
@@ -644,7 +644,7 @@ largas porque la cabecera es fija.
 - `constel-enabled` (pestaña propia **Preferencias › con§tel › Activación**;
   **desactivado por defecto**): cada lector lo enciende. Apagado, las páginas
   se ven como sin la extensión y el menú de usuario no la menciona
-  (`DisabledByPreference`). Constelación y Mi con§tel siguen en Páginas
+  (`DisabledByPreference`). Con§tel y Mis anotaciones siguen en Páginas
   especiales. Un sitio puede cambiar el default con
   `$wgDefaultUserOptions['constel-enabled'] = 1`.
 - `constel-public-ack` (tipo `api`, oculta): el lector ya vio el aviso de que
