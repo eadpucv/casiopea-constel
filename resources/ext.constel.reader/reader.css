@@ -152,7 +152,9 @@
 	top: 0;
 	bottom: 0;
 	left: 50%;
-	border-left: 1px solid var( --constel-hairline-soft );
+	/* Tinta tenue, no filete: el eje va sobre el campo, donde los filetes
+	 * (hairline) casi no se distinguen del fondo en ninguno de los temas. */
+	border-left: 1px solid color-mix( in oklab, var( --constel-ink-faint ) 55%, transparent );
 }
 
 .constel-minimap__tick {
