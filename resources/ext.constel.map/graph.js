@@ -43,6 +43,16 @@ const EDGE_IN_LABELS = 1.3;
 /** Margen de la caja de cada rótulo en 2D: igual por los cuatro lados. */
 const PAD = 3;
 /**
+ * Arranque tibio del layout (al mover una fuerza): temperatura inicial, en
+ * múltiplos de k (la de frío es 2), y pasos (los de frío, 300). Basta para
+ * reacomodar un cambio chico sin reordenar el mapa, y cuesta poco como para
+ * rehacerlo a cada cuadro mientras se arrastra el control.
+ */
+const WARM_TEMPERATURE = 0.2;
+const WARM_STEPS = 120;
+/** Fracción del camino que recorre cada cuadro al deslizarse a su lugar nuevo. */
+const GLIDE = 0.25;
+/**
  * Cuánto mide una letra en pantalla, pase lo que pase con el zoom (px).
  * Como el mapa de vera: por debajo del suelo un rótulo es una mancha y por
  * encima del techo tapa a sus vecinos. Vera usa 11–31 con una sola letra de
@@ -94,14 +104,22 @@ function sizer( nodes ) {
  *  (en unidades del lienzo). Sin él, el mapa se normaliza a una esfera de
  *  radio RADIUS; con él, la escala no depende de las fuerzas y bajar una
  *  fuerza abre de verdad a sus conceptos respecto de sus rótulos.
+ * @param {boolean} [warm] arranque tibio: se parte del equilibrio anterior
+ *  (en 3D, el de antes de normalizar: node.lx, ly, lz) con poca temperatura
+ *  y menos pasos (WARM_*), así un cambio chico de fuerzas mueve poco el mapa
+ *  y se puede recalcular mientras se arrastra un control.
  */
-function layout( nodes, links, themeOf, dims, forces, unit ) {
+function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 	const byId = new Map( nodes.map( ( node ) => [ node.id, node ] ) );
 	const n = nodes.length;
 	const k = Math.sqrt( ( 600 * 600 ) / Math.max( 1, n ) );
 	const scale = dims === 2 && unit ? unit / k : 0;
 	nodes.forEach( ( node, i ) => {
-		if ( node.x !== undefined && scale ) {
+		if ( warm && dims === 3 && node.lx !== undefined ) {
+			node.x = node.lx;
+			node.y = node.ly;
+			node.z = node.lz;
+		} else if ( node.x !== undefined && scale ) {
 			// Semilla: la posición anterior, de vuelta a unidades del layout.
 			node.x /= scale;
 			node.y /= scale;
@@ -126,8 +144,9 @@ function layout( nodes, links, themeOf, dims, forces, unit ) {
 	} );
 	// En 2D, los fijados a mano no se mueven: el resto se acomoda a ellos.
 	const held = ( node ) => dims === 2 && !!node.pin;
-	let temperature = k * 2;
-	for ( let it = 0; it < 300; it++ ) {
+	let temperature = k * ( warm ? WARM_TEMPERATURE : 2 );
+	const steps = warm ? WARM_STEPS : 300;
+	for ( let it = 0; it < steps; it++ ) {
 		for ( const a of nodes ) {
 			// Gravedad al centro: con la repulsión k²/d, el mapa ocupa un
 			// área del orden de n·k² (la de Fruchterman-Reingold).
@@ -210,6 +229,12 @@ function layout( nodes, links, themeOf, dims, forces, unit ) {
 			node.y *= scale;
 		}
 		return;
+	}
+	// El equilibrio en bruto: semilla del próximo arranque tibio en 3D.
+	for ( const node of nodes ) {
+		node.lx = node.x;
+		node.ly = node.y;
+		node.lz = node.z;
 	}
 	// Normalizar a una esfera de radio RADIUS centrada en el origen.
 	const cx = nodes.reduce( ( s, v ) => s + v.x, 0 ) / Math.max( 1, n );
@@ -368,12 +393,15 @@ function forceOf( forces, kind ) {
  * @param {Object} view {mode: '3d'|'2d', edges, autorotate, fill,
  *  forces: {co_excerpt, overlap, co_page} (0–1; 0 = sin arista ni atracción),
  *  themeOf: Map, onSelect}
- * @return {Object} controles: zoomIn, zoomOut, reset, select, setAutorotate, destroy
+ * @return {Object} controles: zoomIn, zoomOut, reset, select, setForces,
+ *  setAutorotate, destroy
  */
 function draw( container, data, view ) {
 	container.textContent = '';
 	const nodes = data.nodes;
-	const links = data.links.filter( ( l ) => forceOf( view.forces, l.kind ) > 0 );
+	// Las aristas que atraen: las de un grado con fuerza (setForces las rehace).
+	const active = () => data.links.filter( ( l ) => forceOf( view.forces, l.kind ) > 0 );
+	let links = active();
 	const is3d = view.mode !== '2d';
 	nodes.forEach( ( node ) => {
 		if ( !is3d ) {
@@ -404,6 +432,11 @@ function draw( container, data, view ) {
 	let frame = null;
 	let lastSort = 0;
 	let autorotate = !!view.autorotate;
+	// Fuerzas en vivo (setForces): si los conceptos se deslizan a su lugar
+	// nuevo, a qué zoom (null: el de quien mira) y el concepto elegido.
+	let gliding = false;
+	let zoomGoal = null;
+	let selected = null;
 
 	// Lienzo: 8:5 fijo, o (view.fill) del tamaño de la celda que lo contiene.
 	// La escala (unidades por píxel) se fija al primer dibujo, con el ancho
@@ -432,9 +465,9 @@ function draw( container, data, view ) {
 	const linkEls = [];
 	const linkLayer = svg( 'g', { class: 'constel-graph__links' } );
 	if ( view.edges ) {
-		links.forEach( ( l ) => {
-			neighbours.get( l.source ).add( l.target );
-			neighbours.get( l.target ).add( l.source );
+		// Todas las aristas se crean; las de un grado en 0 quedan fuera del
+		// lienzo (styleLinks), así una fuerza puede volver sin redibujar.
+		data.links.forEach( ( l ) => {
 			// Clases: constel-graph__link--co_excerpt, --overlap, --co_page
 			const line = svg( 'line', {
 				class: 'constel-graph__link constel-graph__link--' + l.kind,
@@ -443,14 +476,31 @@ function draw( container, data, view ) {
 					Math.min( 5, 1 + Math.log2( 1 + l.weight ) ),
 				'vector-effect': 'non-scaling-stroke'
 			} );
-			// Continua y traslúcida: la opacidad dice el grado y su fuerza.
-			const opacity = ( OPACITY[ l.kind ] || 0.6 ) *
-				( 0.4 + 0.6 * forceOf( view.forces, l.kind ) );
-			line.style.setProperty( '--constel-link-opacity', opacity.toFixed( 2 ) );
-			linkEls.push( { el: line, a: byId.get( l.source ), b: byId.get( l.target ) } );
-			linkLayer.appendChild( line );
+			linkEls.push( {
+				el: line, kind: l.kind, a: byId.get( l.source ), b: byId.get( l.target )
+			} );
 		} );
 	}
+	// Vecinos, visibilidad y opacidad de cada arista, según las fuerzas.
+	const styleLinks = () => {
+		neighbours.forEach( ( set ) => set.clear() );
+		for ( const l of linkEls ) {
+			const force = forceOf( view.forces, l.kind );
+			if ( force <= 0 ) {
+				l.el.remove();
+				continue;
+			}
+			neighbours.get( l.a.id ).add( l.b.id );
+			neighbours.get( l.b.id ).add( l.a.id );
+			// Continua y traslúcida: la opacidad dice el grado y su fuerza.
+			const opacity = ( OPACITY[ l.kind ] || 0.6 ) * ( 0.4 + 0.6 * force );
+			l.el.style.setProperty( '--constel-link-opacity', opacity.toFixed( 2 ) );
+			if ( !l.el.parentNode ) {
+				linkLayer.appendChild( l.el );
+			}
+		}
+	};
+	styleLinks();
 	stage.appendChild( linkLayer );
 
 	const nodeLayer = svg( 'g', { class: 'constel-graph__nodes' } );
@@ -580,14 +630,15 @@ function draw( container, data, view ) {
 
 	// 2D: el layout se hace a la escala de los rótulos (ya medibles en la
 	// página): una arista ideal mide EDGE_IN_LABELS anchos medios de rótulo.
+	let edgeLength = 0;
 	if ( !is3d && nodes.length ) {
 		const measured0 = inkBoxes( nodes, nodeEls, size );
 		let wide = 0;
 		measured0.forEach( ( b ) => {
 			wide += 2 * b.w;
 		} );
-		layout( nodes, links, view.themeOf, 2, view.forces,
-			EDGE_IN_LABELS * wide / measured0.size );
+		edgeLength = EDGE_IN_LABELS * wide / measured0.size;
+		layout( nodes, links, view.themeOf, 2, view.forces, edgeLength );
 	}
 
 	// 2D: rótulos sin traslapes, centrados y encuadrados en el lienzo.
@@ -730,6 +781,10 @@ function draw( container, data, view ) {
 			}
 			again = true;
 		}
+		if ( gliding ) {
+			glide();
+			again = again || gliding;
+		}
 		if ( !is3d && boxes && warm() ) {
 			if ( reduce ) {
 				render();
@@ -863,6 +918,9 @@ function draw( container, data, view ) {
 		}
 	}
 	function hold( node ) {
+		if ( gliding ) {
+			land();
+		}
 		heatUp();
 		sim.held = node;
 		sim.target = 0.3;
@@ -1115,6 +1173,91 @@ function draw( container, data, view ) {
 	if ( resize ) {
 		resize.observe( container );
 	}
+	// ── Fuerzas en vivo ───────────────────────────────────────────────────
+	// Al mover una fuerza el layout se rehace tibio, desde el equilibrio
+	// anterior (layout(…, warm)), sin redibujar: cada concepto se desliza a
+	// su lugar nuevo (node.tx, ty, tz) y, si el mapa estaba encuadrado, el
+	// zoom sigue al encuadre nuevo. Se puede llamar a cada cuadro mientras se
+	// arrastra el control: el siguiente parte del destino del anterior.
+	function glide() {
+		let far = 0;
+		for ( const n of nodes ) {
+			n.x += ( n.tx - n.x ) * GLIDE;
+			n.y += ( n.ty - n.y ) * GLIDE;
+			n.z += ( n.tz - n.z ) * GLIDE;
+			far = Math.max( far,
+				Math.abs( n.tx - n.x ) + Math.abs( n.ty - n.y ) + Math.abs( n.tz - n.z ) );
+		}
+		if ( zoomGoal !== null ) {
+			zoom += ( zoomGoal - zoom ) * GLIDE;
+		}
+		if ( far < 0.3 ) {
+			land();
+		}
+	}
+	// Llega de una vez al destino del deslizamiento.
+	function land() {
+		for ( const n of nodes ) {
+			n.x = n.tx;
+			n.y = n.ty;
+			n.z = n.tz;
+		}
+		if ( zoomGoal !== null ) {
+			zoom = zoomGoal;
+		}
+		gliding = false;
+		zoomGoal = null;
+	}
+	function setForces( forces ) {
+		if ( !document.contains( root ) ) {
+			return;
+		}
+		view.forces = forces;
+		links = active();
+		styleLinks();
+		if ( !nodes.length ) {
+			return;
+		}
+		if ( sim.held ) {
+			// Mientras se arrastra un concepto manda la simulación.
+			return;
+		}
+		// Lo que se ve ahora; el layout parte del destino si aún se desliza.
+		const shown = nodes.map( ( n ) => [ n.x, n.y, n.z ] );
+		const seen = gliding && zoomGoal !== null ? zoomGoal : zoom;
+		const framed = !is3d && Math.abs( seen - fit ) < fit * 1e-3;
+		if ( gliding ) {
+			land();
+		}
+		if ( is3d ) {
+			layout( nodes, links, view.themeOf, 3, view.forces, 0, true );
+		} else {
+			layout( nodes, links, view.themeOf, 2, view.forces, edgeLength, true );
+			settle();
+		}
+		nodes.forEach( ( n, i ) => {
+			n.tx = n.x;
+			n.ty = n.y;
+			n.tz = n.z;
+			[ n.x, n.y, n.z ] = shown[ i ];
+		} );
+		zoomGoal = framed ? fit : null;
+		gliding = true;
+		if ( selected ) {
+			// El concepto elegido sigue al medio, en su lugar nuevo.
+			target.x = selected.tx;
+			target.y = selected.ty;
+			target.z = selected.tz;
+		}
+		if ( reduce ) {
+			land();
+			Object.assign( center, target );
+			render();
+		} else {
+			resume();
+		}
+	}
+
 	// Si la tipografía web aún no cargaba, las cajas se midieron con la de
 	// respaldo: medir de nuevo cuando llegue.
 	if ( !is3d && nodes.length && document.fonts && document.fonts.status !== 'loaded' ) {
@@ -1130,14 +1273,22 @@ function draw( container, data, view ) {
 	const controls = {
 		zoomIn: () => zoomAt( 1.25, { x: 0, y: 0 } ),
 		zoomOut: () => zoomAt( 1 / 1.25, { x: 0, y: 0 } ),
-		reset: resetView,
+		reset: () => {
+			selected = null;
+			resetView();
+		},
 		// El concepto elegido pasa a ser el foco y el centro del mapa.
 		select: ( id ) => {
 			nodeEls.forEach( ( el, nid ) => el.classList.toggle( 'constel-graph__node--selected', nid === id ) );
 			pan = { x: 0, y: 0 };
 			applyPan();
-			aim( byId.get( id ) || null );
+			selected = byId.get( id ) || null;
+			if ( gliding ) {
+				land();
+			}
+			aim( selected );
 		},
+		setForces,
 		exportSvg: ( meta ) => serialize( root, container, meta ),
 		setAutorotate: ( on ) => {
 			autorotate = on;

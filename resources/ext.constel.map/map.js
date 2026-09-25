@@ -266,6 +266,20 @@ function main( root ) {
 	const forces = el( 'div', 'constel-map__forces' );
 	forces.setAttribute( 'role', 'group' );
 	forces.setAttribute( 'aria-label', mw.msg( 'constellation-proximity' ) );
+	// El mapa sigue al control mientras se arrastra: a lo más un recálculo
+	// por cuadro, con el último valor (graph.setForces parte tibio del
+	// equilibrio anterior, así que no salta). Al soltar sólo se recuerda.
+	let pendingForces = null;
+	const applyForces = () => {
+		if ( !pendingForces ) {
+			pendingForces = requestAnimationFrame( () => {
+				pendingForces = null;
+				if ( state.view ) {
+					state.view.setForces( state.forces );
+				}
+			} );
+		}
+	};
 	[ [ 'co_excerpt', 'constellation-force-coexcerpt', 'align-left' ],
 		[ 'overlap', 'constellation-force-overlap', 'layers' ],
 		[ 'co_page', 'constellation-force-copage', 'file-text' ]
@@ -283,15 +297,19 @@ function main( root ) {
 			range.setAttribute( 'aria-valuetext', text );
 		};
 		show();
-		range.addEventListener( 'input', show );
+		range.addEventListener( 'input', () => {
+			show();
+			state.forces[ kind ] = Number( range.value ) / 100;
+			applyForces();
+		} );
 		range.addEventListener( 'change', () => {
 			state.forces[ kind ] = Number( range.value ) / 100;
 			savePref( 'forces', state.forces );
-			// Otro equilibrio de fuerzas: layout desde cero.
-			state.data.nodes.forEach( ( n ) => {
-				delete n.x;
-			} );
-			render();
+			applyForces();
+			// La lista alternativa nombra sólo las aristas de grados con fuerza.
+			if ( state.data ) {
+				renderList();
+			}
 		} );
 		const label = iconLabel( iconName, msg );
 		label.classList.add( 'constel-map__force' );
