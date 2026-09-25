@@ -137,7 +137,7 @@
 	position: fixed;
 	top: calc( var( --constel-header-h ) + var( --constel-s-2 ) );
 	bottom: 4px;
-	left: var( --constel-s-1 );
+	left: var( --constel-s-3 );
 	z-index: var( --constel-z-popup );
 	width: 14px;
 }
