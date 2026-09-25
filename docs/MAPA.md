@@ -18,6 +18,8 @@ páginas):
 
 - **Nodo** = un concepto con al menos un §. Su rótulo mide entre 11 y 31 px:
   `11 + 20 · (0.6 · §§/máx§§ + 0.4 · páginas/máxpáginas)` (como constel).
+  Al acercar o alejar, la letra en pantalla se acota a 11–40 px y crece más
+  lento que el mapa (`FONT_MIN_PX`, `FONT_MAX_PX`, `FONT_GROWTH`).
 - **Aristas**, en tres grados de proximidad. Cada par de conceptos puede tener
   hasta tres aristas, una por grado, y cada una tiene un **peso** entero:
 
@@ -85,8 +87,9 @@ Después vienen dos pasos que sólo existen en 2D:
    Si una zona densa no cede, el mapa entero se abre un 15 % y se reintenta,
    hasta que nada se toque.
 2. **Encuadre**: el mapa se centra y el zoom inicial es el que lo encuadra
-   (`min(1, 0.96·ancho/extensión, 0.96·alto/extensión)`). El zoom escala
-   posiciones y letras por igual, así que no reabre traslapes.
+   (`min(1, 0.96·ancho/extensión, 0.96·alto/extensión)`). Si a ese zoom una
+   letra quedaría bajo 11 px en pantalla, su caja se reserva ya de ese
+   tamaño antes de separar, así que a ese zoom o más nada se pisa.
 
 Los conceptos **fijados a mano** (arrastrados) no se mueven en el layout: el
 resto se acomoda a ellos.

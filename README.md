@@ -83,7 +83,7 @@ En cada página, el menú de usuario ofrece la lectura en tres posiciones:
 **−** sin marcas, **§** solo las propias, **§\*** las de todos.
 `Especial:MiConstel` reúne la lectura propia y la exporta.
 
-Estado: **versión 0.8.0**. Extensión para MediaWiki 1.43 LTS. La GUI se
+Estado: **versión 0.9.0**. Extensión para MediaWiki 1.43 LTS. La GUI se
 diseña sobre los tokens de [Stella Nova](https://github.com/hspencer/stella-nova)
 y funciona con cualquier skin.
 

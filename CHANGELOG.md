@@ -1,7 +1,18 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.9.0 — 2026-09-25
 
+- **Navegación y letra del mapa, como en vera.** La letra se acota en
+  pantalla (11–40 px) y al acercar crece más lento que el mapa, así que
+  acercar separa más de lo que agranda. Arrastrar el fondo desplaza (2D) u
+  orbita (3D), la rueda acerca hacia el cursor, el trackpad desplaza y el
+  pellizco acerca. Arrastrar nunca selecciona rótulos como texto.
+- **Botones de ícono sin borde.** La navegación de la barra (acercar,
+  alejar, encuadrar, exportar) va sólo con el ícono; un disco tenue revela
+  el área clicable al pasar.
+- **«Con§tel» y «Mis anotaciones».** Así se llaman ahora Constelación y Mi
+  con§tel en el menú de usuario y en Páginas especiales (los alias de las
+  páginas no cambian).
 - **Las fuerzas se ven mientras se arrastran.** Mover un control de
   proximidad recalcula el mapa en vivo (a lo más una vez por cuadro) en vez
   de al soltarlo, sin redibujarlo: el layout parte tibio del equilibrio
