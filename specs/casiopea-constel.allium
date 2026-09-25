@@ -286,7 +286,7 @@ entity ReadingExport {
 ------------------------------------------------------------
 
 config {
-    extension_version: String = "0.9.0"          -- debe coincidir con extension.json
+    extension_version: String = "0.10.0"          -- debe coincidir con extension.json
     concept_max_length: Integer = 80             -- caracteres
     theme_label_max_length: Integer = 80
     note_max_length: Integer = 20000             -- desarrollo de un tema

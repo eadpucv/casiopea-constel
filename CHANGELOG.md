@@ -1,5 +1,15 @@
 # Changelog — Casiopea-Con§tel
 
+## 0.10.0 — 2026-09-25
+
+- **Minimap de secciones en la página.** Un trazo vertical fijo al borde
+  izquierdo, de la cabecera al pie de la ventana, representa el texto entero;
+  cada § visible es un trazo horizontal a su altura proporcional, del color
+  de su marca (nova los propios, el tono del autor los ajenos). Al pasar
+  encima se leen sus conceptos; al hacer clic, la página se desplaza hasta el
+  § y le da el foco. Sigue el alcance míos/todos, desaparece sin marcas y no
+  se muestra en pantallas angostas ni al imprimir.
+
 ## 0.9.0 — 2026-09-25
 
 - **Navegación y letra del mapa, como en vera.** La letra se acota en
