@@ -342,6 +342,7 @@
 				"ext.constel.reader/marks.js",
 				"ext.constel.reader/form.js",
 				"ext.constel.reader/menu.js",
+				"ext.constel.reader/minimap.js",
 				"ext.constel.reader/trigger.js",
 				{
 					"name": "ext.constel.reader/config.json",
@@ -362,6 +363,7 @@
 				"constel-reading-none",
 				"constel-reading-mine",
 				"constel-reading-everyone",
+				"constel-minimap-label",
 				"constel-form-gloss-label",
 				"constel-form-gloss-placeholder"
 			],

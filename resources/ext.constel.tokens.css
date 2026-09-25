@@ -104,6 +104,11 @@
 	--constel-dur: var( --sn-dur-1, 120ms );
 	--constel-ease: var( --sn-ease, ease-out );
 	--constel-z-popup: var( --sn-z-panel, 920 );
+
+	/* Alto de la cabecera fija del skin (el minimapa empieza bajo ella).
+	   El respaldo lleva unidad: se suma dentro de calc(). */
+	/* stylelint-disable-next-line length-zero-no-unit */
+	--constel-header-h: var( --sn-header-h, 0px );
 }
 
 /* Marcas ajenas con color de autor. marks.js pone --constel-hue (un tono
@@ -111,7 +116,8 @@
  * el croma de la línea y del lavado en cada tema. Se declaran en la marca y
  * no en :root porque dependen de su --constel-hue. Sin light-dark() (skins
  * sin color-scheme) rige la rama clara. */
-.constel-mark--hued {
+.constel-mark--hued,
+.constel-minimap__tick--hued {
 	--constel-mark-others: light-dark( oklch( 0.6 0.12 var( --constel-hue ) ), oklch( 0.74 0.11 var( --constel-hue ) ) );
 	--constel-mark-others-wash: light-dark( oklch( 0.95 0.035 var( --constel-hue ) ), oklch( 0.33 0.05 var( --constel-hue ) ) );
 }

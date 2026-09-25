@@ -37,8 +37,10 @@
 -- fuzzy match y de ortografía canónica (cajas negras).
 --
 -- FUERA DE ALCANCE, también en la versión final (decisión 2026-09-22):
--- la glosa cronológica y el minimap del Lector de constel, y las
--- colecciones de corpus (p. ej. filtrar el mapa por "Amereida").
+-- la glosa cronológica del Lector de constel y las colecciones de corpus
+-- (p. ej. filtrar el mapa por "Amereida"). El minimap de §§ en la página
+-- sí entró (2026-09-25, pedido del usuario); es presentación del
+-- resaltado, así que vive en el código (minimap.js), no aquí.
 
 ------------------------------------------------------------
 -- External Entities

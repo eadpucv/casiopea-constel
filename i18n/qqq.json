@@ -115,6 +115,7 @@
 	"constel-reading-none": "Tooltip and accessible name of the \"−\" option: hide all marks.",
 	"constel-reading-mine": "Tooltip and accessible name of the \"§\" option: highlight only the viewer's sections.",
 	"constel-reading-everyone": "Tooltip and accessible name of the \"§*\" option: highlight the sections of all readers.",
+	"constel-minimap-label": "Accessible name of the minimap: a vertical bar at the left edge whose ticks mark where each highlighted section sits in the page text.",
 	"constel-form-gloss-label": "Label of the optional gloss field: the reader's note, comment or clarification on the section. Named as a note first because that is the everyday word; gloss is the scholarly one.",
 	"constel-form-gloss-placeholder": "Placeholder of the gloss field.",
 	"prefs-constel": "{{optional}}\nName of the con§tel tab in [[Special:Preferences]].",

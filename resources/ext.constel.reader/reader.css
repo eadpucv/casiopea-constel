@@ -127,8 +127,107 @@
 	box-shadow: var( --constel-focus-ring );
 }
 
+/* ── Minimapa (minimap.js) ──────────────────────────────────────────────
+ * Un trazo vertical fijo al borde izquierdo: la página entera, de la
+ * cabecera al pie de la ventana. Cada § es un trazo horizontal a su altura
+ * proporcional en el texto, del color de su marca. La caja es más ancha que
+ * la línea para que apuntar sea fácil. */
+
+.constel-minimap {
+	position: fixed;
+	top: calc( var( --constel-header-h ) + var( --constel-s-2 ) );
+	bottom: 4px;
+	left: var( --constel-s-1 );
+	z-index: var( --constel-z-popup );
+	width: 14px;
+}
+
+.constel-minimap[ hidden ] {
+	display: none;
+}
+
+.constel-minimap::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 50%;
+	border-left: 1px solid var( --constel-hairline-soft );
+}
+
+.constel-minimap__tick {
+	--constel-tick: var( --constel-mark-others );
+	position: absolute;
+	left: 0;
+	width: 100%;
+	height: 7px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	transform: translateY( -50% );
+	cursor: pointer;
+}
+
+.constel-minimap__tick--mine {
+	--constel-tick: var( --constel-mark-mine );
+}
+
+.constel-minimap__tick::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 2px;
+	right: 2px;
+	height: 2px;
+	margin-top: -1px;
+	border-radius: 1px;
+	background: var( --constel-tick );
+	transition: left var( --constel-dur ) var( --constel-ease ), right var( --constel-dur ) var( --constel-ease );
+}
+
+.constel-minimap__tick:hover::before,
+.constel-minimap__tick:focus-visible::before {
+	left: 0;
+	right: -4px;
+	height: 3px;
+	margin-top: -1.5px;
+}
+
+.constel-minimap__tick:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-minimap__tip {
+	position: fixed;
+	z-index: var( --constel-z-popup );
+	max-width: 18rem;
+	padding: var( --constel-s-1 ) var( --constel-s-2 );
+	border-radius: var( --constel-radius );
+	background: var( --constel-surface );
+	color: var( --constel-ink );
+	box-shadow: var( --constel-lift );
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+	line-height: 1.35;
+	pointer-events: none;
+}
+
+.constel-minimap__tip[ hidden ] {
+	display: none;
+}
+
+/* En pantallas angostas el borde es del texto; al imprimir, no hay a dónde ir. */
+@media ( max-width: 40rem ), print {
+	.constel-minimap,
+	.constel-minimap__tip {
+		display: none;
+	}
+}
+
 @media ( prefers-reduced-motion: reduce ) {
-	.constel-mark {
+	.constel-mark,
+	.constel-minimap__tick::before {
 		transition: none;
 	}
 }

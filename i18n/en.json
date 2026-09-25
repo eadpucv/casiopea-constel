@@ -115,6 +115,7 @@
 	"constel-reading-none": "No marks (clean reading)",
 	"constel-reading-mine": "Only my sections",
 	"constel-reading-everyone": "Everyone's sections",
+	"constel-minimap-label": "Map of the sections on this page",
 	"constel-form-gloss-label": "Note (or gloss)",
 	"constel-form-gloss-placeholder": "A comment or clarification on this section",
 	"prefs-constel": "con§tel",

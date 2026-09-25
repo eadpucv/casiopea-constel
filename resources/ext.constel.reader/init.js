@@ -9,6 +9,7 @@ const api = require( 'ext.constel.ui' ).api;
 const marks = require( './marks.js' );
 const panel = require( 'ext.constel.ui' ).panel;
 const menu = require( './menu.js' );
+const minimap = require( './minimap.js' );
 const trigger = require( './trigger.js' );
 const form = require( './form.js' );
 const detail = require( 'ext.constel.ui' ).detail;
@@ -25,6 +26,7 @@ function main( root ) {
 		document.body.classList.toggle( 'constel-marks-hidden', !state.marks );
 		const visible = state.scope === 'mine' ? excerpts.filter( isMine ) : excerpts;
 		marks.draw( root, visible, isMine );
+		minimap.update( root, state.marks ? visible : [], isMine );
 	};
 	const reload = () => api.listExcerpts( cfg.pageId ).then( ( list ) => {
 		excerpts = list;
