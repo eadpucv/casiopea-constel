@@ -114,10 +114,22 @@
 	font-variant-numeric: tabular-nums;
 }
 
+/* Navegación: botones de ícono sin borde, juntos. El ícono va al tamaño de
+ * los demás íconos de la barra, y el grupo corre su margen derecho medio
+ * botón hacia afuera: lo que se alinea con el borde (o con la esquina que
+ * deja el isotipo a pantalla completa) es la tinta del último ícono, no el
+ * aire de su área clicable, que queda intacta. */
 .constel-map__zoom {
+	--constel-map-zoom-icon: 1.15rem;
 	display: inline-flex;
-	gap: var( --constel-s-1 );
+	gap: 0;
 	margin-left: auto;
+	margin-right: calc( ( var( --constel-map-zoom-icon ) - 2.25rem ) / 2 );
+}
+
+.constel-map__zoom .constel-i {
+	width: var( --constel-map-zoom-icon );
+	height: var( --constel-map-zoom-icon );
 }
 
 /* ── Interruptor (checkbox con role=switch) ──────────────────────────── */
@@ -276,6 +288,12 @@
 	aspect-ratio: 8 / 5;
 	cursor: grab;
 	touch-action: none;
+	overscroll-behavior: contain;
+	/* Arrastrar mueve el mapa: nunca selecciona rótulos como texto (ni el
+	 * segundo pulso de un doble clic, ni la pulsación larga en táctil). */
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
 }
 
 /* Llena su celda (pantalla completa): el viewBox sigue la proporción. */
@@ -315,12 +333,11 @@
 /* :where() = misma especificidad que la regla base: gana por orden. */
 :where( .constel-graph:not( .constel-graph--3d ) ) .constel-graph__node {
 	cursor: grab;
-	touch-action: none;
-	user-select: none;
 }
 
 .constel-graph--dragging,
-:where( .constel-graph--dragging ) .constel-graph__node {
+.constel-graph--panning,
+:where( .constel-graph--dragging, .constel-graph--panning ) .constel-graph__node {
 	cursor: grabbing;
 }
 

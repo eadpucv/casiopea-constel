@@ -382,6 +382,9 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 	pointer-events: none;
 }
 
+/* Botón de ícono: sólo el ícono, sin borde ni fondo. El área clicable
+ * sigue siendo el cuadro de 2.25rem; al pasar o presionar, un disco tenue
+ * la revela y el ícono se acentúa. */
 .constel-button--icon {
 	display: inline-flex;
 	align-items: center;
@@ -389,11 +392,20 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 	width: 2.25rem;
 	height: 2.25rem;
 	padding: 0;
+	border-color: transparent;
+	border-radius: var( --constel-radius-pill );
+	background: transparent;
 	color: var( --constel-icon );
+	transition: color var( --constel-dur ) var( --constel-ease ), background-color var( --constel-dur ) var( --constel-ease );
 }
 
 .constel-button--icon:hover {
+	background: var( --constel-surface-sunk );
 	color: var( --constel-icon-active );
+}
+
+.constel-button--icon:active {
+	background: var( --constel-opt-hover-bg );
 }
 
 .constel-chip__remove .constel-i {

@@ -19,6 +19,12 @@
  * (node.pin) y el layout lo respeta al recalcularse, hasta volver al orden
  * automático.
  *
+ * Navegación y letra, homologadas con el mapa de vera: la letra se acota en
+ * pantalla (FONT_MIN_PX–FONT_MAX_PX) y al acercar crece más lento que el
+ * mapa; arrastrar el fondo desplaza (2D) u orbita (3D), la rueda acerca
+ * hacia el cursor, el trackpad desplaza y el pellizco acerca. Nada de eso
+ * selecciona texto.
+ *
  * Presentación, no comportamiento: el spec sólo fija qué se expone
  * (ConceptMap); tamaños, fuerzas y colores son del lado del diseño.
  */
@@ -36,6 +42,24 @@ const GRAVITY = 1.5;
 const EDGE_IN_LABELS = 1.3;
 /** Margen de la caja de cada rótulo en 2D: igual por los cuatro lados. */
 const PAD = 3;
+/**
+ * Cuánto mide una letra en pantalla, pase lo que pase con el zoom (px).
+ * Como el mapa de vera: por debajo del suelo un rótulo es una mancha y por
+ * encima del techo tapa a sus vecinos. Vera usa 11–31 con una sola letra de
+ * mundo; aquí la frecuencia ya reparte 11–31 a zoom 1, así que el techo sube
+ * para que acercar no aplane esa jerarquía de golpe.
+ */
+const FONT_MIN_PX = 11;
+const FONT_MAX_PX = 40;
+/**
+ * Con qué exponente sigue la letra al zoom al acercar: acercar separa más de
+ * lo que agranda (×4 de zoom, ×2 de letra), y nada se vuelve a pisar.
+ */
+const FONT_GROWTH = 0.5;
+/** Temblor tolerado antes de que pulsar sea arrastrar (px), como en vera. */
+const TAP_SLOP = 6;
+/** Techo del zoom (el suelo depende del encuadre, ver draw()). */
+const ZOOM_MAX = 8;
 
 function svg( tag, attrs ) {
 	const el = document.createElementNS( SVG, tag );
@@ -209,7 +233,8 @@ function layout( nodes, links, themeOf, dims, forces, unit ) {
  * @param {Array} nodes
  * @param {Map<number,SVGTextElement>} nodeEls
  * @param {Function} size
- * @return {Map<number,Object>} id → {w, h, ox, oy} a zoom 1
+ * @return {Map<number,Object>} id → {s, w, h, ox, oy} a zoom 1 (s: la letra
+ *  con que se midió; el desplazamiento de la tinta es proporcional a ella)
  */
 function inkBoxes( nodes, nodeEls, size ) {
 	const ctx = document.createElement( 'canvas' ).getContext( '2d' );
@@ -221,6 +246,7 @@ function inkBoxes( nodes, nodeEls, size ) {
 		ctx.font = `${ style.fontStyle } ${ style.fontWeight } ${ size( node ) }px ${ style.fontFamily }`;
 		const m = ctx.measureText( node.label );
 		boxes.set( node.id, {
+			s: size( node ),
 			w: ( m.actualBoundingBoxLeft + m.actualBoundingBoxRight ) / 2 + PAD,
 			h: ( m.actualBoundingBoxAscent + m.actualBoundingBoxDescent ) / 2 + PAD,
 			ox: ( m.actualBoundingBoxLeft - m.actualBoundingBoxRight ) / 2,
@@ -364,7 +390,14 @@ function draw( container, data, view ) {
 	let pitch = is3d ? -0.35 : 0;
 	let zoom = 1;
 	let hovering = false;
-	let dragging = null;
+	// Píxeles de pantalla por unidad del lienzo (getScreenCTM): la letra se
+	// acota en pantalla y los arrastres se convierten con él.
+	let ppu = 1;
+	// Punteros sobre el lienzo (fuera de un concepto que se arrastra): uno
+	// desplaza u orbita, dos pellizcan.
+	const pointers = new Map();
+	// Tras un arrastre del mapa, el clic que llega al soltar no elige.
+	let swallowUntil = 0;
 	// 2D: el concepto que se arrastra, y el recién soltado (su clic no elige).
 	let grab = null;
 	let moved = null;
@@ -448,8 +481,8 @@ function draw( container, data, view ) {
 		text.textContent = node.label;
 		const activate = () => view.onSelect( node );
 		text.addEventListener( 'click', ( e ) => {
-			// Soltar después de arrastrar no es elegir.
-			if ( moved === node ) {
+			// Soltar después de arrastrar (el concepto, o el mapa) no es elegir.
+			if ( moved === node || performance.now() < swallowUntil ) {
 				moved = null;
 				e.stopPropagation();
 				return;
@@ -472,7 +505,8 @@ function draw( container, data, view ) {
 		} );
 		if ( !is3d ) {
 			text.addEventListener( 'pointerdown', ( e ) => {
-				if ( e.button !== 0 ) {
+				// Con otro dedo ya en el lienzo, esto es parte de un pellizco.
+				if ( e.button !== 0 || pointers.size ) {
 					return;
 				}
 				e.preventDefault();
@@ -483,10 +517,11 @@ function draw( container, data, view ) {
 				if ( !grab || grab.node !== node ) {
 					return;
 				}
-				const s = W / root.clientWidth / zoom;
+				const s = 1 / ( ppu * zoom );
 				const dx = ( e.clientX - grab.x ) * s;
 				const dy = ( e.clientY - grab.y ) * s;
-				if ( !grab.far && Math.hypot( e.clientX - grab.x, e.clientY - grab.y ) < 4 ) {
+				const far = Math.hypot( e.clientX - grab.x, e.clientY - grab.y );
+				if ( !grab.far && far < TAP_SLOP ) {
 					return;
 				}
 				if ( !grab.far ) {
@@ -535,6 +570,13 @@ function draw( container, data, view ) {
 	} );
 	stage.appendChild( nodeLayer );
 	container.appendChild( root );
+	const measurePpu = () => {
+		const m = root.getScreenCTM();
+		if ( m && m.a > 0 ) {
+			ppu = m.a;
+		}
+	};
+	measurePpu();
 
 	// 2D: el layout se hace a la escala de los rótulos (ya medibles en la
 	// página): una arista ideal mide EDGE_IN_LABELS anchos medios de rótulo.
@@ -550,10 +592,10 @@ function draw( container, data, view ) {
 
 	// 2D: rótulos sin traslapes, centrados y encuadrados en el lienzo.
 	let boxes = null;
+	// Zoom del encuadre: desde él la letra crece más lento que el mapa (grow).
 	let fit = 1;
-	const settle = () => {
-		boxes = inkBoxes( nodes, nodeEls, size );
-		separate( nodes, boxes );
+	// Centra el mapa en el origen y dice qué zoom lo encuadra con estas cajas.
+	const frameAll = () => {
 		let minX = Infinity;
 		let maxX = -Infinity;
 		let minY = Infinity;
@@ -575,14 +617,48 @@ function draw( container, data, view ) {
 				node.pin = { x: node.x, y: node.y };
 			}
 		}
-		// El zoom escala posiciones y letras por igual: no reabre traslapes.
-		fit = Math.min( 1, 0.96 * W / Math.max( 1, maxX - minX ),
+		return Math.min( 1, 0.96 * W / Math.max( 1, maxX - minX ),
 			0.96 * H / Math.max( 1, maxY - minY ) );
+	};
+	// Las cajas se separan al tamaño con que se dibujarán en el encuadre: si
+	// a ese zoom una letra cae bajo el suelo (FONT_MIN_PX), se dibuja en el
+	// suelo, y su caja se reserva de ese tamaño. Se repite hasta que el
+	// encuadre no cambie (o unas pocas veces; entonces se parte del zoom para
+	// el que se reservó, y el mapa puede desbordar un poco el lienzo). A ese
+	// zoom o más, ningún rótulo pisa a otro (LabelsNeverOverlapIn2D).
+	const settle = () => {
+		measurePpu();
+		// Letra reservada: la natural, o el suelo al zoom del encuadre anterior.
+		const reservedSize = ( floor ) => ( n ) => Math.max( size( n ), floor );
+		let reserved = 0;
+		let used = 0;
+		let z = 1;
+		for ( let pass = 0; pass < 4; pass++ ) {
+			used = reserved;
+			const at = reservedSize( used );
+			boxes = inkBoxes( nodes, nodeEls, at );
+			separate( nodes, boxes );
+			z = frameAll();
+			const need = FONT_MIN_PX / ( ppu * z );
+			if ( nodes.every( ( n ) => at( n ) >= need - 1e-6 ) ) {
+				fit = z;
+				return;
+			}
+			reserved = need;
+		}
+		// Sin punto fijo: el zoom para el que se reservó la última vez.
+		fit = Math.max( z, FONT_MIN_PX / ( ppu * used ) );
 	};
 	if ( !is3d && nodes.length ) {
 		settle();
 		zoom = fit;
 	}
+	// Cuánto escala la letra al zoom z: hasta el encuadre, igual que el mapa
+	// (no reabre traslapes); más cerca, más lento (FONT_GROWTH).
+	const grow = ( z ) => z <= fit ? z : fit * Math.pow( z / fit, FONT_GROWTH );
+	// Letra de un rótulo (en unidades del lienzo), acotada en pantalla.
+	const fontUnits = ( s ) => Math.min( FONT_MAX_PX,
+		Math.max( FONT_MIN_PX, s * grow( zoom ) * ppu ) ) / ppu;
 
 	// Centro del mapa: el origen, o el concepto seleccionado. La rotación y
 	// la perspectiva se calculan relativas a él, así el concepto elegido
@@ -606,15 +682,18 @@ function draw( container, data, view ) {
 			const z1 = -nx * sy + nz * cy;
 			const y2 = ny * cp - z1 * sp;
 			const z2 = ny * sp + z1 * cp;
-			const scale = ( is3d ? CAMERA / ( CAMERA - z2 ) : 1 ) * zoom;
-			node.px = x1 * scale;
-			node.py = y2 * scale;
+			const persp = is3d ? CAMERA / ( CAMERA - z2 ) : 1;
+			node.px = x1 * persp * zoom;
+			node.py = y2 * persp * zoom;
 			node.depth = z2;
 			const el = nodeEls.get( node.id );
 			const box = boxes && boxes.get( node.id );
-			el.setAttribute( 'x', ( node.px + ( box ? box.ox * zoom : 0 ) ).toFixed( 1 ) );
-			el.setAttribute( 'y', ( node.py + ( box ? box.oy * zoom : 0 ) ).toFixed( 1 ) );
-			el.setAttribute( 'font-size', ( size( node ) * ( is3d ? scale : zoom ) ).toFixed( 1 ) );
+			const font = fontUnits( size( node ) * persp );
+			// La tinta se centra con el desplazamiento medido, a esta letra.
+			const ink = box ? font / box.s : 0;
+			el.setAttribute( 'x', ( node.px + ( box ? box.ox * ink : 0 ) ).toFixed( 1 ) );
+			el.setAttribute( 'y', ( node.py + ( box ? box.oy * ink : 0 ) ).toFixed( 1 ) );
+			el.setAttribute( 'font-size', font.toFixed( 2 ) );
 			if ( is3d ) {
 				// Lo lejano se atenúa: da profundidad sin perder legibilidad.
 				el.style.opacity = ( 0.45 + 0.55 * ( z2 + RADIUS ) / ( 2 * RADIUS ) ).toFixed( 2 );
@@ -659,7 +738,7 @@ function draw( container, data, view ) {
 				again = warm();
 			}
 		}
-		const idle = !hovering && !dragging;
+		const idle = !hovering && !pointers.size;
 		if ( is3d && autorotate && !reduce && idle ) {
 			yaw += 0.0025;
 			again = true;
@@ -805,34 +884,161 @@ function draw( container, data, view ) {
 		}
 	}
 
-	// Arrastrar: orbitar en 3D, panear en 2D.
+	// ── Navegación, como el mapa de vera ──────────────────────────────────
+	// Arrastrar el fondo desplaza (2D) u orbita (3D; con Shift o el botón de
+	// en medio, desplaza). Dos dedos pellizcan: acercan y desplazan a la vez.
+	// La rueda acerca hacia el cursor; el trackpad desplaza con dos dedos y
+	// acerca con el pellizco (que llega como rueda con Ctrl). Incrustado en
+	// una página (sin view.fill), la rueda sigue siendo de la página y sólo
+	// Ctrl+rueda acerca. Nada de esto selecciona texto.
 	let pan = { x: 0, y: 0 };
+	let gesture = null;
+	let pinch = null;
+	let trackpad = false;
+	const applyPan = () => {
+		if ( pan.x || pan.y ) {
+			stage.setAttribute( 'transform', `translate(${ pan.x.toFixed( 1 ) } ${ pan.y.toFixed( 1 ) })` );
+		} else {
+			stage.removeAttribute( 'transform' );
+		}
+	};
+	// Un punto de la pantalla, en coordenadas del lienzo.
+	const toCanvas = ( x, y ) => {
+		const m = root.getScreenCTM();
+		if ( !m ) {
+			return { x: 0, y: 0 };
+		}
+		const p = root.createSVGPoint();
+		p.x = x;
+		p.y = y;
+		return p.matrixTransform( m.inverse() );
+	};
+	// Acerca por `factor` dejando quieto el punto `at` del lienzo.
+	const zoomAt = ( factor, at ) => {
+		const next = Math.max( Math.min( 0.3, fit / 2 ), Math.min( ZOOM_MAX, zoom * factor ) );
+		const f = next / zoom;
+		zoom = next;
+		pan = { x: at.x - ( at.x - pan.x ) * f, y: at.y - ( at.y - pan.y ) * f };
+		applyPan();
+		render();
+	};
+	const panBy = ( dx, dy ) => {
+		pan = { x: pan.x + dx / ppu, y: pan.y + dy / ppu };
+		applyPan();
+	};
+	const turn = ( dx, dy ) => {
+		yaw += dx * 0.008;
+		pitch = Math.max( -1.4, Math.min( 1.4, pitch + dy * 0.008 ) );
+	};
+	// Capturar un puntero que ya se soltó lanza: no debe cortar el gesto.
+	const capture = ( id ) => {
+		try {
+			root.setPointerCapture( id );
+		} catch ( err ) {}
+	};
+	const spread = () => {
+		const [ a, b ] = [ ...pointers.values() ];
+		return {
+			d: Math.hypot( b.x - a.x, b.y - a.y ),
+			x: ( a.x + b.x ) / 2,
+			y: ( a.y + b.y ) / 2
+		};
+	};
+	// Vuelve al encuadre de partida (el centro, al origen del mapa).
+	function resetView() {
+		yaw = is3d ? 0.6 : 0;
+		pitch = is3d ? -0.35 : 0;
+		zoom = is3d ? 1 : fit;
+		pan = { x: 0, y: 0 };
+		applyPan();
+		// Encuadrar todo: el centro vuelve al origen del mapa.
+		aim( null );
+		render();
+	}
 	root.addEventListener( 'pointerdown', ( e ) => {
-		if ( e.target === root || e.target.tagName === 'line' ) {
-			dragging = { x: e.clientX, y: e.clientY, yaw, pitch, pan: Object.assign( {}, pan ) };
-			root.setPointerCapture( e.pointerId );
+		// Un concepto que se arrastra (2D) se atiende en su rótulo.
+		if ( grab || ( e.pointerType === 'mouse' && e.button !== 0 && e.button !== 1 ) ) {
+			return;
+		}
+		// Sin esto, arrastrar selecciona los rótulos como texto de la página.
+		e.preventDefault();
+		( e.target.closest( '[tabindex]' ) || root ).focus( { preventScroll: true } );
+		pointers.set( e.pointerId, { x: e.clientX, y: e.clientY } );
+		if ( pointers.size === 2 ) {
+			// Dos dedos: pellizco, sin giro a medias por debajo.
+			capture( e.pointerId );
+			pinch = spread();
+			gesture = null;
+		} else if ( pointers.size === 1 ) {
+			gesture = {
+				move: is3d && !e.shiftKey && e.button !== 1 ? turn : panBy,
+				x: e.clientX,
+				y: e.clientY,
+				active: false
+			};
 		}
 	} );
 	root.addEventListener( 'pointermove', ( e ) => {
-		if ( !dragging ) {
+		const p = pointers.get( e.pointerId );
+		if ( !p ) {
 			return;
 		}
-		const dx = e.clientX - dragging.x;
-		const dy = e.clientY - dragging.y;
-		if ( is3d ) {
-			yaw = dragging.yaw + dx * 0.008;
-			pitch = Math.max( -1.4, Math.min( 1.4, dragging.pitch + dy * 0.008 ) );
+		const dx = e.clientX - p.x;
+		const dy = e.clientY - p.y;
+		p.x = e.clientX;
+		p.y = e.clientY;
+		if ( pinch && pointers.size >= 2 ) {
+			const now = spread();
+			if ( pinch.d > 0 && now.d > 0 ) {
+				zoomAt( now.d / pinch.d, toCanvas( now.x, now.y ) );
+			}
+			// El punto medio arrastra el mapa: pellizcar y correr es un gesto.
+			panBy( now.x - pinch.x, now.y - pinch.y );
+			pinch = now;
+			render();
+			return;
+		}
+		if ( !gesture ) {
+			return;
+		}
+		if ( !gesture.active ) {
+			// Un pulso tiembla: hasta TAP_SLOP sigue siendo un clic.
+			if ( Math.hypot( e.clientX - gesture.x, e.clientY - gesture.y ) < TAP_SLOP ) {
+				return;
+			}
+			// La captura recién aquí: antes robaría el clic al rótulo (3D).
+			gesture.active = true;
+			capture( e.pointerId );
+			root.classList.add( 'constel-graph--panning' );
+			gesture.move( e.clientX - gesture.x, e.clientY - gesture.y );
 		} else {
-			const s = W / root.clientWidth;
-			pan = { x: dragging.pan.x + dx * s, y: dragging.pan.y + dy * s };
-			stage.setAttribute( 'transform', `translate(${ pan.x } ${ pan.y })` );
+			gesture.move( dx, dy );
 		}
 		render();
 	} );
-	root.addEventListener( 'pointerup', () => {
-		dragging = null;
-		resume();
-	} );
+	const lift = ( e ) => {
+		if ( !pointers.delete( e.pointerId ) ) {
+			return;
+		}
+		if ( gesture && gesture.active || pinch ) {
+			swallowUntil = performance.now() + 250;
+		}
+		if ( pointers.size === 1 ) {
+			// Levantar un dedo del pellizco deja al otro siguiendo, sin saltos.
+			const [ q ] = pointers.values();
+			pinch = null;
+			gesture = { move: is3d ? turn : panBy, x: q.x, y: q.y, active: true };
+			return;
+		}
+		pinch = pointers.size >= 2 ? spread() : null;
+		if ( !pointers.size ) {
+			gesture = null;
+			root.classList.remove( 'constel-graph--panning' );
+			resume();
+		}
+	};
+	root.addEventListener( 'pointerup', lift );
+	root.addEventListener( 'pointercancel', lift );
 	root.addEventListener( 'pointerleave', () => {
 		hovering = false;
 		resume();
@@ -841,44 +1047,70 @@ function draw( container, data, view ) {
 		// Con el puntero encima se detiene la rotación: así se puede apuntar.
 		hovering = true;
 	} );
-	const setZoom = ( factor ) => {
-		zoom = Math.max( 0.3, Math.min( 4, zoom * factor ) );
-		render();
-	};
 	root.addEventListener( 'wheel', ( e ) => {
-		if ( e.ctrlKey ) {
-			e.preventDefault();
-			setZoom( e.deltaY > 0 ? 1 / 1.15 : 1.15 );
-		}
-	}, { passive: false } );
-	// Teclado: flechas orbitan (3D) o panean (2D) con el foco en el grafo.
-	root.addEventListener( 'keydown', ( e ) => {
-		const step = ARROWS[ e.key ];
-		if ( !step || e.target !== root ) {
+		const pinching = e.ctrlKey || e.metaKey;
+		if ( !pinching && !view.fill ) {
 			return;
 		}
 		e.preventDefault();
-		if ( is3d ) {
-			yaw += step[ 0 ] * 0.12;
-			pitch = Math.max( -1.4, Math.min( 1.4, pitch + step[ 1 ] * 0.12 ) );
-		} else {
-			pan = { x: pan.x - step[ 0 ] * 30, y: pan.y - step[ 1 ] * 30 };
-			stage.setAttribute( 'transform', `translate(${ pan.x } ${ pan.y })` );
+		const k = e.deltaMode === 1 ? 16 : ( e.deltaMode === 2 ? root.clientHeight : 1 );
+		const at = toCanvas( e.clientX, e.clientY );
+		if ( pinching ) {
+			// Pellizco del trackpad (o Ctrl+rueda): proporcional, sin saltos.
+			zoomAt( Math.exp( -Math.max( -50, Math.min( 50, e.deltaY * k ) ) * 0.01 ), at );
+			return;
 		}
-		render();
+		// Un trackpad trae algo de horizontal o pasos fraccionarios; una rueda
+		// de ratón, no. Una vez visto, se recuerda.
+		if ( !trackpad && ( e.deltaX !== 0 || !Number.isInteger( e.deltaY ) ) ) {
+			trackpad = true;
+		}
+		if ( trackpad ) {
+			panBy( -e.deltaX * k, -e.deltaY * k );
+			render();
+		} else {
+			zoomAt( e.deltaY > 0 ? 1 / 1.12 : 1.12, at );
+		}
+	}, { passive: false } );
+	// Teclado: flechas orbitan (3D) o desplazan (2D) con el foco en el grafo;
+	// + y − acercan y alejan, 0 encuadra.
+	root.addEventListener( 'keydown', ( e ) => {
+		if ( e.target !== root ) {
+			return;
+		}
+		const step = ARROWS[ e.key ];
+		if ( step ) {
+			e.preventDefault();
+			if ( is3d ) {
+				turn( step[ 0 ] * 15, step[ 1 ] * 15 );
+			} else {
+				panBy( -step[ 0 ] * 30 * ppu, -step[ 1 ] * 30 * ppu );
+			}
+			render();
+		} else if ( e.key === '+' || e.key === '=' || e.key === '-' ) {
+			e.preventDefault();
+			zoomAt( e.key === '-' ? 1 / 1.25 : 1.25, { x: 0, y: 0 } );
+		} else if ( e.key === '0' ) {
+			e.preventDefault();
+			resetView();
+		}
 	} );
 
 	render();
 	resume();
 	// La celda cambia de tamaño (ventana, panel): el lienzo la sigue. Sin
-	// ResizeObserver, queda con la proporción del primer dibujo.
+	// ResizeObserver, queda con la proporción del primer dibujo. La escala de
+	// pantalla cambia también sin view.fill (el lienzo 8:5 sigue el ancho):
+	// la letra se vuelve a acotar.
 	// eslint-disable-next-line compat/compat
-	const resize = measured && window.ResizeObserver ? new ResizeObserver( () => {
-		if ( container.clientWidth && container.clientHeight ) {
+	const resize = window.ResizeObserver ? new ResizeObserver( () => {
+		if ( measured && container.clientWidth && container.clientHeight ) {
 			W = container.clientWidth * unit;
 			H = container.clientHeight * unit;
 			root.setAttribute( 'viewBox', viewBox() );
 		}
+		measurePpu();
+		render();
 	} ) : null;
 	if ( resize ) {
 		resize.observe( container );
@@ -895,24 +1127,15 @@ function draw( container, data, view ) {
 		} );
 	}
 
-	return {
-		zoomIn: () => setZoom( 1.25 ),
-		zoomOut: () => setZoom( 1 / 1.25 ),
-		reset: () => {
-			yaw = is3d ? 0.6 : 0;
-			pitch = is3d ? -0.35 : 0;
-			zoom = is3d ? 1 : fit;
-			pan = { x: 0, y: 0 };
-			stage.removeAttribute( 'transform' );
-			// Encuadrar todo: el centro vuelve al origen del mapa.
-			aim( null );
-			render();
-		},
+	const controls = {
+		zoomIn: () => zoomAt( 1.25, { x: 0, y: 0 } ),
+		zoomOut: () => zoomAt( 1 / 1.25, { x: 0, y: 0 } ),
+		reset: resetView,
 		// El concepto elegido pasa a ser el foco y el centro del mapa.
 		select: ( id ) => {
 			nodeEls.forEach( ( el, nid ) => el.classList.toggle( 'constel-graph__node--selected', nid === id ) );
 			pan = { x: 0, y: 0 };
-			stage.removeAttribute( 'transform' );
+			applyPan();
 			aim( byId.get( id ) || null );
 		},
 		exportSvg: ( meta ) => serialize( root, container, meta ),
@@ -929,6 +1152,7 @@ function draw( container, data, view ) {
 			}
 		}
 	};
+	return controls;
 }
 
 /**
