@@ -14,6 +14,7 @@ const SHAPES = {
 	maximize: [ [ 'path', { d: 'M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3' } ] ],
 	download: [ [ 'path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' } ],
 		[ 'polyline', { points: '7 10 12 15 17 10' } ], [ 'line', { x1: 12, y1: 15, x2: 12, y2: 3 } ] ],
+	plus: [ [ 'line', { x1: 12, y1: 5, x2: 12, y2: 19 } ], [ 'line', { x1: 5, y1: 12, x2: 19, y2: 12 } ] ],
 	x: [ [ 'line', { x1: 18, y1: 6, x2: 6, y2: 18 } ], [ 'line', { x1: 6, y1: 6, x2: 18, y2: 18 } ] ],
 	eye: [ [ 'path', { d: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z' } ], [ 'circle', { cx: 12, cy: 12, r: 3 } ] ],
 	'rotate-cw': [ [ 'polyline', { points: '23 4 23 10 17 10' } ],

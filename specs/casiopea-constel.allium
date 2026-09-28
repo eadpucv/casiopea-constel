@@ -881,6 +881,11 @@ surface ConceptDetail {
     related:
         ConceptMap(viewer)
 
+    @guarantee ExplicitThemeChoice
+        -- Para agrupar el concepto ningún tema viene elegido: el selector
+        -- parte vacío («Elige un tema…») y «Agregar al tema» no se habilita
+        -- hasta que el lector elige uno (decisión 2026-09-28).
+
     @guarantee SectionProvenance
         -- El concepto se titula sin «§» (el § es de la sección, no del
         -- concepto). Cada § lleva al pie, en texto pequeño, su página de
@@ -1039,6 +1044,8 @@ surface ThemesPanel {
             when theme.owner = viewer and config.annotate_right in viewer.rights
         ReaderDeletesTheme(viewer, theme)
             when theme.owner = viewer
+        ReaderGroupsConcept(viewer, concept, theme)
+            when theme.owner = viewer and config.annotate_right in viewer.rights
         ReaderUngroupsConcept(viewer, membership)
             when theme.owner = viewer and config.annotate_right in viewer.rights
         ReaderWritesThemeDevelopment(viewer, theme, text)
@@ -1047,6 +1054,16 @@ surface ThemesPanel {
     @guarantee OthersReadOnly
         -- Los temas y desarrollos de otros lectores se pueden leer, nunca
         -- editar.
+
+    @guarantee AddConceptPill
+        -- Los conceptos de un tema propio son píldoras; la última es «+»,
+        -- con su mismo estilo, que se abre en un campo con autocompletado
+        -- del vocabulario compartido (sólo conceptos existentes) y agrupa
+        -- ahí el elegido (decisión 2026-09-28).
+
+    @guarantee NewThemeSeparated
+        -- Tras el último tema (su desarrollo y «Guardar») una línea (<hr>)
+        -- separa los temas existentes del campo para crear uno nuevo.
 
     @guarantee ThemeSections
         -- Cada tema lista los §§ agrupados (cita, concepto, página) de

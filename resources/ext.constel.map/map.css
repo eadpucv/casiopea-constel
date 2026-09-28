@@ -626,8 +626,66 @@
 	resize: vertical;
 }
 
+/* «+» de un tema propio: una píldora más, que se abre en un campo con
+ * autocompletado del vocabulario (addConceptPill en sidepanel.js). */
+.constel-chip__add {
+	display: inline-flex;
+	align-items: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var( --constel-icon );
+	font: inherit;
+	line-height: inherit;
+	cursor: pointer;
+}
+
+.constel-chip--add:hover,
+.constel-chip--add:focus-within {
+	border-color: var( --constel-focus-border );
+}
+
+.constel-chip__add:hover {
+	color: var( --constel-icon-active );
+}
+
+.constel-chip__add[ hidden ],
+.constel-chip__field[ hidden ] {
+	display: none;
+}
+
+.constel-chip__input {
+	width: 10rem;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var( --constel-ink );
+	font: inherit;
+	outline: 0;
+}
+
+.constel-chip__field .constel-ac {
+	right: auto;
+	min-width: 14rem;
+}
+
+.constel-chip__add:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+	border-radius: var( --constel-radius-pill );
+}
+
+/* Separa el último tema (desarrollo y «Guardar») del tema por crear. */
+.constel-map .constel-theme-sep {
+	height: 0;
+	margin: var( --constel-s-4 ) 0 0;
+	border: 0;
+	border-top: 1px solid var( --constel-hairline );
+	background: none;
+}
+
 .constel-theme-new {
-	margin-top: var( --constel-s-4 );
+	margin-top: var( --constel-s-3 );
 }
 
 /* ── Lista (alternativa textual) ──────────────────────────────────────── */

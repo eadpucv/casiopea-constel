@@ -123,15 +123,30 @@ function conceptDetail( box, node, ctx ) {
 			const form = el( 'form', 'constel-add' );
 			const select = el( 'select', 'constel-input' );
 			select.setAttribute( 'aria-label', mw.msg( 'constellation-group-into' ) );
+			// Ningún tema viene elegido: se elige explícitamente, y hasta
+			// entonces el botón no se habilita.
+			const none = el( 'option', null, mw.msg( 'constellation-group-choose' ) );
+			none.value = '';
+			none.disabled = true;
+			none.selected = true;
+			select.append( none );
 			ctx.myThemes.forEach( ( t ) => {
 				const o = el( 'option', null, t.label );
 				o.value = t.id;
 				select.append( o );
 			} );
 			const fb = feedbackBox();
-			form.append( select, submitButton( mw.msg( 'constellation-group' ), 'constel-button--primary' ), fb );
+			const go = submitButton( mw.msg( 'constellation-group' ), 'constel-button--primary' );
+			go.disabled = true;
+			select.addEventListener( 'change', () => {
+				go.disabled = !select.value;
+			} );
+			form.append( select, go, fb );
 			form.addEventListener( 'submit', ( e ) => {
 				e.preventDefault();
+				if ( !select.value ) {
+					return;
+				}
 				api.write( { action: 'constel-groupconcept', op: 'group', concept: node.id, theme: select.value } )
 					.then( ctx.onChanged, ( code, r ) => {
 						fb.innerHTML = api.describeError( code, r ).html;
@@ -394,6 +409,100 @@ function themeDelete( theme, section, fb, ctx, fail ) {
 }
 
 /**
+ * La píldora «+» al final de los conceptos de un tema propio: se abre en un
+ * campo con autocompletado del vocabulario y agrupa ahí el concepto elegido
+ * (spec: ReaderGroupsConcept; si estaba en otro tema del lector, lo mueve).
+ * Sólo conceptos existentes: lo escrito a mano vale si coincide exacto.
+ * Esc, o salir con el campo vacío, la vuelve a cerrar.
+ *
+ * @param {Object} theme
+ * @param {HTMLElement} fb caja de errores del tema
+ * @param {Object} ctx {onChanged}
+ * @param {Function} fail (fb) => manejador de error
+ * @return {HTMLElement}
+ */
+function addConceptPill( theme, fb, ctx, fail ) {
+	const label = mw.msg( 'constellation-theme-add', theme.label );
+	const li = el( 'li', 'constel-chip constel-chip--add' );
+	const open = icons.iconButton( 'plus', label, 'constel-chip__add' );
+	const field = el( 'div', 'constel-field constel-chip__field' );
+	const input = el( 'input', 'constel-chip__input' );
+	input.type = 'text';
+	input.placeholder = mw.msg( 'constellation-theme-add-placeholder' );
+	input.setAttribute( 'aria-label', label );
+	field.append( input );
+	field.hidden = true;
+	li.append( open, field );
+
+	const inTheme = new Set( theme.concepts.map( ( c ) => c.id ) );
+	let busy = false;
+	const group = ( concept ) => {
+		if ( busy ) {
+			return;
+		}
+		busy = true;
+		api.write( { action: 'constel-groupconcept', op: 'group', concept: concept.id, theme: theme.id } )
+			.then( ctx.onChanged, ( code, r ) => {
+				busy = false;
+				fail( fb )( code, r );
+			} );
+	};
+	const close = () => {
+		input.value = '';
+		field.hidden = true;
+		open.hidden = false;
+		li.classList.remove( 'constel-chip--open' );
+	};
+	open.addEventListener( 'click', () => {
+		fb.textContent = '';
+		open.hidden = true;
+		field.hidden = false;
+		li.classList.add( 'constel-chip--open' );
+		input.focus();
+	} );
+	const combo = autocomplete.attach( input, {
+		source: ( typed ) => api.searchConcepts( typed ).then( ( found ) => found
+			.filter( ( c ) => !inTheme.has( c.id ) )
+			.map( ( c ) => ( {
+				label: c.label,
+				value: c,
+				hint: mw.msg( 'constel-suggestion-uses', mw.language.convertNumber( c.uses ), c.uses )
+			} ) ) ),
+		onPick: ( text, item ) => group( item.value )
+	} );
+	input.addEventListener( 'keydown', ( e ) => {
+		// El autocompletado ya atendió Intro (elegir) y Esc (cerrar su lista).
+		if ( e.defaultPrevented ) {
+			return;
+		}
+		if ( e.key === 'Escape' ) {
+			e.preventDefault();
+			close();
+			open.focus();
+		} else if ( e.key === 'Enter' && !combo.isOpen() ) {
+			e.preventDefault();
+			const typed = input.value.trim();
+			if ( !typed ) {
+				return;
+			}
+			api.conceptByLabel( typed ).then( ( found ) => {
+				if ( found ) {
+					group( found );
+				} else {
+					fb.textContent = mw.msg( 'constellation-theme-add-unknown', typed );
+				}
+			} );
+		}
+	} );
+	input.addEventListener( 'blur', () => setTimeout( () => {
+		if ( !busy && !input.value.trim() && document.activeElement !== input ) {
+			close();
+		}
+	}, 150 ) );
+	return li;
+}
+
+/**
  * Temas de un lector, con sus conceptos y su desarrollo (uno por tema).
  *
  * @param {HTMLElement} box
@@ -446,6 +555,9 @@ function themesPanel( box, themes, ctx ) {
 			}
 			chips.append( li );
 		} );
+		if ( ctx.editable ) {
+			chips.append( addConceptPill( theme, fb, ctx, fail ) );
+		}
 		if ( !theme.concepts.length ) {
 			section.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-theme-empty' ) ) );
 		}
@@ -472,6 +584,8 @@ function themesPanel( box, themes, ctx ) {
 	} );
 
 	if ( ctx.editable ) {
+		// Separa el último tema (su desarrollo y «Guardar») del tema por crear.
+		box.append( el( 'hr', 'constel-theme-sep' ) );
 		const form = el( 'form', 'constel-add constel-theme-new' );
 		const input = el( 'input', 'constel-input' );
 		input.placeholder = mw.msg( 'constellation-theme-new' );
