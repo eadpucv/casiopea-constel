@@ -1,6 +1,6 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.12.0 — 2026-09-30
 
 - **Color de los temas.** Un círculo de color antes del nombre de cada tema
   abre el selector de color. El elegido pinta el título, el texto y el círculo

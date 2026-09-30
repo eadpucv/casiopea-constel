@@ -1028,6 +1028,7 @@ docs/ARCHITECTURE.md          este archivo
 | 0.2.0 | Ajustes | Glosa, preferencia, menú de usuario, un solo «Guardar», páginas anchas, mapa 3D, arista de misma página |
 | 0.3.0 | Constelación | Desactivada por defecto (pestaña de preferencias propia), barra del mapa con píldoras (lectores, páginas, lente), íconos Feather, exportar SVG, terminología «sección» |
 | 0.11.0 | Mapa a escala | Grafo en caché, empaquetado y por grados; topes de carga; palabras o nodos; 2D ⇄ 3D como interruptores; letra coherente y zoom que la escala; 3D con niebla; vista de anillos; varios lectores con color por lector; íconos Lucide con tooltip; manual del mapa en `docs/MAPA.md` |
+| 0.12.0 | Color de los temas | Círculo de color antes del nombre de cada tema (mapa, anillos y panel); texto 3D atenuado frente a la perspectiva; SVG exportado con halo; desplegables por delante del botón de pantalla completa |
 
 ### Ideas para más adelante
 
