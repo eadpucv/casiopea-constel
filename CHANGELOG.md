@@ -13,6 +13,13 @@
   cajas de choque de los círculos son más chicas y el mapa se compacta: con
   los 1 006 conceptos de la prueba de carga, la extensión baja de 2 617 a 931
   y la proporción alto/ancho de 1,75 a 0,84.
+- **Vista de anillos.** Con un concepto elegido, «Ver anillos» lo pone al
+  centro y ordena a sus vecinos en tres anillos, uno por grado de proximidad
+  (misma sección, traslape, mismo texto), cada uno con su cupo de 8, 16 y 24
+  y un «+N más» que abre el resto. Dentro de cada anillo quedan contiguos los
+  vecinos próximos entre sí. Elegir un vecino lo desliza al centro, «Volver al
+  mapa» conserva la selección, y la lista de vecinos por anillo es la
+  alternativa textual.
 - **Mapa 3D más abierto y con niebla.** La esfera del layout crece con la
   cantidad de conceptos, su escala la fija el percentil 92 de las distancias
   y los conceptos lejanos se atenúan con niebla en profundidad, así que los

@@ -383,6 +383,7 @@
 				"ext.constel.map/map.js",
 				"ext.constel.map/graph.js",
 				"ext.constel.map/sidepanel.js",
+				"ext.constel.map/rings.js",
 				"ext.constel.map/pills.js"
 			],
 			"messages": [
@@ -397,6 +398,15 @@
 				"constellation-labels-none",
 				"constellation-labels-main",
 				"constellation-labels-all",
+				"constellation-rings-open",
+				"constellation-rings-close",
+				"constellation-rings-title",
+				"constellation-rings-more",
+				"constellation-rings-none",
+				"constellation-rings-as-list",
+				"constellation-ring-coexcerpt",
+				"constellation-ring-overlap",
+				"constellation-ring-copage",
 				"constellation-proximity",
 				"constellation-force-coexcerpt",
 				"constellation-force-overlap",
@@ -496,7 +506,8 @@
 		"remoteExtPath": "casiopea-constel",
 		"packageFiles": [
 			"tests/qunit/reader.test.js",
-			"tests/qunit/graph.test.js"
+			"tests/qunit/graph.test.js",
+			"tests/qunit/rings.test.js"
 		],
 		"dependencies": [
 			"ext.constel.reader",

@@ -152,6 +152,31 @@ principales»; la elección se recuerda por navegador (`labels` en `constel-map`
   hizo que `separate()` dejara de converger. Se conserva el choque por el eje de
   menor traslape.
 
+### Vista de anillos
+
+Con un concepto elegido, el botón «Ver anillos» del panel reemplaza el lienzo
+por su vista egocéntrica (`rings.js`; se vuelve con «Volver al mapa», que
+conserva la selección). Los tres anillos son los tres grados de proximidad, del
+más fuerte al más débil: misma sección (radio 115), traslape (215) y mismo
+texto (315), con cupos de 8, 16 y 24 vecinos (`RING_RADII`, `RING_QUOTAS`).
+
+- **Anillo de cada vecino.** El del grado más fuerte que lo une al concepto
+  del centro; a igual grado, el de mayor peso.
+- **Cupo y «+N más».** Cada anillo muestra los vecinos de mayor peso hasta su
+  cupo; el resto va en la lista alternativa de abajo, que un «+N más» abre.
+- **Orden angular.** Seriación voraz: se parte del vecino de mayor peso y se
+  agrega, cada vez, el más próximo al último (suma de `log2(1 + peso)` de todos
+  los grados entre ambos), así los vecinos próximos entre sí quedan contiguos.
+  Cada anillo parte de un ángulo distinto para que los rótulos no queden
+  alineados en radio.
+- **Rótulos.** Todos visibles, fuera del círculo y sobre el radio (a la
+  derecha o izquierda según el lado). Los círculos tienen el color del tema y
+  área según la frecuencia, como el modo sin rótulos.
+- **Cambiar de centro.** Elegir un vecino lo lleva al centro deslizando los
+  círculos (450 ms; sin animación con `prefers-reduced-motion`) y actualiza el
+  panel de detalle. Los datos vienen de una lectura aparte con los tres grados
+  (`cgkinds`), cacheada en el servidor, independiente de las fuerzas.
+
 ### 3D: separación y niebla
 
 En 3D la esfera del layout crece con la cantidad de conceptos

@@ -970,6 +970,21 @@ surface ConceptMap {
         -- alternativa textual (AccessibleAlternative) no cambia
         -- (decisión 2026-09-29, pedido del usuario).
 
+    @guarantee RingsView
+        -- Al elegir un concepto se puede ver en anillos: el concepto al centro
+        -- y sus vecinos en tres anillos concéntricos, uno por grado de
+        -- proximidad: misma sección en el primero, traslape en el segundo y
+        -- mismo texto en el tercero. Un vecino con varios grados va al anillo
+        -- del más fuerte. Dentro de cada anillo el orden angular junta a los
+        -- vecinos que también son próximos entre sí, y cada anillo muestra
+        -- sólo sus vecinos de mayor peso (8, 16 y 24), con un «+N más» que
+        -- abre el resto como lista. Los radios son discretos y todos los
+        -- rótulos se muestran. Elegir un vecino lo pasa al centro deslizándolo
+        -- (sin animación con prefers-reduced-motion), y se vuelve al mapa con
+        -- la misma selección. Los temas de la lente colorean como en el mapa.
+        -- La alternativa textual es la lista de vecinos por anillo
+        -- (decisión 2026-09-29).
+
     @guarantee DepthFogIn3D
         -- En la vista 3D los conceptos lejanos se atenúan con una niebla en
         -- profundidad que apaga rápido lo del fondo, y la esfera del layout

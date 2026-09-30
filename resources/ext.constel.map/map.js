@@ -24,6 +24,7 @@ const { api, icons } = require( 'ext.constel.ui' );
 const graph = require( './graph.js' );
 const side = require( './sidepanel.js' );
 const pills = require( './pills.js' );
+const rings = require( './rings.js' );
 
 const cfg = mw.config.get( 'wgConstelMap' );
 const me = mw.user.isNamed() ? mw.config.get( 'wgUserName' ) : null;
@@ -155,6 +156,9 @@ function main( root ) {
 		// fuerza), los filtros con que se pidieron y la vuelta de carga vigente.
 		kinds: new Set(),
 		graphParams: {},
+		// Vista de anillos abierta (rings.open) y sus datos, con los tres grados.
+		rings: null,
+		ringData: null,
 		epoch: 0,
 		themes: [],
 		myThemes: [],
@@ -579,6 +583,12 @@ function main( root ) {
 		if ( !state.data ) {
 			return;
 		}
+		if ( state.rings ) {
+			// Con los anillos abiertos el lienzo es de ellos: sólo se repintan los temas.
+			state.rings.setThemes( themeIndex() );
+			renderList();
+			return;
+		}
 		if ( !state.data.nodes.length ) {
 			canvas.textContent = '';
 			canvas.append( el( 'p', 'constel-map__empty', mw.msg( 'constellation-empty' ) ) );
@@ -660,10 +670,54 @@ function main( root ) {
 			} );
 	}
 
+	/**
+	 * Los tres grados de todas las aristas, para los anillos (aparte de lo
+	 * que el mapa cargó según las fuerzas), una vez por vuelta de carga.
+	 *
+	 * @return {Promise<{nodes: Array, links: Array}>}
+	 */
+	function loadRingData() {
+		if ( !state.ringData ) {
+			const kinds = Object.keys( graph.FORCES );
+			const params = Object.assign( {}, state.graphParams, { cgkinds: kinds } );
+			state.ringData = api.graph( params );
+		}
+		return state.ringData;
+	}
+
+	function closeRings() {
+		if ( !state.rings ) {
+			return;
+		}
+		state.rings.destroy();
+		state.rings = null;
+		// Vuelve al mapa con la misma selección.
+		render();
+	}
+
+	function openRings( node ) {
+		canvas.textContent = mw.msg( 'constellation-loading' );
+		loadRingData().then( ( data ) => {
+			if ( state.view ) {
+				state.view.destroy();
+				state.view = null;
+			}
+			state.rings = rings.open( canvas, data, {
+				center: node.id,
+				themeOf: themeIndex(),
+				onSelect: ( chosen ) => select( chosen ),
+				onClose: closeRings
+			} );
+		}, () => render() );
+	}
+
 	function select( node ) {
 		state.selected = node;
 		if ( state.view ) {
 			state.view.select( node.id );
+		}
+		if ( state.rings ) {
+			state.rings.center( node.id );
 		}
 		const back = el( 'button', 'constel-button constel-map__back', mw.msg( 'constellation-back-to-themes' ) );
 		back.type = 'button';
@@ -681,9 +735,13 @@ function main( root ) {
 				select( kept );
 			}
 		} );
+		const ringsButton = el( 'button', 'constel-button constel-map__rings', mw.msg( 'constellation-rings-open' ) );
+		ringsButton.type = 'button';
+		ringsButton.hidden = !!state.rings;
+		ringsButton.addEventListener( 'click', () => openRings( node ) );
 		const box = el( 'div' );
 		sideBody.textContent = '';
-		sideBody.append( back, box );
+		sideBody.append( back, ringsButton, box );
 		side.conceptDetail( box, node, {
 			me,
 			canAnnotate: cfg.canAnnotate,
@@ -784,6 +842,12 @@ function main( root ) {
 	function loadGraph() {
 		canvas.textContent = mw.msg( 'constellation-loading' );
 		const epoch = ++state.epoch;
+		// Otros filtros son otro mapa: los anillos se cierran y se vuelven a abrir a mano.
+		state.ringData = null;
+		if ( state.rings ) {
+			state.rings.destroy();
+			state.rings = null;
+		}
 		return api.pageIds( state.pages ).then( ( ids ) => {
 			const params = {};
 			if ( state.readersOn && state.readers.length ) {
@@ -821,4 +885,4 @@ $( () => {
 } );
 
 // Para las pruebas QUnit (la lógica pura del grafo).
-module.exports = { graph };
+module.exports = { graph, rings };

@@ -417,6 +417,72 @@
 	text-decoration-color: var( --constel-accent );
 }
 
+/* ── Vista de anillos ─────────────────────────────────────────────────── */
+
+.constel-rings {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+}
+
+.constel-rings__bar {
+	display: flex;
+	align-items: center;
+	gap: var( --constel-space-3, 0.75rem );
+	padding: var( --constel-space-2, 0.5rem );
+}
+
+.constel-rings__title {
+	color: var( --constel-ink );
+	font-family: var( --constel-font-ui );
+	font-weight: 600;
+}
+
+.constel-rings__svg {
+	display: block;
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* Los anillos son sólo guía: continuos y tenues. */
+.constel-rings__guide {
+	fill: none;
+	stroke: var( --constel-ink-faint );
+	stroke-opacity: 0.35;
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.constel-rings__node {
+	cursor: pointer;
+}
+
+.constel-rings__node:focus-visible {
+	outline: 0;
+}
+
+.constel-rings__node:focus-visible .constel-graph__dot {
+	stroke: var( --constel-accent );
+	stroke-width: 3px;
+}
+
+.constel-rings__node--center {
+	font-weight: 600;
+}
+
+.constel-rings__lists {
+	padding: var( --constel-space-2, 0.5rem );
+}
+
+.constel-rings__ring-list ul {
+	margin: 0;
+	padding-left: 1.25em;
+}
+
 /* ── Panel lateral ────────────────────────────────────────────────────── */
 
 /* Títulos h4/h5 propios: sin mayúsculas ni color de acento del skin
