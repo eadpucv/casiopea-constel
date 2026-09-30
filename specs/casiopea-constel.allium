@@ -959,7 +959,8 @@ surface ConceptMap {
 
     @guarantee ToolbarSeparatesHowFromWhat
         -- La barra del mapa tiene dos filas con sentidos distintos. La primera
-        -- dice cómo se ve: vista 2D o 3D (y girar solo, en 3D), aristas,
+        -- dice cómo se ve: vista plana (2D) o en el espacio (3D), como un
+        -- interruptor con un ícono a cada lado (y girar solo, en 3D), aristas,
         -- conceptos como palabras o nodos (con sus principales rotulados),
         -- proximidad y navegación. La segunda dice qué se ve: lectores,
         -- páginas, lente de temas y, con varios lectores, qué conceptos

@@ -20,6 +20,9 @@
   lectores, qué conceptos). Aristas, palabras ⇄ nodos y girar solo son
   interruptores o casillas, nombrados con íconos. La letra mínima sube de 11
   a 13 px (los rótulos miden de 13 a 33).
+- **2D ⇄ 3D como interruptor.** El selector de vista pasa a ser un interruptor
+  con un ícono a cada lado (`square`, la vista plana, y `box`, el espacio),
+  igual que palabras ⇄ nodos; «Girar solo» aparece sólo en 3D.
 - **Tooltip explicativo en todos los íconos.** Cada ícono de la interfaz del mapa
   explica qué hace su control (por ejemplo, el de traslape dice cuánto atrae a
   conceptos de lectores distintos que comparten texto), incluidos los de las

@@ -310,13 +310,14 @@ function main( root ) {
 	};
 
 	// ── Fila 1: vista ─────────────────────────────────────────────────────
-	const mode = el( 'select', 'constel-input' );
-	[ [ '2d', 'constellation-mode-2d' ], [ '3d', 'constellation-mode-3d' ] ].forEach( ( [ v, m ] ) => {
-		const o = el( 'option', null, mw.msg( m ) );
-		o.value = v;
-		mode.append( o );
-	} );
-	mode.value = state.mode;
+	// Vista plana (2D) o en el espacio (3D): un interruptor con un ícono a cada
+	// lado, como palabras ⇄ nodos. «Girar solo» sólo existe en 3D.
+	const flatChoice = iconChoice( 'square', mw.msg( 'constellation-mode-2d' ) );
+	const spaceChoice = iconChoice( 'box', mw.msg( 'constellation-mode-3d' ) );
+	const viewSwitch = el( 'input', 'constel-switch' );
+	viewSwitch.type = 'checkbox';
+	viewSwitch.setAttribute( 'role', 'switch' );
+	viewSwitch.setAttribute( 'aria-label', mw.msg( 'constellation-mode-3d' ) );
 	// Girar solo: junto a la vista, sólo en 3D; apagado por defecto.
 	const spin = toggle( 'rotate-3d', mw.msg( 'constellation-autorotate' ), state.autorotate, ( on ) => {
 		state.autorotate = on;
@@ -325,18 +326,36 @@ function main( root ) {
 			state.view.setAutorotate( on );
 		}
 	}, false );
-	spin.label.hidden = state.mode !== '3d';
-	mode.addEventListener( 'change', () => {
-		state.mode = mode.value;
-		spin.label.hidden = state.mode !== '3d';
+	const syncMode = () => {
+		const space = state.mode === '3d';
+		viewSwitch.checked = space;
+		flatChoice.classList.toggle( 'constel-map__choice--on', !space );
+		spaceChoice.classList.toggle( 'constel-map__choice--on', space );
+		flatChoice.setAttribute( 'aria-pressed', String( !space ) );
+		spaceChoice.setAttribute( 'aria-pressed', String( space ) );
+		spin.label.hidden = !space;
+	};
+	const chooseMode = ( value ) => {
+		if ( value === state.mode ) {
+			return;
+		}
+		state.mode = value;
+		syncMode();
 		// Nuevo layout desde cero: 2D y 3D no comparten posiciones.
 		state.data.nodes.forEach( ( n ) => {
 			delete n.x;
 		} );
 		render();
-	} );
+	};
+	viewSwitch.addEventListener( 'change', () => chooseMode( viewSwitch.checked ? '3d' : '2d' ) );
+	flatChoice.addEventListener( 'click', () => chooseMode( '2d' ) );
+	spaceChoice.addEventListener( 'click', () => chooseMode( '3d' ) );
 	const viewGroup = el( 'div', 'constel-map__group' );
-	viewGroup.append( field( 'eye', 'constellation-mode', mode ), spin.label );
+	viewGroup.setAttribute( 'role', 'group' );
+	viewGroup.setAttribute( 'aria-label', mw.msg( 'constellation-mode' ) );
+	viewGroup.title = mw.msg( 'constellation-mode' );
+	viewGroup.append( flatChoice, viewSwitch, spaceChoice, spin.label );
+	syncMode();
 
 	const edges = toggle( 'waypoints', mw.msg( 'constellation-edges' ), state.edges, ( on ) => {
 		state.edges = on;
