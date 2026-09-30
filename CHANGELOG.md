@@ -13,6 +13,14 @@
   cajas de choque de los círculos son más chicas y el mapa se compacta: con
   los 1 006 conceptos de la prueba de carga, la extensión baja de 2 617 a 931
   y la proporción alto/ancho de 1,75 a 0,84.
+- **Lectura entre varios lectores.** Con dos o más lectores en «Secciones de»,
+  cada concepto muestra quién lo aporta: un anillo segmentado alrededor del
+  círculo (o un subrayado bajo el rótulo) con un tramo por lector, del color
+  de su lugar en el filtro, y una leyenda. Un control Todo · Compartido ·
+  Propio deja ver sólo los conceptos que comparten dos o más lectores o los
+  de uno solo, y el mapa parte con el traslape al 100 % y el mismo texto en
+  0 % (salvo que ya se hayan guardado las fuerzas). `list=constelgraph`
+  entrega `readers` por nodo sin nombrar a los usuarios ocultos.
 - **Vista de anillos.** Con un concepto elegido, «Ver anillos» lo pone al
   centro y ordena a sus vecinos en tres anillos, uno por grado de proximidad
   (misma sección, traslape, mismo texto), cada uno con su cupo de 8, 16 y 24

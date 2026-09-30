@@ -807,6 +807,40 @@ function draw( container, data, view ) {
 		nodeEls.set( node.id, text );
 	} );
 	stage.appendChild( dotLayer );
+
+	// Aporte de cada lector: con dos o más lectores filtrados (view.readers,
+	// en el orden de las píldoras), cada concepto lleva un anillo segmentado
+	// alrededor de su círculo, o un subrayado segmentado bajo su rótulo, con
+	// un tramo por lector proporcional a los §§ que aporta y el color estable
+	// de su lugar en el filtro (spec: ConceptMap.ReaderContributions).
+	const readerNames = view.readers && view.readers.length >= 2 ? view.readers : null;
+	const segEls = new Map();
+	const segLayer = svg( 'g', { class: 'constel-graph__segments' } );
+	if ( readerNames ) {
+		nodes.forEach( ( node ) => {
+			const given = node.readers || {};
+			const counts = readerNames.map( ( name ) => given[ name ] || 0 );
+			const total = counts.reduce( ( a, b ) => a + b, 0 );
+			if ( !total ) {
+				return;
+			}
+			let from = 0;
+			const parts = [];
+			counts.forEach( ( count, k ) => {
+				if ( count ) {
+					// Clases: constel-graph__seg--0 … constel-graph__seg--7
+					const el = svg( dotEls.has( node.id ) ? 'circle' : 'line', {
+						class: 'constel-graph__seg constel-graph__seg--' + ( k % CATEGORIES )
+					} );
+					segLayer.appendChild( el );
+					parts.push( { el, from: from / total, frac: count / total } );
+					from += count;
+				}
+			} );
+			segEls.set( node.id, parts );
+		} );
+	}
+	stage.appendChild( segLayer );
 	stage.appendChild( nodeLayer );
 	container.appendChild( root );
 	const measurePpu = () => {
@@ -954,6 +988,24 @@ function draw( container, data, view ) {
 				if ( is3d ) {
 					dot.style.opacity = fog( z2, sphere3d ).toFixed( 2 );
 				}
+				const ring = segEls.get( node.id );
+				if ( ring ) {
+					const rr = r + 2.5 / ppu;
+					const length = 2 * Math.PI * rr;
+					for ( const part of ring ) {
+						part.el.setAttribute( 'cx', node.px.toFixed( 1 ) );
+						part.el.setAttribute( 'cy', node.py.toFixed( 1 ) );
+						part.el.setAttribute( 'r', rr.toFixed( 2 ) );
+						part.el.setAttribute( 'stroke-width', ( 3 / ppu ).toFixed( 2 ) );
+						part.el.setAttribute( 'stroke-dasharray',
+							`${ ( part.frac * length ).toFixed( 2 ) } ${ length.toFixed( 2 ) }` );
+						part.el.setAttribute( 'stroke-dashoffset', ( -part.from * length ).toFixed( 2 ) );
+						part.el.setAttribute( 'transform', `rotate(-90 ${ node.px.toFixed( 1 ) } ${ node.py.toFixed( 1 ) })` );
+						if ( is3d ) {
+							part.el.style.opacity = dot.style.opacity;
+						}
+					}
+				}
 				continue;
 			}
 			// La tinta se centra con el desplazamiento medido, a esta letra.
@@ -964,6 +1016,22 @@ function draw( container, data, view ) {
 			if ( is3d ) {
 				// Lo lejano se atenúa: da profundidad sin perder legibilidad.
 				el.style.opacity = fog( z2, sphere3d ).toFixed( 2 );
+			}
+			const underline = segEls.get( node.id );
+			if ( underline ) {
+				const half = box ? ( box.w - PAD ) * ink : node.label.length * font * 0.3;
+				const y = node.py + ( box ? ( box.h - PAD ) * ink : font * 0.6 ) + 3 / ppu;
+				for ( const part of underline ) {
+					const left = node.px - half + part.from * 2 * half;
+					part.el.setAttribute( 'x1', left.toFixed( 1 ) );
+					part.el.setAttribute( 'x2', ( left + part.frac * 2 * half ).toFixed( 1 ) );
+					part.el.setAttribute( 'y1', y.toFixed( 1 ) );
+					part.el.setAttribute( 'y2', y.toFixed( 1 ) );
+					part.el.setAttribute( 'stroke-width', ( 3 / ppu ).toFixed( 2 ) );
+					if ( is3d ) {
+						part.el.style.opacity = el.style.opacity;
+					}
+				}
 			}
 		}
 		for ( const l of linkEls ) {
@@ -1589,8 +1657,9 @@ function serialize( root, container, meta ) {
 	Array.from( clone.querySelectorAll( 'text, line, circle' ) ).forEach( ( node, i ) => {
 		const cs = getComputedStyle( originals[ i ] );
 		if ( node.tagName === 'circle' ) {
-			node.setAttribute( 'fill', toRgb( cs.fill ) );
+			node.setAttribute( 'fill', cs.fill === 'none' ? 'none' : toRgb( cs.fill ) );
 			node.setAttribute( 'stroke', toRgb( cs.stroke ) );
+			node.setAttribute( 'stroke-width', cs.strokeWidth );
 			node.removeAttribute( 'tabindex' );
 			node.removeAttribute( 'role' );
 		} else if ( node.tagName === 'text' ) {

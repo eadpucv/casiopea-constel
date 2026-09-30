@@ -402,6 +402,46 @@
 	stroke-width: 3px;
 }
 
+/* Aporte de cada lector: un tramo por lector, con el color de su lugar en el
+ * filtro (los mismos colores de categoría de los temas). */
+.constel-graph__seg {
+	fill: none;
+	pointer-events: none;
+	stroke-linecap: butt;
+}
+
+.constel-graph__seg--0 {
+	stroke: var( --constel-cat-0 );
+}
+
+.constel-graph__seg--1 {
+	stroke: var( --constel-cat-1 );
+}
+
+.constel-graph__seg--2 {
+	stroke: var( --constel-cat-2 );
+}
+
+.constel-graph__seg--3 {
+	stroke: var( --constel-cat-3 );
+}
+
+.constel-graph__seg--4 {
+	stroke: var( --constel-cat-4 );
+}
+
+.constel-graph__seg--5 {
+	stroke: var( --constel-cat-5 );
+}
+
+.constel-graph__seg--6 {
+	stroke: var( --constel-cat-6 );
+}
+
+.constel-graph__seg--7 {
+	stroke: var( --constel-cat-7 );
+}
+
 .constel-graph__dot.constel-graph__node--selected {
 	stroke: var( --constel-accent );
 	stroke-width: 3px;
@@ -415,6 +455,65 @@
 .constel-graph__node--selected {
 	text-decoration: underline;
 	text-decoration-color: var( --constel-accent );
+}
+
+/* Leyenda de los lectores filtrados (con varios): un color por lector. */
+.constel-map__legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 1rem;
+	margin: 0;
+	padding: 0.25rem 0.5rem;
+	list-style: none;
+	font-family: var( --constel-font-ui );
+	color: var( --constel-ink-soft );
+}
+
+.constel-map__legend-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	margin: 0;
+}
+
+.constel-map__swatch {
+	display: inline-block;
+	width: 1.25em;
+	height: 0.3em;
+	border-radius: 1em;
+	background: var( --constel-ink-faint );
+}
+
+.constel-map__swatch--0 {
+	background: var( --constel-cat-0 );
+}
+
+.constel-map__swatch--1 {
+	background: var( --constel-cat-1 );
+}
+
+.constel-map__swatch--2 {
+	background: var( --constel-cat-2 );
+}
+
+.constel-map__swatch--3 {
+	background: var( --constel-cat-3 );
+}
+
+.constel-map__swatch--4 {
+	background: var( --constel-cat-4 );
+}
+
+.constel-map__swatch--5 {
+	background: var( --constel-cat-5 );
+}
+
+.constel-map__swatch--6 {
+	background: var( --constel-cat-6 );
+}
+
+.constel-map__swatch--7 {
+	background: var( --constel-cat-7 );
 }
 
 /* ── Vista de anillos ─────────────────────────────────────────────────── */

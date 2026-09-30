@@ -985,6 +985,30 @@ surface ConceptMap {
         -- La alternativa textual es la lista de vecinos por anillo
         -- (decisión 2026-09-29).
 
+    @guarantee ReaderContributions
+        -- Cuando el filtro de lectores tiene más de uno, cada concepto dice
+        -- cuántos §§ aporta cada lector filtrado, sin nombrar a los usuarios
+        -- ocultos para quien no puede verlos (su aporte sigue en el total). El
+        -- mapa lo dibuja como un anillo segmentado alrededor del círculo, o un
+        -- subrayado segmentado bajo el rótulo, con un tramo por lector
+        -- proporcional a su aporte y el color estable de su lugar en el
+        -- filtro; una leyenda nombra los colores (decisión 2026-09-29).
+
+    @guarantee SharedAndOwnFilter
+        -- Con más de un lector filtrado, un control de tres estados elige qué
+        -- conceptos se ven: todos; sólo los compartidos (con §§ de dos o más
+        -- de los lectores filtrados); o sólo los propios (con §§ de uno solo).
+        -- Las aristas son las de los conceptos que quedan (decisión
+        -- 2026-09-29).
+
+    @guarantee OverlapFirstForSeveralReaders
+        -- Con más de un lector filtrado el mapa parte con la fuerza del mismo
+        -- texto en 0 % y la del traslape en 100 % (lo que une a lectores
+        -- distintos), salvo que quien mira ya haya guardado sus fuerzas. Al
+        -- volver a un solo lector se restauran las de siempre, si no las
+        -- tocó. Ver dos lectores lado a lado, con el mismo trazado y colores,
+        -- queda como fase posterior (decisión 2026-09-29).
+
     @guarantee DepthFogIn3D
         -- En la vista 3D los conceptos lejanos se atenúan con una niebla en
         -- profundidad que apaga rápido lo del fondo, y la esfera del layout

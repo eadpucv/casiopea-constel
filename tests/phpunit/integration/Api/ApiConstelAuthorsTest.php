@@ -139,6 +139,38 @@ class ApiConstelAuthorsTest extends ApiTestCase {
 		);
 	}
 
+	public function testGraphNamesEachReadersContributionAndHidesHiddenOnes(): void {
+		[ $visible, $hidden ] = $this->readers( 2 );
+		$request = [
+			'action' => 'query', 'list' => 'constelgraph',
+			'cgusers' => $visible->getName() . '|' . $hidden->getName(),
+		];
+		$nodes = $this->doApiRequest( $request )[0]['query']['constelgraph']['nodes'];
+		$this->assertCount( 1, $nodes );
+		$this->assertEqualsCanonicalizing(
+			[ $visible->getName(), $hidden->getName() ], array_keys( $nodes[0]['readers'] )
+		);
+		$this->assertSame( [ 1, 1 ], array_values( $nodes[0]['readers'] ) );
+		$this->assertSame( 2, $nodes[0]['excerpts'] );
+
+		$this->getServiceContainer()->getDatabaseBlockStore()->insertBlock( new DatabaseBlock( [
+			'address' => $hidden,
+			'by' => $this->getTestSysop()->getUser(),
+			'expiry' => 'infinity',
+			'hideName' => true,
+		] ) );
+		$this->resetServices();
+		$masked = $this->doApiRequest( $request )[0]['query']['constelgraph']['nodes'][0];
+		$this->assertSame( [ $visible->getName() ], array_keys( $masked['readers'] ) );
+		$this->assertSame( 2, $masked['excerpts'], 'el aporte oculto sigue en el total' );
+		$this->assertArrayNotHasKey( 'by', $masked );
+
+		$single = $this->doApiRequest( [
+			'action' => 'query', 'list' => 'constelgraph', 'cgusers' => $visible->getName(),
+		] )[0]['query']['constelgraph']['nodes'][0];
+		$this->assertArrayNotHasKey( 'readers', $single, 'con un solo lector no hay desglose' );
+	}
+
 	private function sortedAuthors( array $rows ): array {
 		$authors = array_column( $rows, 'author' );
 		usort( $authors, static fn ( $a, $b ) => strcmp( (string)$a, (string)$b ) );

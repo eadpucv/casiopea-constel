@@ -7,6 +7,7 @@ use MediaWiki\Api\ApiQueryBase;
 use MediaWiki\Api\ApiResult;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
 use MediaWiki\User\ActorStore;
+use MediaWiki\User\UserFactory;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -29,6 +30,7 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 		string $moduleName,
 		private readonly GraphBuilder $graphBuilder,
 		private readonly ActorStore $actorStore,
+		private readonly UserFactory $userFactory,
 		private readonly IConnectionProvider $dbProvider
 	) {
 		parent::__construct( $query, $moduleName, 'cg' );
@@ -55,17 +57,58 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 		$path = [ 'query', $this->getModuleName() ];
 		if ( $params['compact'] ) {
 			$graph = $this->graphBuilder->buildPacked( $actors, $pages, $viewer, $kinds );
-			$result->addValue( $path, 'nodes', $graph['nodes'] );
+			$result->addValue( $path, 'nodes', $this->withReaders( $graph['nodes'] ) );
 			// Enteros y cadenas de la base: nada que validar ni normalizar.
 			$result->addValue( $path, 'runs', $graph['runs'], ApiResult::NO_VALIDATE );
 			$result->addIndexedTagName( [ ...$path, 'nodes' ], 'node' );
 			return;
 		}
 		$graph = $this->graphBuilder->build( $actors, $pages, $viewer, $kinds );
-		$result->addValue( $path, 'nodes', $graph['nodes'] );
+		$result->addValue( $path, 'nodes', $this->withReaders( $graph['nodes'] ) );
 		$result->addValue( $path, 'links', $graph['links'], ApiResult::NO_VALIDATE );
 		$result->addIndexedTagName( [ ...$path, 'nodes' ], 'node' );
 		$result->addIndexedTagName( [ ...$path, 'links' ], 'link' );
+	}
+
+	/**
+	 * Con varios lectores filtrados, cada nodo dice cuántos §§ aporta cada uno
+	 * (`readers`: nombre de usuario => cantidad). Los usuarios ocultos, para
+	 * quien no puede verlos, no aparecen: su aporte sigue contando en los
+	 * totales del concepto pero no se nombra (spec: ReadingIsPublicData).
+	 *
+	 * @param array[] $nodes con `by` (actor => cantidad) cuando hay varios lectores
+	 * @return array[]
+	 */
+	private function withReaders( array $nodes ): array {
+		$actorIds = [];
+		foreach ( $nodes as $node ) {
+			foreach ( array_keys( $node['by'] ?? [] ) as $actorId ) {
+				$actorIds[$actorId] = true;
+			}
+		}
+		if ( !$actorIds ) {
+			return $nodes;
+		}
+		$authors = new AuthorFormatter(
+			$this->actorStore, $this->userFactory, $this->dbProvider, $this->getAuthority()
+		);
+		$authors->preload( array_keys( $actorIds ) );
+		foreach ( $nodes as &$node ) {
+			if ( !isset( $node['by'] ) ) {
+				continue;
+			}
+			$readers = [];
+			foreach ( $node['by'] as $actorId => $count ) {
+				$name = $authors->format( $actorId )['name'];
+				if ( $name !== null ) {
+					$readers[$name] = $count;
+				}
+			}
+			ApiResult::setArrayType( $readers, 'assoc' );
+			$node['readers'] = $readers;
+			unset( $node['by'] );
+		}
+		return $nodes;
 	}
 
 	/** @inheritDoc */

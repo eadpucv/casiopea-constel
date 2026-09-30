@@ -328,4 +328,21 @@ class GraphBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->assertCount( 3, $this->linkKind( $uncapped, 'overlap' ) );
 		$this->assertNotNull( $first );
 	}
+
+	public function testSeveralReadersGetTheirContributionPerConcept(): void {
+		$this->excerpt( 1, 3, 11, [ 'Travesía' ], 10 );
+		$this->excerpt( 1, 44, 52, [ 'Diseño' ], 10 );
+		$this->excerpt( 2, 3, 11, [ 'Travesía' ], 11 );
+		$this->excerpt( 3, 44, 52, [ 'Diseño' ], 11 );
+		$builder = $this->constel()->getGraphBuilder();
+		$by = static fn ( array $g ) => array_column( $g['nodes'], 'by', 'label' );
+
+		$two = $by( $builder->build( [ 1, 2 ], null, null ) );
+		$this->assertSame( [ 1 => 1, 2 => 1 ], $two['Travesía'], 'la comparten' );
+		$this->assertSame( [ 1 => 1 ], $two['Diseño'], 'sólo la del lector 1 entra en el filtro' );
+
+		$one = $builder->build( [ 1 ], null, null )['nodes'][0];
+		$this->assertArrayNotHasKey( 'by', $one, 'un lector: sin desglose' );
+		$this->assertArrayNotHasKey( 'by', $builder->build( null, null, null )['nodes'][0], 'todos: sin desglose' );
+	}
 }

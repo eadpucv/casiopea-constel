@@ -146,6 +146,10 @@ function main( root ) {
 		labels: LABEL_OPTIONS.some( ( o ) => o.value === prefs().labels ) ? prefs().labels : null,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
 		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
+		// Si quien mira ya fijó sus fuerzas, no se le cambian (autoForces).
+		forcesTouched: !!prefs().forces,
+		// Con varios lectores: todo, sólo lo compartido, o sólo lo propio de cada uno.
+		scope: 'all',
 		readersOn: !!me,
 		readers: me ? [ me ] : [],
 		readerLabel: ( name ) => name,
@@ -336,6 +340,9 @@ function main( root ) {
 	// El mapa sigue al control mientras se arrastra: a lo más un recálculo
 	// por cuadro, con el último valor (graph.setForces parte tibio del
 	// equilibrio anterior, así que no salta). Al soltar sólo se recuerda.
+	// Varios lectores en el filtro «Secciones de», y si el mapa muestra sólo una parte.
+	const isMulti = () => state.readersOn && state.readers.length >= 2;
+	const isFiltered = () => isMulti() && state.scope !== 'all';
 	let pendingForces = null;
 	const applyForces = () => {
 		if ( !pendingForces ) {
@@ -344,6 +351,12 @@ function main( root ) {
 				// Un grado que estaba en 0 y recién tiene fuerza aún no se
 				// pidió: se pide y se suma sin redibujar el mapa.
 				ensureKinds().then( ( added ) => {
+					if ( added.length && isFiltered() ) {
+						// El mapa dibuja una copia filtrada: se suman a los datos y se redibuja.
+						added.forEach( ( link ) => state.data.links.push( link ) );
+						render();
+						return;
+					}
 					if ( state.view ) {
 						if ( added.length ) {
 							state.view.addLinks( added );
@@ -358,6 +371,7 @@ function main( root ) {
 			} );
 		}
 	};
+	const forceInputs = {};
 	[ [ 'co_excerpt', 'constellation-force-coexcerpt', 'align-left' ],
 		[ 'overlap', 'constellation-force-overlap', 'layers' ],
 		[ 'co_page', 'constellation-force-copage', 'file-text' ]
@@ -375,6 +389,7 @@ function main( root ) {
 			range.setAttribute( 'aria-valuetext', text );
 		};
 		show();
+		forceInputs[ kind ] = { range, show };
 		range.addEventListener( 'input', () => {
 			show();
 			state.forces[ kind ] = Number( range.value ) / 100;
@@ -382,6 +397,7 @@ function main( root ) {
 		} );
 		range.addEventListener( 'change', () => {
 			state.forces[ kind ] = Number( range.value ) / 100;
+			state.forcesTouched = true;
 			savePref( 'forces', state.forces );
 			applyForces();
 			// La lista alternativa nombra sólo las aristas de grados con fuerza.
@@ -394,6 +410,21 @@ function main( root ) {
 		label.append( range, out );
 		forces.append( label );
 	} );
+
+	// Con varios lectores el mapa parte con el traslape al 100 % y el mismo
+	// texto en 0 % (lo que une a lectores distintos), salvo que quien mira ya
+	// haya guardado sus fuerzas (spec: ConceptMap.OverlapFirstForSeveralReaders).
+	const autoForces = () => {
+		if ( state.forcesTouched ) {
+			return;
+		}
+		// eslint-disable-next-line camelcase
+		Object.assign( state.forces, graph.FORCES, isMulti() ? { overlap: 1, co_page: 0 } : {} );
+		Object.keys( forceInputs ).forEach( ( kind ) => {
+			forceInputs[ kind ].range.value = String( Math.round( state.forces[ kind ] * 100 ) );
+			forceInputs[ kind ].show();
+		} );
+	};
 
 	// Navegación del mapa: íconos Feather con nombre accesible.
 	const zoom = el( 'div', 'constel-map__zoom' );
@@ -496,7 +527,49 @@ function main( root ) {
 	// se llama Constelación).
 	const brand = el( 'span', 'constel-map__brand', 'con§tel' );
 	brand.setAttribute( 'aria-hidden', 'true' );
-	rowView.append( brand, viewGroup, edgesGroup, labelsGroup, forces, zoom );
+	// Con varios lectores: qué conceptos se ven (todos, los que comparten dos o
+	// más de los lectores filtrados, o los propios de uno solo).
+	const SCOPES = [
+		{ value: 'all', msg: 'constellation-scope-all' },
+		{ value: 'shared', msg: 'constellation-scope-shared' },
+		{ value: 'own', msg: 'constellation-scope-own' }
+	];
+	const scopeGroup = el( 'div', 'constel-map__group constel-ui constel-seg' );
+	scopeGroup.setAttribute( 'role', 'radiogroup' );
+	scopeGroup.setAttribute( 'aria-label', mw.msg( 'constellation-scope' ) );
+	scopeGroup.hidden = true;
+	const scopeButtons = SCOPES.map( ( option ) => {
+		const b = el( 'button', 'constel-seg__option', mw.msg( option.msg ) );
+		b.type = 'button';
+		b.setAttribute( 'role', 'radio' );
+		b.dataset.value = option.value;
+		scopeGroup.append( b );
+		return b;
+	} );
+	const syncScope = () => {
+		scopeGroup.hidden = !isMulti();
+		scopeButtons.forEach( ( b ) => {
+			const on = b.dataset.value === state.scope;
+			b.setAttribute( 'aria-checked', String( on ) );
+			b.tabIndex = on ? 0 : -1;
+		} );
+	};
+	scopeButtons.forEach( ( b, i ) => {
+		b.addEventListener( 'click', () => {
+			state.scope = b.dataset.value;
+			syncScope();
+			render();
+		} );
+		b.addEventListener( 'keydown', ( e ) => {
+			const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[ e.key ];
+			if ( step ) {
+				e.preventDefault();
+				scopeButtons[ ( i + step + SCOPES.length ) % SCOPES.length ].click();
+				scopeButtons[ ( i + step + SCOPES.length ) % SCOPES.length ].focus();
+			}
+		} );
+	} );
+	rowView.append( brand, viewGroup, edgesGroup, labelsGroup, scopeGroup, forces, zoom );
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
 	// Secciones: como la lente (por defecto quien mira; se suman lectores).
@@ -571,6 +644,26 @@ function main( root ) {
 		}
 	} );
 	rowFilters.append( readers.el, pages.el, lens.el );
+	// Leyenda de colores de los lectores (sólo con varios): el color de cada
+	// uno es el de su lugar en el filtro, el mismo de sus tramos en el mapa.
+	const legend = el( 'ul', 'constel-map__legend' );
+	legend.hidden = true;
+	function syncLegend() {
+		legend.textContent = '';
+		legend.hidden = !isMulti();
+		if ( !isMulti() ) {
+			return;
+		}
+		state.readers.forEach( ( name, k ) => {
+			const item = el( 'li', 'constel-map__legend-item' );
+			// Clases: constel-graph__seg--0 … constel-graph__seg--7
+			const swatch = el( 'span', 'constel-map__swatch constel-map__swatch--' + ( k % 8 ) );
+			swatch.setAttribute( 'aria-hidden', 'true' );
+			item.append( swatch, el( 'span', null, state.readerLabel( name ) ) );
+			legend.append( item );
+		} );
+	}
+	rowFilters.after( legend );
 
 	// ── Datos y dibujo ────────────────────────────────────────────────────
 	const themeIndex = () => {
@@ -578,6 +671,29 @@ function main( root ) {
 		state.themes.forEach( ( t, i ) => t.concepts.forEach( ( c ) => map.set( c.id, i ) ) );
 		return map;
 	};
+
+	/**
+	 * Lo que se dibuja: todo, o con varios lectores sólo los conceptos que
+	 * aportan dos o más de ellos (compartido) o uno solo (propio), con las
+	 * aristas entre los que quedan.
+	 *
+	 * @return {{nodes: Array, links: Array}}
+	 */
+	function visibleData() {
+		if ( !isFiltered() ) {
+			return state.data;
+		}
+		const contributors = ( n ) => Object.keys( n.readers || {} ).length;
+		const keep = state.scope === 'shared' ?
+			( n ) => contributors( n ) >= 2 :
+			( n ) => contributors( n ) === 1;
+		const nodes = state.data.nodes.filter( keep );
+		const ids = new Set( nodes.map( ( n ) => n.id ) );
+		return {
+			nodes,
+			links: state.data.links.filter( ( l ) => ids.has( l.source ) && ids.has( l.target ) )
+		};
+	}
 
 	function render() {
 		if ( !state.data ) {
@@ -589,14 +705,20 @@ function main( root ) {
 			renderList();
 			return;
 		}
-		if ( !state.data.nodes.length ) {
+		const shown = visibleData();
+		if ( !shown.nodes.length ) {
+			if ( state.view ) {
+				state.view.destroy();
+				state.view = null;
+			}
 			canvas.textContent = '';
 			canvas.append( el( 'p', 'constel-map__empty', mw.msg( 'constellation-empty' ) ) );
 		} else {
 			if ( state.view ) {
 				state.view.destroy();
 			}
-			state.view = graph.draw( canvas, state.data, {
+			state.view = graph.draw( canvas, shown, {
+				readers: isMulti() ? state.readers : null,
 				mode: state.mode,
 				autorotate: state.autorotate,
 				edges: state.edges,
@@ -614,14 +736,17 @@ function main( root ) {
 		}
 		syncUnpin();
 		syncLabels();
+		syncScope();
+		syncLegend();
 		renderList();
 	}
 
 	function renderList() {
 		altList.textContent = '';
-		const byId = new Map( state.data.nodes.map( ( n ) => [ n.id, n ] ) );
+		const shown = visibleData();
+		const byId = new Map( shown.nodes.map( ( n ) => [ n.id, n ] ) );
 		const near = new Map();
-		state.data.links.filter( ( l ) => state.forces[ l.kind ] > 0 ).forEach( ( l ) => {
+		shown.links.filter( ( l ) => state.forces[ l.kind ] > 0 ).forEach( ( l ) => {
 			[ [ l.source, l.target ], [ l.target, l.source ] ].forEach( ( [ a, b ] ) => {
 				const entry = { id: b, kind: l.kind, weight: l.weight };
 				near.set( a, ( near.get( a ) || [] ).concat( entry ) );
@@ -636,7 +761,7 @@ function main( root ) {
 			) );
 		} ) );
 		const byFrequency = ( a, b ) => b.excerpts - a.excerpts || a.label.localeCompare( b.label );
-		state.data.nodes.slice().sort( byFrequency )
+		shown.nodes.slice().sort( byFrequency )
 			.forEach( ( n ) => {
 				const li = el( 'li' );
 				const open = el( 'button', 'constel-link constel-map__open', n.label );
@@ -842,6 +967,10 @@ function main( root ) {
 	function loadGraph() {
 		canvas.textContent = mw.msg( 'constellation-loading' );
 		const epoch = ++state.epoch;
+		autoForces();
+		if ( !isMulti() ) {
+			state.scope = 'all';
+		}
 		// Otros filtros son otro mapa: los anillos se cierran y se vuelven a abrir a mano.
 		state.ringData = null;
 		if ( state.rings ) {

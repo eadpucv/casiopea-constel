@@ -152,6 +152,28 @@ principales»; la elección se recuerda por navegador (`labels` en `constel-map`
   hizo que `separate()` dejara de converger. Se conserva el choque por el eje de
   menor traslape.
 
+### Varios lectores
+
+Con dos o más lectores en «Secciones de», el servidor agrega a cada nodo
+`readers` (usuario → cantidad de §§, sólo de los lectores filtrados; los ocultos
+para quien mira no se nombran, pero su aporte sigue en `excerpts`). El cliente:
+
+- **Segmentos.** Alrededor del círculo (o bajo el rótulo) dibuja un tramo por
+  lector, de largo proporcional a su aporte, con el color de su lugar en el
+  filtro (`constel-graph__seg--0…7`, los mismos colores de categoría de los
+  temas). Una leyenda bajo los filtros nombra los colores.
+- **Filtro de tres estados.** Todo, Compartido (dos o más lectores aportan al
+  concepto) y Propio (uno solo). Se calcula en el cliente sobre `readers` y deja
+  las aristas entre los conceptos que quedan; al subir una fuerza desde 0 con el
+  mapa filtrado, se piden los grados que faltan y se redibuja.
+- **Fuerzas iniciales.** Sin fuerzas guardadas por quien mira, el mapa parte con
+  traslape al 100 % y mismo texto en 0 % (`autoForces`); con un solo lector
+  vuelven las de siempre.
+- **Lado a lado (fase posterior).** `graph.draw` no guarda estado fuera de su
+  contenedor y `map.js` concentra el estado en un objeto, de modo que dos
+  paneles con el mismo trazado se arman con dos llamadas; falta la
+  sincronización de posiciones y de selección entre ambos.
+
 ### Vista de anillos
 
 Con un concepto elegido, el botón «Ver anillos» del panel reemplaza el lienzo

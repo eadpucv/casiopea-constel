@@ -25,7 +25,9 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * `mine`) se calcula aparte, sobre el grafo guardado.
  *
  * Forma empaquetada (la que se guarda y viaja en la respuesta compacta):
- *  - nodes: lista de {id, label, excerpts, pages}, ordenada por id.
+ *  - nodes: lista de {id, label, excerpts, pages}, ordenada por id. Si el
+ *    filtro nombra a dos o más lectores, cada nodo trae además `by`: cuántos
+ *    §§ aporta cada lector filtrado (actor => cantidad).
  *  - runs: por grado, una cadena de enteros separados por comas que lista
  *    tramos «i,n,j1,w1,…,jn,wn»: la arista entre el nodo de índice i y cada
  *    uno de los n nodos j (con i < j) con su peso w. Los índices son
@@ -210,11 +212,16 @@ class GraphBuilder {
 		$edges = array_fill_keys( $kinds, [] );
 		$byPage = [];
 		$conceptsByPage = [];
+		// Con varios lectores filtrados, quién aporta cada concepto.
+		$trackReaders = $actors !== null && count( $actors ) >= 2;
 		foreach ( $excerpts as $e ) {
 			foreach ( $e['concepts'] as $c ) {
-				$nodes[$c] ??= [ 'id' => $c, 'label' => '', 'excerpts' => 0, 'pages' => [] ];
+				$nodes[$c] ??= [ 'id' => $c, 'label' => '', 'excerpts' => 0, 'pages' => [], 'by' => [] ];
 				$nodes[$c]['excerpts']++;
 				$nodes[$c]['pages'][$e['page']] = true;
+				if ( $trackReaders ) {
+					$nodes[$c]['by'][$e['actor']] = ( $nodes[$c]['by'][$e['actor']] ?? 0 ) + 1;
+				}
 			}
 			if ( isset( $want['overlap'] ) && $e['status'] === ExcerptRecord::STATUS_ANCHORED ) {
 				$byPage[$e['page']][] = $e;
@@ -273,12 +280,16 @@ class GraphBuilder {
 		$list = [];
 		foreach ( $nodes as $id => $node ) {
 			$index[$id] = count( $list );
-			$list[] = [
+			$entry = [
 				'id' => $id,
 				'label' => $node['label'],
 				'excerpts' => $node['excerpts'],
 				'pages' => count( $node['pages'] ),
 			];
+			if ( $trackReaders ) {
+				$entry['by'] = $node['by'];
+			}
+			$list[] = $entry;
 		}
 
 		$runs = [];
