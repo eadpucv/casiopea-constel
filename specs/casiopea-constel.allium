@@ -971,6 +971,19 @@ surface ConceptMap {
         -- accesible. La vista por omisión es 2D con rótulos (palabras).
         -- (decisión 2026-09-30, pedido del usuario).
 
+    @guarantee LoadingIsStated
+        -- Mientras se lee el mapa y se calculan las distancias, el lienzo lo dice
+        -- con un texto al centro, horizontal y verticalmente: «Leyendo conceptos
+        -- y calculando distancias». Un cambio de vista sobre un mapa grande lo
+        -- muestra antes de calcular, para que no parezca colgado (decisión
+        -- 2026-09-30, pedido del usuario).
+
+    @guarantee QuietBackLinks
+        -- Volver de un concepto a los temas y de los anillos al mapa se hace con
+        -- un texto discreto precedido de una flecha («← Temas», «← Mapa»), no
+        -- con un botón, alineado en la misma línea con los demás controles de
+        -- su cabecera (decisión 2026-09-30, pedido del usuario).
+
     @guarantee TextScaleIsConsistent
         -- La letra tiene el mismo criterio en 2D y en 3D: al encuadre (el mapa
         -- entero a la vista, también en 3D) mide lo que reservaron las cajas,

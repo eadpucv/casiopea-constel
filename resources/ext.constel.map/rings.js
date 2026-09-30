@@ -16,6 +16,7 @@
  *
  * La misma información va como lista por anillo (AccessibleAlternative).
  */
+const { icons } = require( 'ext.constel.ui' );
 const SVG = 'http://www.w3.org/2000/svg';
 const CATEGORIES = 8;
 /** Grado de cada anillo, del más fuerte al más débil. */
@@ -188,8 +189,11 @@ function open( container, data, options ) {
 
 	const wrap = html( 'div', 'constel-rings' );
 	const bar = html( 'div', 'constel-rings__bar' );
-	const back = html( 'button', 'constel-button constel-rings__close', mw.msg( 'constellation-rings-close' ) );
+	// «← Mapa»: texto discreto con su flecha (como «← Temas» del panel).
+	const back = html( 'button', 'constel-backlink constel-rings__close' );
 	back.type = 'button';
+	back.append( icons.icon( 'arrow-left' ), html( 'span', null, mw.msg( 'constellation-rings-close' ) ) );
+	back.title = mw.msg( 'constellation-rings-close-hint' );
 	back.addEventListener( 'click', () => options.onClose() );
 	const title = html( 'span', 'constel-rings__title' );
 	bar.append( back, title );

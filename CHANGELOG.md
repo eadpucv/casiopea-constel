@@ -20,6 +20,15 @@
   lectores, qué conceptos). Aristas, palabras ⇄ nodos y girar solo son
   interruptores o casillas, nombrados con íconos. La letra mínima sube de 11
   a 13 px (los rótulos miden de 13 a 33).
+- **Volver como texto con flecha.** «← Temas» (del panel) y «← Mapa» (de los
+  anillos) pasan de botones a texto discreto con su flecha, y en el panel quedan
+  alineados con el ícono de los anillos en la misma línea.
+- **Texto de carga al centro.** Mientras se lee el mapa, el lienzo dice «Leyendo
+  conceptos y calculando distancias» en el centro, y un cambio de vista sobre un
+  mapa grande lo muestra antes de calcular.
+- **Aristas resaltadas más tenues en conceptos muy conectados.** Con cientos de
+  vecinos, las aristas del concepto apuntado o elegido bajan su opacidad (de 1
+  a 0,12) para no inundar el mapa.
 - **2D ⇄ 3D como interruptor.** El selector de vista pasa a ser un interruptor
   con un ícono a cada lado (`square`, la vista plana, y `box`, el espacio),
   igual que palabras ⇄ nodos; «Girar solo» aparece sólo en 3D.

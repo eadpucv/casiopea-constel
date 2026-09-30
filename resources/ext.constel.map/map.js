@@ -345,7 +345,7 @@ function main( root ) {
 		state.data.nodes.forEach( ( n ) => {
 			delete n.x;
 		} );
-		render();
+		renderSoon();
 	};
 	viewSwitch.addEventListener( 'change', () => chooseMode( viewSwitch.checked ? '3d' : '2d' ) );
 	flatChoice.addEventListener( 'click', () => chooseMode( '2d' ) );
@@ -359,7 +359,7 @@ function main( root ) {
 
 	const edges = toggle( 'waypoints', mw.msg( 'constellation-edges' ), state.edges, ( on ) => {
 		state.edges = on;
-		render();
+		renderSoon();
 	}, true );
 	const edgesGroup = el( 'div', 'constel-map__group' );
 	edgesGroup.append( edges.label );
@@ -383,7 +383,7 @@ function main( root ) {
 	const lead = toggle( 'star', mw.msg( 'constellation-lead' ), state.lead, ( on ) => {
 		state.lead = on;
 		savePref( 'lead', on );
-		render();
+		renderSoon();
 	}, false );
 	const syncConcepts = () => {
 		const nodes = effectiveConcepts() === 'nodes';
@@ -398,7 +398,7 @@ function main( root ) {
 		state.concepts = value;
 		savePref( 'concepts', value );
 		syncConcepts();
-		render();
+		renderSoon();
 	};
 	conceptsSwitch.addEventListener( 'change', () => chooseConcepts( conceptsSwitch.checked ? 'nodes' : 'words' ) );
 	wordsLabel.addEventListener( 'click', () => chooseConcepts( 'words' ) );
@@ -418,6 +418,22 @@ function main( root ) {
 	const readerColor = ( name, index ) => state.readerColors[ name ] ||
 		defaultReaderColor( index );
 	const isFiltered = () => isMulti() && state.scope !== 'all';
+
+	// El mapa tarda en leerse y calcularse: mientras tanto el lienzo lo dice, con el
+	// texto al centro. Un cambio de vista sobre un mapa grande lo muestra primero
+	// y deja pintar un cuadro antes de calcular, para que no parezca colgado.
+	function showLoading() {
+		canvas.textContent = '';
+		canvas.append( el( 'p', 'constel-map__loading', mw.msg( 'constellation-loading-map' ) ) );
+	}
+	function renderSoon() {
+		if ( !state.data || state.data.nodes.length < 150 ) {
+			render();
+			return;
+		}
+		showLoading();
+		requestAnimationFrame( () => setTimeout( render, 0 ) );
+	}
 	let pendingForces = null;
 	const applyForces = () => {
 		if ( !pendingForces ) {
@@ -632,7 +648,7 @@ function main( root ) {
 	};
 	scope.addEventListener( 'change', () => {
 		state.scope = scope.value;
-		render();
+		renderSoon();
 	} );
 	rowView.append( brand, viewGroup, edgesGroup, conceptsGroup, forces, zoom );
 
@@ -940,7 +956,7 @@ function main( root ) {
 	}
 
 	function openRings( node ) {
-		canvas.textContent = mw.msg( 'constellation-loading' );
+		showLoading();
 		loadRingData().then( ( data ) => {
 			if ( state.view ) {
 				state.view.destroy();
@@ -963,8 +979,11 @@ function main( root ) {
 		if ( state.rings ) {
 			state.rings.center( node.id );
 		}
-		const back = el( 'button', 'constel-button constel-map__back', mw.msg( 'constellation-back-to-themes' ) );
+		// «← Temas»: texto discreto con su flecha, no un botón.
+		const back = el( 'button', 'constel-backlink' );
 		back.type = 'button';
+		back.append( icons.icon( 'arrow-left' ), el( 'span', null, mw.msg( 'constellation-back-to-themes' ) ) );
+		back.title = mw.msg( 'constellation-back-to-themes-hint' );
 		back.addEventListener( 'click', () => {
 			state.selected = null;
 			if ( state.view ) {
@@ -981,12 +1000,16 @@ function main( root ) {
 		} );
 		// Sólo el ícono (círculos concéntricos): el nombre va de tooltip y de nombre accesible.
 		const ringsButton = icons.iconButton( 'disc-2', mw.msg( 'constellation-rings-open' ),
-			'constel-button constel-button--icon constel-map__rings' );
+			'constel-map__choice constel-map__rings' );
 		ringsButton.hidden = !!state.rings;
 		ringsButton.addEventListener( 'click', () => openRings( node ) );
 		const box = el( 'div' );
 		sideBody.textContent = '';
-		sideBody.append( back, ringsButton, box );
+		// Fila de cabecera: «← Temas» a la izquierda y los anillos a la derecha,
+		// centrados en la misma línea.
+		const head = el( 'div', 'constel-map__head' );
+		head.append( back, ringsButton );
+		sideBody.append( head, box );
 		side.conceptDetail( box, node, {
 			me,
 			canAnnotate: cfg.canAnnotate,
@@ -1085,7 +1108,7 @@ function main( root ) {
 	}
 
 	function loadGraph() {
-		canvas.textContent = mw.msg( 'constellation-loading' );
+		showLoading();
 		const epoch = ++state.epoch;
 		autoForces();
 		if ( !isMulti() ) {

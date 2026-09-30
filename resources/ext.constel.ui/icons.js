@@ -123,6 +123,10 @@ const SHAPES = {
 		[ 'path', { d: 'M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2' } ],
 		[ 'path', { d: 'M9 20h6' } ]
 	],
+	'arrow-left': [
+		[ 'path', { d: 'm12 19-7-7 7-7' } ],
+		[ 'path', { d: 'M19 12H5' } ]
+	],
 	square: [ [ 'rect', { width: 18, height: 18, x: 3, y: 3, rx: 2 } ] ],
 	box: [
 		[ 'path', { d: 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z' } ],

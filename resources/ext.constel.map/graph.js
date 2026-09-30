@@ -655,12 +655,17 @@ function draw( container, data, view ) {
 		if ( id === null || !view.edges ) {
 			return;
 		}
-		for ( const l of adjacency.get( id ) ) {
+		// Un concepto con cientos de vecinos no debe inundar el mapa: cuantas más
+		// aristas resaltadas, más tenues (de 1 a 0,12).
+		const list = adjacency.get( id );
+		const share = Math.min( 1, Math.max( 0.12, 40 / Math.max( 1, list.length ) ) );
+		for ( const l of list ) {
 			if ( base.has( l ) ) {
 				continue;
 			}
 			addLinkEl( l );
 			const shown = linkEls[ linkEls.length - 1 ];
+			shown.el.style.strokeOpacity = String( share );
 			shown.focus = true;
 			shown.el.classList.add( 'constel-graph__link--near' );
 			linkLayer.appendChild( shown.el );

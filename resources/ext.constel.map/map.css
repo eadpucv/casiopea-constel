@@ -709,8 +709,55 @@
 	color: var( --constel-danger );
 }
 
-.constel-map__back {
+/* Cabecera del panel: «← Temas» y el ícono de los anillos, en la misma línea. */
+.constel-map__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 1.75rem;
 	margin-bottom: var( --constel-s-2 );
+}
+
+/* Volver: texto discreto con su flecha, sin aspecto de botón. */
+.constel-map .constel-backlink {
+	display: inline-flex;
+	gap: var( --constel-s-1 );
+	align-items: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var( --constel-ink-soft );
+	font: inherit;
+	cursor: pointer;
+}
+
+.constel-map .constel-backlink .constel-i {
+	width: 1rem;
+	height: 1rem;
+}
+
+.constel-map .constel-backlink:hover {
+	color: var( --constel-ink );
+	text-decoration: underline;
+}
+
+.constel-map .constel-backlink:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}
+
+/* Leyendo conceptos y calculando distancias: al centro del lienzo. */
+.constel-map__loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	min-height: 12rem;
+	margin: 0;
+	padding: var( --constel-s-4 );
+	color: var( --constel-ink-soft );
+	text-align: center;
 }
 
 .constel-theme {
