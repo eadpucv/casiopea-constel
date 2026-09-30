@@ -18,8 +18,23 @@
   2D/3D, girar solo, aristas, conceptos como palabras o nodos, proximidad y
   zoom) y la segunda qué se ve (lectores, páginas, lente y, con varios
   lectores, qué conceptos). Aristas, palabras ⇄ nodos y girar solo son
-  interruptores o casillas con su texto visible en vez de botones. La letra
-  mínima sube de 11 a 13 px (los rótulos miden de 13 a 33).
+  interruptores o casillas, nombrados con íconos. La letra mínima sube de 11
+  a 13 px (los rótulos miden de 13 a 33).
+- **Íconos Lucide.** Los íconos de la extensión pasan de Feather a Lucide
+  (`ext.constel.ui/icons.js`, desde `lucide-static` 1.49): aristas
+  (`waypoints`), palabras (`type`), nodos (`circle-dot`), rotular los
+  principales (`star`) y girar solo (`rotate-3d`) se nombran con su ícono, con
+  el texto como tooltip y nombre accesible.
+- **Vista por omisión: 2D con palabras.** El mapa ya no parte como nodos con
+  más de 80 conceptos; los topes de carga lo protegen.
+- **Letra coherente en 2D y 3D, y el zoom la escala.** Antes el 2D escalaba la
+  letra con el zoom de encuadre (aplastada contra el piso de 13 px en mapas
+  densos) y el 3D partía sin encuadre, así que salía más grande; además
+  acercar no la cambiaba, porque crecía desde un tamaño bajo el piso. Ahora el
+  3D se encuadra como el 2D y el zoom escala la letra desde lo que se ve,
+  entre 13 y 40 px.
+- **Concepto enfocado en negrita, en 2D y 3D.** El concepto elegido se destaca
+  con un peso mayor en ambas vistas, y deja de subrayarse.
 - **Conceptos como palabras o nodos.** Un interruptor explícito deja el mapa
   en palabras o en nodos, y una casilla «Rotular los principales», apagada por
   omisión, deja la palabra de los conceptos de mayor frecuencia
@@ -29,7 +44,7 @@
   apuntarlo se lee su rótulo encima y sus vecinos quedan resaltados, y en
   un dispositivo que no puede apuntar el primer toque revela y el segundo
   elige; con mouse un clic elige. Sin rótulos o con los
-  principales. Con más de 80 conceptos el mapa parte como nodos. En 2D las
+  principales. En 2D las
   cajas de choque de los círculos son más chicas y el mapa se compacta: con
   los 1 006 conceptos de la prueba de carga, la extensión baja de 2 617 a 931
   y la proporción alto/ancho de 1,75 a 0,84.

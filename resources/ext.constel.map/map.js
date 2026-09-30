@@ -33,8 +33,6 @@ const full = !!cfg.full;
 const ANTE_MIN = 20;
 const ANTE_MAX = 80;
 const ANTE_DEFAULT = 50;
-/** Hasta cuántos conceptos parte como palabras (con más, como nodos con los principales). */
-const AUTO_ALL_MAX = 80;
 /** Cuánto dura un aviso sobre el mapa antes de apagarse solo (ms). */
 const NOTICE_MS = 12000;
 /** Máximo de lectores en el filtro «Secciones de» (uno por color de categoría). */
@@ -172,8 +170,8 @@ function main( root ) {
 		mode: '2d',
 		autorotate: !!prefs().autorotate,
 		edges: true,
-		// Conceptos como 'words' (palabras) o 'nodes' (círculos); null = automático
-		// según el tamaño del mapa (AUTO_ALL_MAX). Con nodos, `lead` (apagado por
+		// Conceptos como 'words' (palabras, por omisión) o 'nodes' (círculos).
+		// Con nodos, `lead` (apagado por
 		// omisión: nodos son nodos) rotula los principales. Ambos se recuerdan
 		// por navegador.
 		concepts: [ 'words', 'nodes' ].includes( prefs().concepts ) ? prefs().concepts : null,
@@ -272,7 +270,7 @@ function main( root ) {
 		root.append( controls, layout, alt );
 	}
 
-	// Controles en línea: un ícono Feather en vez de rótulo; el nombre
+	// Controles en línea: un ícono Lucide en vez de rótulo; el nombre
 	// queda como tooltip y para lectores de pantalla. Así la barra es baja.
 	const iconLabel = ( iconName, msg ) => {
 		const label = el( 'label', 'constel-map__field constel-map__field--icon' );
@@ -287,10 +285,11 @@ function main( root ) {
 		label.append( control );
 		return label;
 	};
-	// Interruptor con su texto visible (role=switch) y casilla con su texto:
-	// lo que se activa o apaga se lee en la barra, no sólo en un tooltip.
-	const toggle = ( text, checked, onChange, asSwitch ) => {
+	// Interruptor (role=switch) o casilla con su ícono: el nombre va en el
+	// tooltip y para lectores de pantalla, así la barra es baja.
+	const toggle = ( iconName, text, checked, onChange, asSwitch ) => {
 		const label = el( 'label', 'constel-map__toggle' );
+		label.title = text;
 		const input = el( 'input', asSwitch ? 'constel-switch' : null );
 		input.type = 'checkbox';
 		if ( asSwitch ) {
@@ -298,8 +297,16 @@ function main( root ) {
 		}
 		input.checked = checked;
 		input.addEventListener( 'change', () => onChange( input.checked ) );
-		label.append( input, el( 'span', null, text ) );
+		const mark = el( 'span', 'constel-map__icon' );
+		mark.append( icons.icon( iconName ) );
+		label.append( input, mark, el( 'span', 'constel-visually-hidden', text ) );
 		return { label, input };
+	};
+	// Una de dos opciones con su ícono (botón con nombre accesible).
+	const iconChoice = ( iconName, text ) => {
+		const button = icons.iconButton( iconName, text, 'constel-map__choice' );
+		button.setAttribute( 'aria-pressed', 'false' );
+		return button;
 	};
 
 	// ── Fila 1: vista ─────────────────────────────────────────────────────
@@ -311,7 +318,7 @@ function main( root ) {
 	} );
 	mode.value = state.mode;
 	// Girar solo: junto a la vista, sólo en 3D; apagado por defecto.
-	const spin = toggle( mw.msg( 'constellation-autorotate' ), state.autorotate, ( on ) => {
+	const spin = toggle( 'rotate-3d', mw.msg( 'constellation-autorotate' ), state.autorotate, ( on ) => {
 		state.autorotate = on;
 		savePref( 'autorotate', on );
 		if ( state.view ) {
@@ -331,7 +338,7 @@ function main( root ) {
 	const viewGroup = el( 'div', 'constel-map__group' );
 	viewGroup.append( field( 'eye', 'constellation-mode', mode ), spin.label );
 
-	const edges = toggle( mw.msg( 'constellation-edges' ), state.edges, ( on ) => {
+	const edges = toggle( 'waypoints', mw.msg( 'constellation-edges' ), state.edges, ( on ) => {
 		state.edges = on;
 		render();
 	}, true );
@@ -342,20 +349,19 @@ function main( root ) {
 	// frecuencia y del color de su tema), con un interruptor que dice las dos
 	// cosas. Con nodos, «Rotular los principales» deja la palabra de los más
 	// frecuentes. Las aristas de un mapa de nodos se dibujan al apuntar uno.
-	const effectiveConcepts = () => state.concepts ||
-		( state.data && state.data.nodes.length > AUTO_ALL_MAX ? 'nodes' : 'words' );
+	const effectiveConcepts = () => state.concepts || 'words';
 	// Lo que entiende graph.draw: todos los rótulos, sólo los principales o ninguno.
 	const conceptsMode = () => effectiveConcepts() === 'words' ? 'all' : ( state.lead ? 'main' : 'none' );
 	const conceptsGroup = el( 'div', 'constel-map__group' );
 	conceptsGroup.setAttribute( 'role', 'group' );
 	conceptsGroup.setAttribute( 'aria-label', mw.msg( 'constellation-concepts' ) );
-	const wordsLabel = el( 'span', 'constel-map__choice', mw.msg( 'constellation-concepts-words' ) );
-	const nodesLabel = el( 'span', 'constel-map__choice', mw.msg( 'constellation-concepts-nodes' ) );
+	const wordsLabel = iconChoice( 'type', mw.msg( 'constellation-concepts-words' ) );
+	const nodesLabel = iconChoice( 'circle-dot', mw.msg( 'constellation-concepts-nodes' ) );
 	const conceptsSwitch = el( 'input', 'constel-switch' );
 	conceptsSwitch.type = 'checkbox';
 	conceptsSwitch.setAttribute( 'role', 'switch' );
 	conceptsSwitch.setAttribute( 'aria-label', mw.msg( 'constellation-concepts-nodes' ) );
-	const lead = toggle( mw.msg( 'constellation-lead' ), state.lead, ( on ) => {
+	const lead = toggle( 'star', mw.msg( 'constellation-lead' ), state.lead, ( on ) => {
 		state.lead = on;
 		savePref( 'lead', on );
 		render();
@@ -365,6 +371,8 @@ function main( root ) {
 		conceptsSwitch.checked = nodes;
 		wordsLabel.classList.toggle( 'constel-map__choice--on', !nodes );
 		nodesLabel.classList.toggle( 'constel-map__choice--on', nodes );
+		wordsLabel.setAttribute( 'aria-pressed', String( !nodes ) );
+		nodesLabel.setAttribute( 'aria-pressed', String( nodes ) );
 		lead.label.hidden = !nodes;
 	};
 	const chooseConcepts = ( value ) => {
@@ -483,7 +491,7 @@ function main( root ) {
 		} );
 	};
 
-	// Navegación del mapa: íconos Feather con nombre accesible.
+	// Navegación del mapa: íconos Lucide con nombre accesible.
 	const zoom = el( 'div', 'constel-map__zoom' );
 	let unpin = null;
 	zoom.setAttribute( 'role', 'group' );

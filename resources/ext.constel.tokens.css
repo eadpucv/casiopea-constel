@@ -46,7 +46,7 @@
 	--constel-mark-others: var( --sn-ink-faint, var( --color-placeholder, #72777d ) );
 	--constel-mark-others-wash: var( --sn-sunk, var( --background-color-interactive-subtle, #f8f9fa ) );
 
-	/* Íconos (Feather): mismo color que los del skin */
+	/* Íconos (Lucide): mismo color que los del skin */
 	--constel-icon: var( --sn-icon, var( --color-subtle, #54595d ) );
 	--constel-icon-active: var( --sn-icon-active, var( --color-base, #202122 ) );
 

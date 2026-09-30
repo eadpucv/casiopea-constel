@@ -23,7 +23,7 @@ function el( tag, className, text ) {
 /**
  * @param {Object} opts
  * @param {string} opts.label nombre del campo
- * @param {string} [opts.icon] ícono Feather en lugar del rótulo visible (el
+ * @param {string} [opts.icon] ícono Lucide en lugar del rótulo visible (el
  *  nombre queda como tooltip y para lectores de pantalla)
  * @param {string} opts.placeholder
  * @param {string} [opts.empty] texto cuando no hay ninguna

@@ -1048,12 +1048,23 @@ function draw( container, data, view ) {
 		settle();
 		zoom = fit;
 	}
-	// Cuánto escala la letra al zoom z: hasta el encuadre, igual que el mapa
-	// (no reabre traslapes); más cerca, más lento (FONT_GROWTH).
-	const grow = ( z ) => z <= fit ? z : fit * Math.pow( z / fit, FONT_GROWTH );
-	// Letra de un rótulo (en unidades del lienzo), acotada en pantalla.
-	const fontUnits = ( s ) => Math.min( FONT_MAX_PX,
-		Math.max( FONT_MIN_PX, s * grow( zoom ) * ppu ) ) / ppu;
+	// En 3D el encuadre es el que deja la esfera entera en el lienzo: así 2D y
+	// 3D parten del mismo criterio (mapa entero a la vista) y la letra sale del
+	// mismo tamaño en ambos.
+	if ( is3d ) {
+		fit = Math.min( 1, 0.9 * Math.min( W, H ) / ( 2 * sphereRadius( nodes.length ) ) );
+		zoom = fit;
+	}
+	// Letra de un rótulo (en unidades del lienzo), acotada en pantalla. Al
+	// encuadre mide lo que reservaron las cajas (la natural, o el piso de
+	// FONT_MIN_PX si el mapa es tan denso que la natural queda bajo él); el zoom
+	// la escala desde ahí, más lento que el mapa (FONT_GROWTH), sin salir del
+	// rango FONT_MIN_PX a FONT_MAX_PX. Así acercar siempre agranda el texto.
+	const fontUnits = ( s ) => {
+		const atFit = Math.max( FONT_MIN_PX, s * fit * ppu );
+		return Math.min( FONT_MAX_PX,
+			Math.max( FONT_MIN_PX, atFit * Math.pow( zoom / fit, FONT_GROWTH ) ) ) / ppu;
+	};
 
 	// Centro del mapa: el origen, o el concepto seleccionado. La rotación y
 	// la perspectiva se calculan relativas a él, así el concepto elegido
@@ -1373,7 +1384,7 @@ function draw( container, data, view ) {
 	function resetView() {
 		yaw = is3d ? 0.6 : 0;
 		pitch = is3d ? -0.35 : 0;
-		zoom = is3d ? 1 : fit;
+		zoom = fit;
 		pan = { x: 0, y: 0 };
 		applyPan();
 		// Encuadrar todo: el centro vuelve al origen del mapa.

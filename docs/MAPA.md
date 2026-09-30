@@ -115,9 +115,20 @@ páginas, lente y, con varios lectores, qué conceptos). Un interruptor explíci
 **Palabras ⇄ Nodos** elige cómo se dibujan los conceptos, y con nodos una casilla
 «Rotular los principales» (apagada por omisión) deja la palabra de los
 `map_main_labels` (12) más frecuentes, a lo más la cuarta parte del mapa (`graph.draw` recibe `labels`: `all` = palabras, `main` = nodos con
-principales, `none` = nodos sin rótulos). Con más de 80 conceptos el mapa parte
-como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
-`constel-map`). La letra de un rótulo no baja de 13 px en pantalla.
+principales, `none` = nodos sin rótulos). La vista por omisión es 2D con palabras,
+sea cual sea el tamaño del mapa (los topes de carga lo protegen); la elección se
+recuerda por navegador (`concepts` y `lead` en `constel-map`). Los controles de
+la fila «cómo se ve» se nombran con íconos Lucide (tooltip y nombre accesible).
+
+**Tamaño de la letra.** Es el mismo en 2D y en 3D (`fontUnits`): al encuadre mide
+`max(13, tamaño · fit · ppu)` px, o sea lo que reservaron las cajas (de 13 a 33
+según la frecuencia), y el zoom la multiplica por `(zoom/fit)^0,5`, con el
+resultado acotado entre 13 y 40 px. Antes el 2D escalaba la letra con el zoom de
+encuadre (aplastada contra el piso en mapas densos) y el 3D partía sin encuadre
+con zoom 1, así que salía más grande; y como la letra crecía desde el tamaño
+natural, que en mapas densos queda bajo el piso, acercar no la cambiaba. Ahora
+el 3D se encuadra (`fit` deja la esfera entera en el lienzo) y la letra crece
+desde lo que se ve. El concepto elegido va en negrita, igual en ambas vistas.
 
 - **Círculos.** Un concepto sin rótulo es un `<circle>` del color de su tema
   con **área proporcional a su frecuencia** (la misma `0.6 · §§ + 0.4 · páginas`
@@ -176,7 +187,6 @@ mientras el texto sea el mismo.
 | Palabras | `ConstelMapMaxLabels` (300) | como palabras, las 300 más frecuentes llevan su palabra y el resto son nodos |
 | Aristas dibujadas | `ConstelMapMaxDrawnLinks` (6 000) | se dibujan las más fuertes hasta el tope y las del concepto apuntado o elegido; si al subir una fuerza se pasa del tope, el mapa se redibuja así |
 | Lectores en el filtro | 8 (`MAX_READERS`, uno por color) | el campo se apaga («Máximo: 8») |
-| Rótulos por omisión | 80 conceptos (`AUTO_ALL_MAX`) | con más, el mapa parte como nodos con los principales rotulados |
 
 El trazado también está acotado. La repulsión del layout de fuerzas compara todos
 los conceptos entre sí, así que sus iteraciones bajan cuando hay muchos

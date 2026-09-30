@@ -6,7 +6,7 @@
 /* ── Barra de herramientas ─────────────────────────────────────────────
  * Fila 1: vista (+ girar solo) · aristas (+ peso) · proximidad · zoom.
  * Fila 2: filtros como píldoras.
- * Sin rótulos visibles: cada control lleva su ícono Feather en línea, y el
+ * Sin rótulos visibles: cada control lleva su ícono Lucide en línea, y el
  * nombre va como tooltip y para lectores de pantalla (barra baja). */
 
 .constel-map__controls {
@@ -145,14 +145,27 @@
 	display: none;
 }
 
-.constel-map__choice {
-	color: var( --constel-ink-soft );
+/* Las dos opciones palabras ⇄ nodos: ícono sin borde, apagado o encendido. */
+.constel-map .constel-map__choice {
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var( --constel-icon );
 	cursor: pointer;
 }
 
-.constel-map__choice--on {
-	color: var( --constel-ink );
-	font-weight: 600;
+.constel-map .constel-map__choice .constel-i {
+	width: 1.15rem;
+	height: 1.15rem;
+}
+
+.constel-map .constel-map__choice--on {
+	color: var( --constel-accent );
+}
+
+.constel-map .constel-map__choice:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
 }
 
 /* Cada grupo de la fila «cómo se ve» se separa del anterior con un filete. */
@@ -441,9 +454,10 @@
 	opacity: 0.25;
 }
 
+/* El concepto enfocado (elegido) se destaca con un peso mayor, igual en 2D y
+ * en 3D: nunca subrayado. */
 .constel-graph__node--selected {
-	text-decoration: underline;
-	text-decoration-color: var( --constel-accent );
+	font-weight: bold;
 }
 
 /* Aviso de los topes de carga: flota sobre el mapa (sin ocupar lugar en el

@@ -939,7 +939,7 @@ tokens. Al mismo tiempo, la extensión tiene que funcionar con cualquier skin
   conserva el `light-dark()` de Stella Nova sin evaluar hasta donde se usa.
 - La nova (`--sn-nova`) es el único acento: el signo §, el foco y las marcas
   propias. Las marcas ajenas usan tinta tenue.
-- **Íconos:** Feather (MIT), como en Stella Nova: trazo 1,75, `currentColor`
+- **Íconos:** Lucide (ISC; sucesor de Feather, con muchos más íconos): trazo 1,75, `currentColor`
   y los colores de `--sn-icon`/`--sn-icon-active` (alias `--constel-icon*`).
   La extensión trae la geometría de los que usa (`ext.constel.ui/icons.js`:
   zoom-in, zoom-out, maximize, download, x), porque no puede depender del

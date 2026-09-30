@@ -412,7 +412,7 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 	margin-top: var( --constel-s-2 );
 }
 
-/* ── Íconos Feather (como los del skin: trazo 1.75, color de token) ──── */
+/* ── Íconos Lucide (como los del skin: trazo 1.75, color de token) ──── */
 
 .constel-i {
 	width: 1.1em;

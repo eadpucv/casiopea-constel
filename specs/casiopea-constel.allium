@@ -964,9 +964,20 @@ surface ConceptMap {
         -- proximidad y navegación. La segunda dice qué se ve: lectores,
         -- páginas, lente de temas y, con varios lectores, qué conceptos
         -- (todos, compartidos o propios). Lo que se enciende o apaga usa
-        -- interruptores y casillas con su texto visible, no solo botones ni
-        -- íconos con tooltip. La letra de un rótulo nunca baja de 13 px en
-        -- pantalla (decisión 2026-09-30, pedido del usuario).
+        -- interruptores y casillas, y las opciones de cómo se ve se nombran
+        -- con un ícono (Lucide), cuyo nombre es el tooltip y el nombre
+        -- accesible. La vista por omisión es 2D con rótulos (palabras).
+        -- (decisión 2026-09-30, pedido del usuario).
+
+    @guarantee TextScaleIsConsistent
+        -- La letra tiene el mismo criterio en 2D y en 3D: al encuadre (el mapa
+        -- entero a la vista, también en 3D) mide lo que reservaron las cajas,
+        -- de 13 a 33 px según la frecuencia del concepto y nunca menos de 13.
+        -- El zoom la escala desde ahí, más lento que el mapa, dentro de un
+        -- rango de 13 a 40 px, así que acercar siempre la agranda. El
+        -- concepto enfocado (elegido) se destaca con un peso tipográfico
+        -- mayor, en negrita, igual en 2D y en 3D, y nunca subrayado
+        -- (decisión 2026-09-30, pedido del usuario).
 
     @guarantee LabelsAreOptional
         -- Un interruptor explícito, Palabras o Nodos, elige cómo se dibujan los
@@ -981,10 +992,10 @@ surface ConceptMap {
         -- apuntar sin tocar (teléfono, tableta) un toque hace lo del cursor y
         -- el segundo elige el concepto, y con mouse o puntero un clic elige
         -- directamente. Las aristas se dibujan igual con nodos que con
-        -- palabras, siempre debajo de ellos y sin tapar ni ser tapadas. Con
-        -- más de 80 conceptos el mapa parte como
-        -- nodos, y la elección se recuerda por navegador junto con las
-        -- fuerzas. La
+        -- palabras, siempre debajo de ellos y sin tapar ni ser tapadas. El
+        -- mapa parte como palabras, cualquiera sea su tamaño (los topes de
+        -- MapHasLoadLimits lo protegen), y la elección se recuerda por
+        -- navegador junto con las fuerzas. La
         -- alternativa textual (AccessibleAlternative) no cambia
         -- (decisión 2026-09-29, pedido del usuario).
 
@@ -1048,8 +1059,6 @@ surface ConceptMap {
         --     tope y, además, todas las del concepto apuntado o elegido.
         --   · Lectores: el filtro «Secciones de» admite a lo más
         --     config.map_max_readers (uno por color); lleno, el campo se apaga.
-        --   · Por omisión, con más de 80 conceptos el mapa parte en «sólo los
-        --     principales».
         -- El trabajo del trazado también está acotado: con muchos conceptos hay
         -- menos iteraciones de fuerzas, y las cajas se comparan sólo con las que
         -- se cruzan en x. Nada de esto cambia la topología ni el vocabulario
