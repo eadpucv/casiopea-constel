@@ -1128,10 +1128,15 @@ surface ConceptMap {
     @guarantee ReaderAndPageFilters
         -- El mapa se filtra por lectores ("Secciones de") y por páginas,
         -- cada filtro con uno o varios valores. Páginas vacío = TODAS.
-        -- Lectores: por defecto el viewer (como la lente); un interruptor
-        -- fuera del filtro lo desactiva y entonces son TODOS (decisión
-        -- 2026-09-22; reemplaza el alcance mine/everyone). Para un visitante
-        -- anónimo el interruptor parte apagado.
+        -- Lectores: por defecto el viewer (como la lente). «Todos» es un
+        -- lector más de la caja, que se escribe y se elige del autocompletado
+        -- con un ícono propio (un globo) que lo distingue de los usuarios;
+        -- reemplaza a los demás lectores y agregar cualquiera lo saca, y
+        -- entonces el filtro no restringe (decisión 2026-09-30, pedido del
+        -- usuario; antes era un interruptor fuera de la caja, decisión
+        -- 2026-09-22, que reemplazó el alcance mine/everyone). Para un
+        -- visitante anónimo parte en «Todos». El ícono de usuarios sigue
+        -- siendo el rótulo del campo.
         -- Los lectores se nombran por su nombre real (preferencia del
         -- usuario) con el nombre de usuario como respaldo; si el sitio oculta
         -- el nombre real, sólo el de usuario. Sólo se listan lectores de

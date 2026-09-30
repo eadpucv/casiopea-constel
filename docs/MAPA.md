@@ -87,7 +87,7 @@ reacomoda en vivo (sección 9). En 0 %, el grado no dibuja arista ni atrae.
 
 | Ícono | Control | Qué hace | Por omisión |
 |---|---|---|---|
-| <img src="icons/users.svg" width="18" alt=""> | **Secciones de** (píldoras con autocompletado, más un interruptor) | Sólo los §§ de los lectores de la lista. Se nombran por su nombre real si lo definieron, si no por su usuario. El interruptor desactiva el filtro y entonces son los de todos. Admite hasta 8 lectores | quien mira (para un visitante anónimo, todos) |
+| <img src="icons/users.svg" width="18" alt=""> | **Secciones de** (píldoras con autocompletado) | Sólo los §§ de los lectores de la lista. Se nombran por su nombre real si lo definieron, si no por su usuario. «Todos» (con un ícono de globo <img src="icons/globe.svg" width="14" alt=""> en la lista y en su píldora) es un lector más que quita el filtro: reemplaza a los demás, y agregar a cualquiera lo saca. Admite hasta 8 lectores | quien mira (para un visitante anónimo, «Todos») |
 | <img src="icons/file.svg" width="18" alt=""> | **Páginas** (píldoras) | Sólo los §§ de esas páginas. Vacío es todas. `?page=Título` en la URL abre el mapa ya filtrado | todas |
 | <img src="icons/tag.svg" width="18" alt=""> | **Temas de** (lente, píldoras) | Colorea y agrupa los conceptos según los temas de esos lectores. Para una cuenta registrada nunca queda vacía. Sólo los temas propios se editan | quien mira |
 | <img src="icons/funnel.svg" width="18" alt=""> | **Qué conceptos ver** (selector, sólo con varios lectores) | Todos, sólo los compartidos (con §§ de dos o más de los lectores filtrados) o sólo los propios (de uno solo) | todos |
@@ -587,6 +587,7 @@ los SVG en `docs/icons/` (con su `LICENSE`).
 | <img src="icons/type.svg" width="18" alt=""> | `type` | `type` | conceptos como palabras |
 | <img src="icons/circle-dot.svg" width="18" alt=""> | `circle-dot` | `circle-dot` | conceptos como nodos |
 | <img src="icons/star.svg" width="18" alt=""> | `star` | `star` | rotular los principales |
+| <img src="icons/globe.svg" width="18" alt=""> | `globe` | `globe` | «Todos» en el filtro de lectores (lista y píldora) |
 | <img src="icons/text-align-start.svg" width="18" alt=""> | `align-left` | `text-align-start` | proximidad: misma sección |
 | <img src="icons/layers.svg" width="18" alt=""> | `layers` | `layers` | proximidad: traslape |
 | <img src="icons/file-text.svg" width="18" alt=""> | `file-text` | `file-text` | proximidad: mismo texto |

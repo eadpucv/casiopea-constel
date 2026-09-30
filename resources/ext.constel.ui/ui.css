@@ -374,6 +374,12 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 	background: var( --constel-opt-sel-bg );
 }
 
+.constel-ac__label {
+	display: inline-flex;
+	gap: var( --constel-s-1 );
+	align-items: center;
+}
+
 .constel-ac__uses {
 	color: var( --constel-ink-faint );
 	font-size: var( --constel-fs-xs );
@@ -426,6 +432,12 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 	stroke-linecap: round;
 	stroke-linejoin: round;
 	pointer-events: none;
+}
+
+.constel-ac__label .constel-i {
+	flex: none;
+	width: 1em;
+	height: 1em;
 }
 
 /* Botón de ícono: sólo el ícono, sin borde ni fondo. El área clicable

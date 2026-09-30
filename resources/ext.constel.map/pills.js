@@ -34,6 +34,9 @@ function el( tag, className, text ) {
  * @param {Function} opts.search (typed) => Promise<Array<string|{value, label, hint?}>>
  * @param {Function} [opts.decorate] (value, index, count, label) => HTMLElement|null, algo que
  *  se antepone a cada píldora (p. ej. el color de un lector)
+ * @param {string} [opts.exclusive] valor que no convive con otros: al agregarlo
+ *  reemplaza a los demás, y agregar cualquier otro lo saca
+ * @param {Function} [opts.valueIcon] (value) => nombre de ícono|null, que lleva la píldora
  * @param {Function} [opts.describe] (values) => Promise<Map<value,label>>
  * @param {Function} [opts.onLabels] () => void, cuando llegan los rótulos iniciales
  * @param {Function} opts.onChange (values) => void
@@ -77,7 +80,7 @@ function create( opts ) {
 		values.forEach( ( value ) => {
 			const li = el( 'li', 'constel-chip constel-pill' );
 			const text = el( 'span', 'constel-chip__label', labelOf( value ) );
-			if ( labelOf( value ) !== value ) {
+			if ( labelOf( value ) !== value && !( opts.valueIcon && opts.valueIcon( value ) ) ) {
 				text.title = value;
 			}
 			const index = values.indexOf( value );
@@ -85,6 +88,11 @@ function create( opts ) {
 			const extra = opts.decorate && opts.decorate( value, index, values.length, name );
 			if ( extra ) {
 				li.append( extra );
+			}
+			const glyph = opts.valueIcon && opts.valueIcon( value );
+			if ( glyph ) {
+				li.classList.add( 'constel-pill--icon' );
+				li.append( icons.icon( glyph ) );
 			}
 			li.append( text );
 			if ( values.length > min ) {
@@ -112,7 +120,13 @@ function create( opts ) {
 		if ( text ) {
 			labels.set( value, text );
 		}
-		if ( value && !values.includes( value ) && !full() ) {
+		if ( value && !values.includes( value ) && ( !full() || value === opts.exclusive ) ) {
+			if ( opts.exclusive ) {
+				// Con el valor exclusivo, los demás salen; con otro, sale el exclusivo.
+				values = value === opts.exclusive ?
+					[] :
+					values.filter( ( v ) => v !== opts.exclusive );
+			}
 			values.push( value );
 			render();
 			changed();

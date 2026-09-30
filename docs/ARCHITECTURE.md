@@ -791,8 +791,9 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   `rgb()` (para Inkscape o Illustrator), con fondo, `<title>` y `<desc>`
   (filtros y fecha).
   Fila 2: tres campos de píldoras con autocompletado (`pills.js`):
-  **Secciones de** (lectores; por defecto quien mira, se suman otros; un
-  interruptor fuera de la caja lo apaga y entonces son todas), **Páginas**
+  **Secciones de** (lectores; por defecto quien mira, se suman otros; «Todos»
+  es un lector más, con ícono de globo, que reemplaza a los demás y quita el
+  filtro), **Páginas**
   (títulos, `list=prefixsearch` en los namespaces de contenido; vacío =
   todas; también `?page=`) y **Temas de** (la lente; por defecto quien mira,
   nunca vacía para una cuenta registrada). El panel de temas muestra un

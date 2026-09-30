@@ -37,6 +37,13 @@ const ANTE_DEFAULT = 50;
 const NOTICE_MS = 12000;
 /** Máximo de lectores en el filtro «Secciones de» (uno por color de categoría). */
 const MAX_READERS = 8;
+/**
+ * Valor de «Todos» en el filtro de lectores. Lleva «#», que un nombre de usuario
+ * no puede tener, así nunca choca con uno.
+ */
+const ALL_READERS = '#todos';
+/** Ícono de «Todos»: en la píldora y en el autocompletado. */
+const ALL_ICON = 'globe';
 
 /**
  * Preferencias del mapa por navegador: se fusionan, no se pisan.
@@ -186,8 +193,9 @@ function main( root ) {
 		themeColors: prefs().themeColors || {},
 		// Con varios lectores: todo, sólo lo compartido, o sólo lo propio de cada uno.
 		scope: 'all',
-		readersOn: !!me,
-		readers: me ? [ me ] : [],
+		// Lectores del filtro «Secciones de»: quien mira, o «Todos» (ALL_READERS)
+		// para un visitante anónimo.
+		readers: me ? [ me ] : [ ALL_READERS ],
 		readerLabel: ( name ) => name,
 		pages: pageParam ? [ pageParam ] : [],
 		lens: me ? [ me ] : [],
@@ -415,7 +423,8 @@ function main( root ) {
 	// por cuadro, con el último valor (graph.setForces parte tibio del
 	// equilibrio anterior, así que no salta). Al soltar sólo se recuerda.
 	// Varios lectores en el filtro «Secciones de», y si el mapa muestra sólo una parte.
-	const isMulti = () => state.readersOn && state.readers.length >= 2;
+	const everyone = () => state.readers.includes( ALL_READERS );
+	const isMulti = () => !everyone() && state.readers.length >= 2;
 	const readerColor = ( name, index ) => state.readerColors[ name ] ||
 		defaultReaderColor( index );
 	const isFiltered = () => isMulti() && state.scope !== 'all';
@@ -577,18 +586,14 @@ function main( root ) {
 	 */
 	function fileName() {
 		const who = slug( me || mw.msg( 'constellation-file-visitor' ) );
-		const sections = state.readersOn && state.readers.length ?
-			state.readers.map( slug ).join( '-' ) :
-			'all';
+		const sections = everyone() ? 'all' : state.readers.map( slug ).join( '-' );
 		return [ mw.msg( 'constellation-file-prefix' ), state.mode, who, sections ].join( '-' ) + '.svg';
 	}
 
 	// Descarga el grafo tal como se ve (vista, filtros y proyección actuales).
 	function exportSvg() {
 		const describe = [
-			state.readersOn ?
-				mw.msg( 'constellation-sections' ) + ': ' + state.readers.map( state.readerLabel ).join( ', ' ) :
-				'',
+			mw.msg( 'constellation-sections' ) + ': ' + state.readers.map( state.readerLabel ).join( ', ' ),
 			state.pages.length ? mw.msg( 'constellation-pages' ) + ': ' + state.pages.join( ', ' ) : ''
 		].filter( Boolean ).join( ' · ' );
 		const svg = state.view.exportSvg( {
@@ -655,7 +660,7 @@ function main( root ) {
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
 	// Secciones: como la lente (por defecto quien mira; se suman lectores).
-	// El interruptor, fuera de la caja, desactiva el filtro: todas.
+	// «Todos» es un lector más, con su ícono: reemplaza a los demás y quita el filtro.
 	const readers = pills.create( {
 		label: mw.msg( 'constellation-sections' ),
 		hint: mw.msg( 'constellation-sections-hint' ),
@@ -664,6 +669,8 @@ function main( root ) {
 		values: state.readers,
 		min: 1,
 		max: MAX_READERS,
+		exclusive: ALL_READERS,
+		valueIcon: ( value ) => value === ALL_READERS ? ALL_ICON : null,
 		// Con varios lectores, cada píldora lleva el color de su lector (un
 		// círculo que abre el selector de color) con el que se pinta en el mapa.
 		decorate: ( value, index, count, label ) => {
@@ -689,36 +696,21 @@ function main( root ) {
 			swatch.append( input );
 			return swatch;
 		},
-		search: api.searchReaders,
-		describe: api.describeReaders,
+		search: ( typed ) => api.searchReaders( typed ).then( ( found ) => {
+			// «Todos» se ofrece como un lector más, con su ícono, al escribir su inicio.
+			const all = mw.msg( 'constellation-all-readers' );
+			return all.toLowerCase().startsWith( typed.trim().toLowerCase() ) ?
+				[ { value: ALL_READERS, label: all, icon: ALL_ICON } ].concat( found ) :
+				found;
+		} ),
+		describe: ( values ) => api.describeReaders( values.filter( ( v ) => v !== ALL_READERS ) )
+			.then( ( found ) => found.set( ALL_READERS, mw.msg( 'constellation-all-readers' ) ) ),
 		onChange: ( values ) => {
 			state.readers = values;
 			loadGraph();
 		}
 	} );
-	const readersSwitch = el( 'input', 'constel-switch' );
-	readersSwitch.type = 'checkbox';
-	readersSwitch.setAttribute( 'role', 'switch' );
-	readersSwitch.checked = state.readersOn;
-	const readersSwitchLabel = el( 'label', 'constel-map__field--inline constel-map__switch' );
-	readersSwitch.setAttribute( 'aria-label', mw.msg( 'constellation-sections-filter' ) );
-	readersSwitchLabel.title = mw.msg( 'constellation-sections-filter' );
-	readersSwitchLabel.append( readersSwitch );
-	const allNote = el( 'div', 'constel-pills__box constel-pills__box--off' );
-	allNote.append( el( 'span', 'constel-pills__empty', mw.msg( 'constellation-all-sections' ) ) );
-	const syncReaders = () => {
-		readers.box.hidden = !state.readersOn;
-		allNote.hidden = state.readersOn;
-	};
-	readersSwitch.addEventListener( 'change', () => {
-		state.readersOn = readersSwitch.checked;
-		syncReaders();
-		loadGraph();
-	} );
-	readers.el.querySelector( '.constel-label' ).after( readersSwitchLabel );
-	readers.box.after( allNote );
 	state.readerLabel = readers.labelOf;
-	syncReaders();
 	const pages = pills.create( {
 		label: mw.msg( 'constellation-pages' ),
 		hint: mw.msg( 'constellation-pages-hint' ),
@@ -1144,7 +1136,7 @@ function main( root ) {
 		}
 		return api.pageIds( state.pages ).then( ( ids ) => {
 			const params = {};
-			if ( state.readersOn && state.readers.length ) {
+			if ( !everyone() ) {
 				params.cgusers = state.readers;
 			}
 			if ( state.pages.length ) {

@@ -81,16 +81,6 @@
 	min-width: 6rem;
 }
 
-.constel-map__field--inline {
-	display: inline-flex;
-	gap: var( --constel-s-1 );
-	align-items: center;
-}
-
-.constel-map__field--inline[ hidden ] {
-	display: none;
-}
-
 .constel-map__field[ hidden ] {
 	display: none;
 }
@@ -176,13 +166,6 @@
 
 /* ── Interruptor (checkbox con role=switch) ──────────────────────────── */
 
-.constel-map__switch {
-	flex: none;
-	margin: 0;
-	padding: 0;
-	font-size: var( --constel-fs-xs );
-}
-
 .constel-switch {
 	appearance: none;
 	position: relative;
@@ -227,9 +210,11 @@
 	display: inline-block;
 }
 
-.constel-pills__box--off {
-	border-style: dashed;
-	background: transparent;
+.constel-map .constel-pill--icon .constel-i {
+	flex: none;
+	width: 1em;
+	height: 1em;
+	margin-inline-end: var( --constel-s-1 );
 }
 
 .constel-pills__box[ hidden ] {

@@ -2,6 +2,12 @@
 
 ## Sin publicar
 
+- **«Todos» como un lector más.** Se elimina el interruptor del filtro
+  «Secciones de»: ahora se escribe «Todos» en la caja y se elige del
+  autocompletado, donde lleva un ícono de globo que lo distingue de los
+  usuarios (y en su píldora). Reemplaza a los demás lectores, y agregar a uno
+  lo saca. El visitante anónimo parte en «Todos».
+
 - **Letra y círculos más chicos.** Los rótulos miden de 11 a 22 px al
   encuadre y hasta 24 px con zoom (antes 13 a 33 y hasta 40); los círculos, de 2,4 a 10 px de radio (antes 3 a 15,6). El mapa
   pesa menos frente al texto de la página.

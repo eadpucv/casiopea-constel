@@ -6,6 +6,7 @@
  * lista.
  */
 const api = require( './api.js' );
+const icons = require( './icons.js' );
 
 let seq = 0;
 
@@ -80,7 +81,11 @@ function attach( input, opts = {} ) {
 			li.setAttribute( 'role', 'option' );
 			li.className = 'constel-ac__option';
 			const label = document.createElement( 'span' );
-			label.textContent = c.label;
+			label.className = 'constel-ac__label';
+			if ( c.icon ) {
+				label.append( icons.icon( c.icon ) );
+			}
+			label.append( document.createTextNode( c.label ) );
 			li.append( label );
 			if ( c.hint ) {
 				const hint = document.createElement( 'span' );
