@@ -431,46 +431,6 @@
 	stroke-width: 3px;
 }
 
-/* Aporte de cada lector: un tramo por lector, con el color de su lugar en el
- * filtro (los mismos colores de categoría de los temas). */
-.constel-graph__seg {
-	fill: none;
-	pointer-events: none;
-	stroke-linecap: butt;
-}
-
-.constel-graph__seg--0 {
-	stroke: var( --constel-cat-0 );
-}
-
-.constel-graph__seg--1 {
-	stroke: var( --constel-cat-1 );
-}
-
-.constel-graph__seg--2 {
-	stroke: var( --constel-cat-2 );
-}
-
-.constel-graph__seg--3 {
-	stroke: var( --constel-cat-3 );
-}
-
-.constel-graph__seg--4 {
-	stroke: var( --constel-cat-4 );
-}
-
-.constel-graph__seg--5 {
-	stroke: var( --constel-cat-5 );
-}
-
-.constel-graph__seg--6 {
-	stroke: var( --constel-cat-6 );
-}
-
-.constel-graph__seg--7 {
-	stroke: var( --constel-cat-7 );
-}
-
 .constel-graph__dot.constel-graph__node--selected {
 	stroke: var( --constel-accent );
 	stroke-width: 3px;
@@ -486,72 +446,71 @@
 	text-decoration-color: var( --constel-accent );
 }
 
-/* Aviso de los topes de carga: el mapa recortó conceptos, rótulos o aristas. */
+/* Aviso de los topes de carga: flota sobre el mapa (sin ocupar lugar en el
+ * diseño), arriba a la izquierda, y deja libre el botón de pantalla completa. */
 .constel-map__notice {
-	margin: 0;
-	padding: 0.35rem 0.75rem;
-	background: var( --constel-surface-sunk );
-	color: var( --constel-ink-soft );
-	font-family: var( --constel-font-ui );
-}
-
-/* Leyenda de los lectores filtrados (con varios): un color por lector. */
-.constel-map__legend {
+	position: absolute;
+	top: var( --constel-s-2 );
+	right: 3rem;
+	left: var( --constel-s-2 );
+	z-index: 1;
 	display: flex;
-	flex-wrap: wrap;
-	gap: 0.25rem 1rem;
-	margin: 0;
-	padding: 0.25rem 0.5rem;
-	list-style: none;
-	font-family: var( --constel-font-ui );
+	gap: var( --constel-s-2 );
+	align-items: flex-start;
+	padding: var( --constel-s-2 ) var( --constel-s-3 );
+	border: 1px solid var( --constel-hairline );
+	border-radius: var( --constel-radius );
+	background: var( --constel-surface );
 	color: var( --constel-ink-soft );
+	font-family: var( --constel-font-ui );
+	font-size: var( --constel-fs-sm );
+	pointer-events: none;
 }
 
-.constel-map__legend-item {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.4em;
-	margin: 0;
+.constel-map__notice[ hidden ] {
+	display: none;
 }
 
-.constel-map__swatch {
+.constel-map__notice-text {
+	flex: 1;
+}
+
+.constel-map .constel-map__notice-close {
+	flex: none;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var( --constel-icon );
+	pointer-events: auto;
+}
+
+/* El color de un lector en su píldora: un círculo del tamaño de los íconos de la
+ * barra que abre el selector de color (un input type=color invisible encima). */
+.constel-pill__color {
+	position: relative;
 	display: inline-block;
-	width: 1.25em;
-	height: 0.3em;
-	border-radius: 1em;
-	background: var( --constel-ink-faint );
+	flex: none;
+	width: 1.15rem;
+	height: 1.15rem;
+	border: 1px solid var( --constel-hairline );
+	border-radius: var( --constel-radius-pill );
+	overflow: hidden;
+	cursor: pointer;
 }
 
-.constel-map__swatch--0 {
-	background: var( --constel-cat-0 );
+.constel-pill__color input {
+	position: absolute;
+	inset: -0.4rem;
+	width: calc( 100% + 0.8rem );
+	height: calc( 100% + 0.8rem );
+	padding: 0;
+	border: 0;
+	opacity: 0;
+	cursor: pointer;
 }
 
-.constel-map__swatch--1 {
-	background: var( --constel-cat-1 );
-}
-
-.constel-map__swatch--2 {
-	background: var( --constel-cat-2 );
-}
-
-.constel-map__swatch--3 {
-	background: var( --constel-cat-3 );
-}
-
-.constel-map__swatch--4 {
-	background: var( --constel-cat-4 );
-}
-
-.constel-map__swatch--5 {
-	background: var( --constel-cat-5 );
-}
-
-.constel-map__swatch--6 {
-	background: var( --constel-cat-6 );
-}
-
-.constel-map__swatch--7 {
-	background: var( --constel-cat-7 );
+.constel-pill__color:focus-within {
+	box-shadow: var( --constel-focus-ring );
 }
 
 /* ── Vista de anillos ─────────────────────────────────────────────────── */

@@ -2,6 +2,11 @@
 
 ## Sin publicar
 
+- **Aristas visibles con nodos.** Con el interruptor «Aristas» encendido se
+  dibujan también en modo Nodos, siempre debajo de los nodos; con más que el
+  tope se dibujan las más fuertes y las del concepto apuntado o elegido, en vez
+  de ninguna. Se eliminó la leyenda de lectores, cuyo margen dejaba un hueco
+  entre los controles y el mapa, y los avisos pasaron a flotar sobre el mapa.
 - **Menos aire entre nodos.** Dos círculos chocan como círculos, con el mismo
   margen que hay entre dos cajas de texto, y no como cuadrados (que en la
   diagonal dejaban más espacio). Con los 1 006 conceptos de la prueba de carga,
@@ -24,25 +29,26 @@
   apuntarlo se lee su rótulo encima y sus vecinos quedan resaltados, y en
   un dispositivo que no puede apuntar el primer toque revela y el segundo
   elige; con mouse un clic elige. Sin rótulos o con los
-  principales, las aristas se dibujan sólo para el concepto apuntado o elegido.
-  Con más de 80 conceptos el mapa parte como nodos. En 2D las
+  principales. Con más de 80 conceptos el mapa parte como nodos. En 2D las
   cajas de choque de los círculos son más chicas y el mapa se compacta: con
   los 1 006 conceptos de la prueba de carga, la extensión baja de 2 617 a 931
   y la proporción alto/ancho de 1,75 a 0,84.
 - **Topes de carga del mapa.** Pensado para lecturas colectivas muy grandes,
-  cada costo tiene un tope configurable y un aviso sobre el lienzo cuando actúa:
+  cada costo tiene un tope configurable y un aviso que flota sobre el mapa cuando
+  actúa (se cierra con su botón y se apaga solo):
   la respuesta trae a lo más 2 000 conceptos (los más frecuentes,
   `$wgConstelMapMaxNodes`), «todos los rótulos» dibuja a lo más 300
-  (`$wgConstelMapMaxLabels`), con más de 6 000 aristas se dibujan sólo las del
-  concepto apuntado o elegido (`$wgConstelMapMaxDrawnLinks`) y el filtro de
+  (`$wgConstelMapMaxLabels`), con más de 6 000 aristas se dibujan las más fuertes y
+  las del concepto apuntado o elegido (`$wgConstelMapMaxDrawnLinks`) y el filtro de
   lectores admite 8. El layout de fuerzas hace menos iteraciones con muchos
   conceptos y el choque de cajas compara sólo las que se cruzan en x. Con los
   1 006 conceptos de la prueba de carga, redibujar con todos los rótulos pasa
   de más de 15 s a unos 3 s.
 - **Lectura entre varios lectores.** Con dos o más lectores en «Secciones de»,
-  cada concepto muestra quién lo aporta: un anillo segmentado alrededor del
-  círculo (o un subrayado bajo el rótulo) con un tramo por lector, del color
-  de su lugar en el filtro, y una leyenda. Un selector Todos ·
+  cada concepto muestra quién lo aporta: su texto (o su círculo) se pinta con
+  el color del lector, en tramos proporcionales si lo aportan varios, y cada
+  píldora de lector lleva un círculo de color que abre un selector para
+  cambiarlo. Un selector Todos ·
   Compartidos · Propios, en la fila de filtros, deja ver sólo los conceptos
   que comparten dos o más lectores o los de uno solo, y el mapa parte con el traslape al 100 % y el mismo texto en
   0 % (salvo que ya se hayan guardado las fuerzas). `list=constelgraph`

@@ -597,10 +597,11 @@ function draw( container, data, view ) {
 	const dotK = ( n ) => 1 + ( DOT_MAX_PX / DOT_MIN_PX - 1 ) * Math.sqrt( score( n ) );
 	const dotR0 = ( n ) => DOT_R_MIN + ( DOT_R_MAX - DOT_R_MIN ) * Math.sqrt( score( n ) );
 	const dotOf0 = ( n ) => labelled( n ) ? null : dotR0( n );
-	// Con los rótulos apagados o reducidos, las aristas se dibujan sólo para
-	// el concepto bajo el cursor (o con el foco) o el elegido.
+	// Las aristas se dibujan todas mientras quepan. Con más que el tope
+	// (maxLinks) se dibujan las más fuertes, más todas las del concepto bajo el
+	// cursor (o con el foco) o el elegido.
 	const maxLinks = view.maxLinks || MAX_LINKS;
-	const focusOnly = mode !== 'all' || links.length > maxLinks;
+	const lazyEdges = links.length > maxLinks;
 	// Cuántas aristas activas (fuerza > 0) tendría el mapa con estas fuerzas.
 	const linkCount = ( forces ) => data.links
 		.reduce( ( sum, l ) => sum + ( forceOf( forces, l.kind ) > 0 ? 1 : 0 ), 0 );
@@ -632,35 +633,48 @@ function draw( container, data, view ) {
 			el: line, kind: l.kind, a: byId.get( l.source ), b: byId.get( l.target )
 		} );
 	};
-	if ( view.edges && !focusOnly ) {
+	if ( view.edges && !lazyEdges ) {
 		// Todas las aristas se crean; las de un grado en 0 quedan fuera del
 		// lienzo (styleLinks), así una fuerza puede volver sin redibujar.
 		data.links.forEach( addLinkEl );
 	}
-	// Con focusOnly: las aristas de cada concepto (de los grados con fuerza) y
-	// el concepto cuyas aristas se ven ahora (el del cursor, o el elegido).
+	// Con lazyEdges: las aristas de cada concepto (de los grados con fuerza), las
+	// más fuertes que se dibujan siempre (`base`) y el concepto cuyas aristas se
+	// suman ahora (el del cursor, o el elegido).
 	const adjacency = new Map( nodes.map( ( n ) => [ n.id, [] ] ) );
+	let base = new Set();
 	let edgeFocus = null;
 	const showEdgesOf = ( id ) => {
 		edgeFocus = id;
-		for ( const l of linkEls ) {
-			l.el.remove();
+		for ( let i = linkEls.length - 1; i >= 0; i-- ) {
+			if ( linkEls[ i ].focus ) {
+				linkEls[ i ].el.remove();
+				linkEls.splice( i, 1 );
+			}
 		}
-		linkEls.length = 0;
 		if ( id === null || !view.edges ) {
 			return;
 		}
 		for ( const l of adjacency.get( id ) ) {
+			if ( base.has( l ) ) {
+				continue;
+			}
 			addLinkEl( l );
 			const shown = linkEls[ linkEls.length - 1 ];
+			shown.focus = true;
 			shown.el.classList.add( 'constel-graph__link--near' );
 			linkLayer.appendChild( shown.el );
 		}
 	};
+	// Continua y traslúcida: la opacidad dice el grado y su fuerza.
+	const opacityOf = ( kind ) => {
+		const force = forceOf( view.forces, kind );
+		return ( OPACITY[ kind ] || 0.6 ) * ( 0.4 + 0.6 * force );
+	};
 	// Vecinos, visibilidad y opacidad de cada arista, según las fuerzas.
 	const styleLinks = () => {
 		neighbours.forEach( ( set ) => set.clear() );
-		if ( focusOnly ) {
+		if ( lazyEdges ) {
 			adjacency.forEach( ( list ) => {
 				list.length = 0;
 			} );
@@ -669,6 +683,23 @@ function draw( container, data, view ) {
 				neighbours.get( l.target ).add( l.source );
 				adjacency.get( l.source ).push( l );
 				adjacency.get( l.target ).push( l );
+			}
+			for ( const l of linkEls ) {
+				l.el.remove();
+			}
+			linkEls.length = 0;
+			base = new Set();
+			if ( view.edges ) {
+				const strength = ( l ) => forceOf( view.forces, l.kind ) *
+					Math.log2( 1 + l.weight );
+				links.slice().sort( ( a, b ) => strength( b ) - strength( a ) ).slice( 0, maxLinks )
+					.forEach( ( l ) => {
+						base.add( l );
+						addLinkEl( l );
+						const shown = linkEls[ linkEls.length - 1 ];
+						shown.el.style.setProperty( '--constel-link-opacity', opacityOf( l.kind ).toFixed( 2 ) );
+						linkLayer.appendChild( shown.el );
+					} );
 			}
 			showEdgesOf( edgeFocus );
 			return;
@@ -681,9 +712,7 @@ function draw( container, data, view ) {
 			}
 			neighbours.get( l.a.id ).add( l.b.id );
 			neighbours.get( l.b.id ).add( l.a.id );
-			// Continua y traslúcida: la opacidad dice el grado y su fuerza.
-			const opacity = ( OPACITY[ l.kind ] || 0.6 ) * ( 0.4 + 0.6 * force );
-			l.el.style.setProperty( '--constel-link-opacity', opacity.toFixed( 2 ) );
+			l.el.style.setProperty( '--constel-link-opacity', opacityOf( l.kind ).toFixed( 2 ) );
 			if ( !l.el.parentNode ) {
 				linkLayer.appendChild( l.el );
 			}
@@ -712,7 +741,7 @@ function draw( container, data, view ) {
 		} );
 	};
 	const focusEdges = () => {
-		if ( focusOnly ) {
+		if ( lazyEdges ) {
 			showEdgesOf( hoverNode ? hoverNode.id : ( selected ? selected.id : null ) );
 			render();
 		}
@@ -778,7 +807,7 @@ function draw( container, data, view ) {
 			const activate = () => {
 				// Táctil sin rótulos: el primer toque revela el concepto (su
 				// rótulo y sus aristas), el segundo lo elige.
-				if ( peeksByTap() && focusOnly && hoverNode !== node ) {
+				if ( peeksByTap() && dotEls.size > 0 && hoverNode !== node ) {
 					setHover( node );
 					return;
 				}
@@ -878,15 +907,17 @@ function draw( container, data, view ) {
 	} );
 	stage.appendChild( dotLayer );
 
-	// Aporte de cada lector: con dos o más lectores filtrados (view.readers,
-	// en el orden de las píldoras), cada concepto lleva un anillo segmentado
-	// alrededor de su círculo, o un subrayado segmentado bajo su rótulo, con
-	// un tramo por lector proporcional a los §§ que aporta y el color estable
-	// de su lugar en el filtro (spec: ConceptMap.ReaderContributions).
+	// Aporte de cada lector: con dos o más lectores filtrados (view.readers, en
+	// el orden de las píldoras, con view.readerColors), el texto de un concepto
+	// y su círculo se pintan con el color del lector que lo aporta; si lo
+	// aportan varios, con un degradado de tramos parejos al borde, de largo
+	// proporcional a lo que aporta cada uno (spec: ConceptMap.ReaderContributions).
 	const readerNames = view.readers && view.readers.length >= 2 ? view.readers : null;
-	const segEls = new Map();
-	const segLayer = svg( 'g', { class: 'constel-graph__segments' } );
 	if ( readerNames ) {
+		const defs = svg( 'defs' );
+		root.insertBefore( defs, stage );
+		const gradients = new Map();
+		const colorOf = ( k ) => ( view.readerColors && view.readerColors[ k ] ) || 'currentColor';
 		nodes.forEach( ( node ) => {
 			const given = node.readers || {};
 			const counts = readerNames.map( ( name ) => given[ name ] || 0 );
@@ -894,23 +925,36 @@ function draw( container, data, view ) {
 			if ( !total ) {
 				return;
 			}
-			let from = 0;
 			const parts = [];
 			counts.forEach( ( count, k ) => {
 				if ( count ) {
-					// Clases: constel-graph__seg--0 … constel-graph__seg--7
-					const el = svg( dotEls.has( node.id ) ? 'circle' : 'line', {
-						class: 'constel-graph__seg constel-graph__seg--' + ( k % CATEGORIES )
-					} );
-					segLayer.appendChild( el );
-					parts.push( { el, from: from / total, frac: count / total } );
-					from += count;
+					parts.push( { k, frac: count / total } );
 				}
 			} );
-			segEls.set( node.id, parts );
+			let fill = colorOf( parts[ 0 ].k );
+			if ( parts.length > 1 ) {
+				const key = parts.map( ( part ) => part.k + ':' + part.frac.toFixed( 3 ) ).join( '|' );
+				if ( !gradients.has( key ) ) {
+					const id = 'constel-g' + gradients.size;
+					const gradient = svg( 'linearGradient', { id, x1: 0, x2: 1, y1: 0, y2: 0 } );
+					let at = 0;
+					parts.forEach( ( part ) => {
+						const color = colorOf( part.k );
+						gradient.append( svg( 'stop', { offset: at.toFixed( 3 ), 'stop-color': color } ) );
+						at += part.frac;
+						gradient.append( svg( 'stop', { offset: at.toFixed( 3 ), 'stop-color': color } ) );
+					} );
+					defs.append( gradient );
+					gradients.set( key, `url(#${ id })` );
+				}
+				fill = gradients.get( key );
+			}
+			nodeEls.get( node.id ).style.fill = fill;
+			if ( dotEls.has( node.id ) ) {
+				dotEls.get( node.id ).style.fill = fill;
+			}
 		} );
 	}
-	stage.appendChild( segLayer );
 	stage.appendChild( nodeLayer );
 	container.appendChild( root );
 	const measurePpu = () => {
@@ -1058,24 +1102,6 @@ function draw( container, data, view ) {
 				if ( is3d ) {
 					dot.style.opacity = fog( z2, sphere3d ).toFixed( 2 );
 				}
-				const ring = segEls.get( node.id );
-				if ( ring ) {
-					const rr = r + 2.5 / ppu;
-					const length = 2 * Math.PI * rr;
-					for ( const part of ring ) {
-						part.el.setAttribute( 'cx', node.px.toFixed( 1 ) );
-						part.el.setAttribute( 'cy', node.py.toFixed( 1 ) );
-						part.el.setAttribute( 'r', rr.toFixed( 2 ) );
-						part.el.setAttribute( 'stroke-width', ( 3 / ppu ).toFixed( 2 ) );
-						part.el.setAttribute( 'stroke-dasharray',
-							`${ ( part.frac * length ).toFixed( 2 ) } ${ length.toFixed( 2 ) }` );
-						part.el.setAttribute( 'stroke-dashoffset', ( -part.from * length ).toFixed( 2 ) );
-						part.el.setAttribute( 'transform', `rotate(-90 ${ node.px.toFixed( 1 ) } ${ node.py.toFixed( 1 ) })` );
-						if ( is3d ) {
-							part.el.style.opacity = dot.style.opacity;
-						}
-					}
-				}
 				continue;
 			}
 			// La tinta se centra con el desplazamiento medido, a esta letra.
@@ -1086,22 +1112,6 @@ function draw( container, data, view ) {
 			if ( is3d ) {
 				// Lo lejano se atenúa: da profundidad sin perder legibilidad.
 				el.style.opacity = fog( z2, sphere3d ).toFixed( 2 );
-			}
-			const underline = segEls.get( node.id );
-			if ( underline ) {
-				const half = box ? ( box.w - PAD ) * ink : node.label.length * font * 0.3;
-				const y = node.py + ( box ? ( box.h - PAD ) * ink : font * 0.6 ) + 3 / ppu;
-				for ( const part of underline ) {
-					const left = node.px - half + part.from * 2 * half;
-					part.el.setAttribute( 'x1', left.toFixed( 1 ) );
-					part.el.setAttribute( 'x2', ( left + part.frac * 2 * half ).toFixed( 1 ) );
-					part.el.setAttribute( 'y1', y.toFixed( 1 ) );
-					part.el.setAttribute( 'y2', y.toFixed( 1 ) );
-					part.el.setAttribute( 'stroke-width', ( 3 / ppu ).toFixed( 2 ) );
-					if ( is3d ) {
-						part.el.style.opacity = el.style.opacity;
-					}
-				}
 			}
 		}
 		for ( const l of linkEls ) {
@@ -1576,7 +1586,7 @@ function draw( container, data, view ) {
 	function addLinks( more ) {
 		for ( const l of more ) {
 			data.links.push( l );
-			if ( view.edges && !focusOnly ) {
+			if ( view.edges && !lazyEdges ) {
 				addLinkEl( l );
 			}
 		}
@@ -1673,9 +1683,9 @@ function draw( container, data, view ) {
 		// otras fuerzas habría que redibujar porque las aristas ya no caben.
 		limits: {
 			labels: mode !== 'none' && !everyLabel && mode === 'all' ? labelCap : 0,
-			links: mode === 'all' && focusOnly
+			links: lazyEdges ? maxLinks : 0
 		},
-		overloads: ( forces ) => !focusOnly && linkCount( forces ) > maxLinks,
+		overloads: ( forces ) => !lazyEdges && linkCount( forces ) > maxLinks,
 		exportSvg: ( meta ) => serialize( root, container, meta ),
 		setAutorotate: ( on ) => {
 			autorotate = on;
@@ -1722,6 +1732,10 @@ function toRgb( color ) {
  * @return {string}
  */
 function serialize( root, container, meta ) {
+	// Un relleno de color se resuelve a rgb(); uno de degradado (url(#…), el
+	// aporte de varios lectores) se deja tal cual: sus definiciones viajan en
+	// el mismo SVG, con sus colores ya resueltos más abajo.
+	const paint = ( fill ) => fill === 'none' || fill.startsWith( 'url(' ) ? fill : toRgb( fill );
 	const clone = root.cloneNode( true );
 	clone.setAttribute( 'xmlns', SVG );
 	clone.removeAttribute( 'tabindex' );
@@ -1734,7 +1748,7 @@ function serialize( root, container, meta ) {
 	Array.from( clone.querySelectorAll( 'text, line, circle' ) ).forEach( ( node, i ) => {
 		const cs = getComputedStyle( originals[ i ] );
 		if ( node.tagName === 'circle' ) {
-			node.setAttribute( 'fill', cs.fill === 'none' ? 'none' : toRgb( cs.fill ) );
+			node.setAttribute( 'fill', paint( cs.fill ) );
 			node.setAttribute( 'stroke', toRgb( cs.stroke ) );
 			node.setAttribute( 'stroke-width', cs.strokeWidth );
 			node.removeAttribute( 'tabindex' );
@@ -1743,7 +1757,7 @@ function serialize( root, container, meta ) {
 			if ( cs.display === 'none' ) {
 				node.setAttribute( 'display', 'none' );
 			}
-			node.setAttribute( 'fill', toRgb( cs.fill ) );
+			node.setAttribute( 'fill', paint( cs.fill ) );
 			node.setAttribute( 'font-family', cs.fontFamily );
 			node.removeAttribute( 'tabindex' );
 			node.removeAttribute( 'role' );

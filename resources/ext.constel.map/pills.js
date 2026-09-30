@@ -31,6 +31,8 @@ function el( tag, className, text ) {
  * @param {number} [opts.min] mínimo de píldoras (default 0)
  * @param {number} [opts.max] máximo de píldoras (sin tope por omisión); lleno, el campo se apaga
  * @param {Function} opts.search (typed) => Promise<Array<string|{value, label, hint?}>>
+ * @param {Function} [opts.decorate] (value, index, count, label) => HTMLElement|null, algo que
+ *  se antepone a cada píldora (p. ej. el color de un lector)
  * @param {Function} [opts.describe] (values) => Promise<Map<value,label>>
  * @param {Function} [opts.onLabels] () => void, cuando llegan los rótulos iniciales
  * @param {Function} opts.onChange (values) => void
@@ -76,6 +78,12 @@ function create( opts ) {
 			const text = el( 'span', 'constel-chip__label', labelOf( value ) );
 			if ( labelOf( value ) !== value ) {
 				text.title = value;
+			}
+			const index = values.indexOf( value );
+			const name = labelOf( value );
+			const extra = opts.decorate && opts.decorate( value, index, values.length, name );
+			if ( extra ) {
+				li.append( extra );
 			}
 			li.append( text );
 			if ( values.length > min ) {

@@ -402,6 +402,8 @@
 				"constellation-notice-nodes",
 				"constellation-notice-labels",
 				"constellation-notice-links",
+				"constellation-reader-color",
+				"constellation-notice-close",
 				"constellation-pills-full",
 				"constellation-scope",
 				"constellation-scope-all",

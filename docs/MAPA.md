@@ -131,9 +131,11 @@ como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
   `DOT_MIN_PX` al zoom de encuadre). La escala del layout (`EDGE_IN_LABELS`) se
   ancla al ancho medio de las cajas, que con círculos es mucho menor: el mapa
   se compacta.
-- **Aristas.** Sin rótulos o con los principales, no se crea ninguna línea al
-  dibujar: al apuntar o elegir un concepto se dibujan sólo sus aristas
-  (`adjacency`), y sus vecinos quedan resaltados. Donde no se puede apuntar
+- **Aristas.** Se dibujan igual con nodos que con palabras, en una capa debajo de
+  ellos (enlaces, luego círculos, luego textos). Al apuntar o elegir un concepto
+  sus vecinos quedan resaltados. Con más aristas que `ConstelMapMaxDrawnLinks` se
+  dibujan las más fuertes (por fuerza del grado y `log2(1 + peso)`) hasta ese
+  tope y, además, todas las del concepto apuntado o elegido (`adjacency`). Donde no se puede apuntar
   (`hover: none`: teléfono, tableta) el primer toque revela y el segundo elige;
   con mouse, o una pantalla táctil que también apunta, un clic elige directo.
 - **Medición** (`Especial:Constelación`, 1 006 conceptos, todos los lectores;
@@ -163,13 +165,16 @@ como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
 
 El mapa está pensado para lecturas colectivas muy grandes, así que cada costo
 tiene un tope (`MapHasLoadLimits`), con un valor por omisión que se ajusta en la
-configuración, y un aviso sobre el lienzo cuando el tope actúa.
+configuración, y un aviso cuando el tope actúa. El aviso es una sobreposición
+sobre el mapa (no ocupa lugar en el diseño), con un botón para cerrarlo, que se
+apaga solo a los 12 s (`NOTICE_MS`); lo cerrado o vencido no vuelve a salir
+mientras el texto sea el mismo.
 
 | Qué | Tope (por omisión) | Qué pasa al pasarlo |
 |---|---|---|
 | Conceptos por respuesta | `ConstelMapMaxNodes` (2 000) | el servidor entrega los más frecuentes, con sus conteos completos, y calcula las aristas sólo entre ellos; el aviso dice «los N más frecuentes de M» |
 | Palabras | `ConstelMapMaxLabels` (300) | como palabras, las 300 más frecuentes llevan su palabra y el resto son nodos |
-| Aristas dibujadas | `ConstelMapMaxDrawnLinks` (6 000) | se dibujan sólo las del concepto apuntado o elegido; si al subir una fuerza se pasa del tope, el mapa se redibuja así |
+| Aristas dibujadas | `ConstelMapMaxDrawnLinks` (6 000) | se dibujan las más fuertes hasta el tope y las del concepto apuntado o elegido; si al subir una fuerza se pasa del tope, el mapa se redibuja así |
 | Lectores en el filtro | 8 (`MAX_READERS`, uno por color) | el campo se apaga («Máximo: 8») |
 | Rótulos por omisión | 80 conceptos (`AUTO_ALL_MAX`) | con más, el mapa parte como nodos con los principales rotulados |
 
@@ -191,10 +196,13 @@ Con dos o más lectores en «Secciones de», el servidor agrega a cada nodo
 `readers` (usuario → cantidad de §§, sólo de los lectores filtrados; los ocultos
 para quien mira no se nombran, pero su aporte sigue en `excerpts`). El cliente:
 
-- **Segmentos.** Alrededor del círculo (o bajo el rótulo) dibuja un tramo por
-  lector, de largo proporcional a su aporte, con el color de su lugar en el
-  filtro (`constel-graph__seg--0…7`, los mismos colores de categoría de los
-  temas). Una leyenda bajo los filtros nombra los colores.
+- **Color por lector.** El texto del concepto (o su círculo) se pinta con el color
+  del lector que lo aporta; si lo aportan varios, con un degradado de tramos
+  parejos al borde, de largo proporcional al aporte de cada uno (un
+  `linearGradient` por composición distinta). Cada lector parte con el color de
+  su lugar en el filtro (los colores de categoría de los temas) y se cambia con
+  un `input type=color` dentro de un círculo de 1,15 rem en su píldora, que
+  hace de leyenda; la elección se recuerda por navegador (`readerColors`).
 - **Filtro de conceptos.** Un selector en la fila de filtros: todos, sólo los
   compartidos (dos o más lectores aportan al concepto) o sólo los propios (uno
   solo). Se calcula en el cliente sobre `readers` y deja

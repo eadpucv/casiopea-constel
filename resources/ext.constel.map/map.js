@@ -35,6 +35,8 @@ const ANTE_MAX = 80;
 const ANTE_DEFAULT = 50;
 /** Hasta cuántos conceptos parte como palabras (con más, como nodos con los principales). */
 const AUTO_ALL_MAX = 80;
+/** Cuánto dura un aviso sobre el mapa antes de apagarse solo (ms). */
+const NOTICE_MS = 12000;
 /** Máximo de lectores en el filtro «Secciones de» (uno por color de categoría). */
 const MAX_READERS = 8;
 
@@ -49,6 +51,39 @@ function prefs() {
 
 function savePref( key, value ) {
 	mw.storage.setObject( 'constel-map', Object.assign( prefs(), { [ key ]: value } ) );
+}
+
+/**
+ * Un color CSS cualquiera (variables, light-dark(), oklch…) como #rrggbb, que
+ * es lo que entiende un input type=color: se pinta en un canvas de un píxel.
+ *
+ * @param {string} color
+ * @return {string}
+ */
+function toHex( color ) {
+	const ctx = toHex.ctx || ( toHex.ctx = document.createElement( 'canvas' ).getContext( '2d', { willReadFrequently: true } ) );
+	ctx.clearRect( 0, 0, 1, 1 );
+	ctx.fillStyle = '#000';
+	ctx.fillStyle = color;
+	ctx.fillRect( 0, 0, 1, 1 );
+	const [ r, g, b ] = ctx.getImageData( 0, 0, 1, 1 ).data;
+	return '#' + [ r, g, b ].map( ( v ) => v.toString( 16 ).padStart( 2, '0' ) ).join( '' );
+}
+
+/**
+ * El color por omisión de la posición `index` en el filtro de lectores: el
+ * mismo de las categorías de los temas, ya resuelto para el tema claro u oscuro.
+ *
+ * @param {number} index
+ * @return {string}
+ */
+function defaultReaderColor( index ) {
+	const probe = document.createElement( 'span' );
+	probe.style.color = `var(--constel-cat-${ index % 8 })`;
+	document.body.append( probe );
+	const color = getComputedStyle( probe ).color;
+	probe.remove();
+	return toHex( color );
 }
 
 function el( tag, className, text ) {
@@ -147,6 +182,9 @@ function main( root ) {
 		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
 		// Si quien mira ya fijó sus fuerzas, no se le cambian (autoForces).
 		forcesTouched: !!prefs().forces,
+		// Color elegido para cada lector (usuario → #rrggbb); el que no tiene
+		// usa el de su lugar en el filtro (readerColor).
+		readerColors: prefs().readerColors || {},
 		// Con varios lectores: todo, sólo lo compartido, o sólo lo propio de cada uno.
 		scope: 'all',
 		readersOn: !!me,
@@ -180,16 +218,22 @@ function main( root ) {
 	const canvas = el( 'div', 'constel-map__canvas' );
 	// Moderación del concepto seleccionado: bajo el mapa, no en el panel.
 	const below = el( 'div', 'constel-map__below' );
-	// Avisos de los topes de carga (mapa recortado, rótulos o aristas limitados).
-	const notice = el( 'p', 'constel-map__notice' );
+	// Avisos de los topes de carga (mapa recortado, rótulos o aristas limitados):
+	// una sobreposición sobre el mapa, sin lugar propio en el diseño, que se
+	// cierra con su botón y se apaga sola pasado un rato.
+	const notice = el( 'div', 'constel-map__notice' );
 	notice.setAttribute( 'role', 'status' );
+	const noticeText = el( 'span', 'constel-map__notice-text' );
+	const noticeClose = icons.iconButton( 'x', mw.msg( 'constellation-notice-close' ),
+		'constel-button constel-button--icon constel-map__notice-close' );
+	notice.append( noticeText, noticeClose );
 	notice.hidden = true;
 	// El lienzo va dentro de un visor que lleva, en su esquina superior
 	// derecha, el botón de pantalla completa del puro mapa (maximize ↔
 	// minimize). Se pone en pantalla completa el visor, no el lienzo, para que
 	// el botón siga a mano; Esc también sale.
 	const viewport = el( 'div', 'constel-map__viewport' );
-	viewport.append( canvas );
+	viewport.append( canvas, notice );
 	if ( viewport.requestFullscreen ) {
 		const fullscreen = icons.iconButton( 'maximize', mw.msg( 'constellation-fullscreen' ),
 			'constel-button constel-button--icon constel-map__fullscreen' );
@@ -209,7 +253,7 @@ function main( root ) {
 		} );
 		viewport.append( fullscreen );
 	}
-	stage.append( notice, viewport, below );
+	stage.append( viewport, below );
 	const aside = el( 'aside', 'constel-map__side' );
 	// Lo que cambia con la selección; la lista (a pantalla completa) queda.
 	const sideBody = el( 'div', 'constel-map__side-body' );
@@ -344,6 +388,8 @@ function main( root ) {
 	// equilibrio anterior, así que no salta). Al soltar sólo se recuerda.
 	// Varios lectores en el filtro «Secciones de», y si el mapa muestra sólo una parte.
 	const isMulti = () => state.readersOn && state.readers.length >= 2;
+	const readerColor = ( name, index ) => state.readerColors[ name ] ||
+		defaultReaderColor( index );
 	const isFiltered = () => isMulti() && state.scope !== 'all';
 	let pendingForces = null;
 	const applyForces = () => {
@@ -573,6 +619,31 @@ function main( root ) {
 		values: state.readers,
 		min: 1,
 		max: MAX_READERS,
+		// Con varios lectores, cada píldora lleva el color de su lector (un
+		// círculo que abre el selector de color) con el que se pinta en el mapa.
+		decorate: ( value, index, count, label ) => {
+			if ( count < 2 ) {
+				return null;
+			}
+			const color = readerColor( value, index );
+			const swatch = el( 'label', 'constel-pill__color' );
+			swatch.style.background = color;
+			swatch.title = mw.msg( 'constellation-reader-color', label );
+			const input = el( 'input' );
+			input.type = 'color';
+			input.value = color;
+			input.setAttribute( 'aria-label', mw.msg( 'constellation-reader-color', label ) );
+			input.addEventListener( 'input', () => {
+				swatch.style.background = input.value;
+			} );
+			input.addEventListener( 'change', () => {
+				state.readerColors[ value ] = input.value;
+				savePref( 'readerColors', state.readerColors );
+				render();
+			} );
+			swatch.append( input );
+			return swatch;
+		},
 		search: api.searchReaders,
 		describe: api.describeReaders,
 		onChange: ( values ) => {
@@ -637,26 +708,6 @@ function main( root ) {
 		}
 	} );
 	rowFilters.append( readers.el, pages.el, lens.el, scopeField );
-	// Leyenda de colores de los lectores (sólo con varios): el color de cada
-	// uno es el de su lugar en el filtro, el mismo de sus tramos en el mapa.
-	const legend = el( 'ul', 'constel-map__legend' );
-	legend.hidden = true;
-	function syncLegend() {
-		legend.textContent = '';
-		legend.hidden = !isMulti();
-		if ( !isMulti() ) {
-			return;
-		}
-		state.readers.forEach( ( name, k ) => {
-			const item = el( 'li', 'constel-map__legend-item' );
-			// Clases: constel-graph__seg--0 … constel-graph__seg--7
-			const swatch = el( 'span', 'constel-map__swatch constel-map__swatch--' + ( k % 8 ) );
-			swatch.setAttribute( 'aria-hidden', 'true' );
-			item.append( swatch, el( 'span', null, state.readerLabel( name ) ) );
-			legend.append( item );
-		} );
-	}
-	rowFilters.after( legend );
 
 	// ── Datos y dibujo ────────────────────────────────────────────────────
 	const themeIndex = () => {
@@ -712,6 +763,7 @@ function main( root ) {
 			}
 			state.view = graph.draw( canvas, shown, {
 				readers: isMulti() ? state.readers : null,
+				readerColors: isMulti() ? state.readers.map( readerColor ) : null,
 				mode: state.mode,
 				autorotate: state.autorotate,
 				edges: state.edges,
@@ -732,9 +784,31 @@ function main( root ) {
 		syncUnpin();
 		syncConcepts();
 		syncScope();
-		syncLegend();
 		syncNotice();
 		renderList();
+	}
+
+	// Muestra un aviso sobre el mapa; lo cerrado o vencido no vuelve a salir
+	// mientras el texto sea el mismo (un texto nuevo sí).
+	let noticeTimer = null;
+	let noticeDone = '';
+	function dismissNotice() {
+		clearTimeout( noticeTimer );
+		noticeDone = noticeText.textContent;
+		notice.hidden = true;
+	}
+	noticeClose.addEventListener( 'click', dismissNotice );
+	function showNotice( text ) {
+		if ( !text ) {
+			clearTimeout( noticeTimer );
+			noticeDone = '';
+			notice.hidden = true;
+		} else if ( text !== noticeDone && ( notice.hidden || text !== noticeText.textContent ) ) {
+			noticeText.textContent = text;
+			notice.hidden = false;
+			clearTimeout( noticeTimer );
+			noticeTimer = setTimeout( dismissNotice, NOTICE_MS );
+		}
 	}
 
 	// Lo que el mapa recortó para no colgarse: conceptos, rótulos o aristas.
@@ -751,10 +825,9 @@ function main( root ) {
 			notes.push( mw.msg( 'constellation-notice-labels', shownLabels ) );
 		}
 		if ( limits && limits.links ) {
-			notes.push( mw.msg( 'constellation-notice-links' ) );
+			notes.push( mw.msg( 'constellation-notice-links', mw.language.convertNumber( limits.links ) ) );
 		}
-		notice.textContent = notes.join( ' ' );
-		notice.hidden = !notes.length;
+		showNotice( notes.join( ' ' ) );
 	}
 
 	function renderList() {

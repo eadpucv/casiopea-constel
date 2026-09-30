@@ -980,9 +980,9 @@ surface ConceptMap {
         -- resaltados y el resto atenuado; en un dispositivo que no puede
         -- apuntar sin tocar (teléfono, tableta) un toque hace lo del cursor y
         -- el segundo elige el concepto, y con mouse o puntero un clic elige
-        -- directamente. Como nodos, las aristas
-        -- se dibujan únicamente para el concepto apuntado o elegido; como
-        -- palabras, como siempre. Con más de 80 conceptos el mapa parte como
+        -- directamente. Las aristas se dibujan igual con nodos que con
+        -- palabras, siempre debajo de ellos y sin tapar ni ser tapadas. Con
+        -- más de 80 conceptos el mapa parte como
         -- nodos, y la elección se recuerda por navegador junto con las
         -- fuerzas. La
         -- alternativa textual (AccessibleAlternative) no cambia
@@ -1007,10 +1007,13 @@ surface ConceptMap {
         -- Cuando el filtro de lectores tiene más de uno, cada concepto dice
         -- cuántos §§ aporta cada lector filtrado, sin nombrar a los usuarios
         -- ocultos para quien no puede verlos (su aporte sigue en el total). El
-        -- mapa lo dibuja como un anillo segmentado alrededor del círculo, o un
-        -- subrayado segmentado bajo el rótulo, con un tramo por lector
-        -- proporcional a su aporte y el color estable de su lugar en el
-        -- filtro; una leyenda nombra los colores (decisión 2026-09-29).
+        -- mapa pinta con el color del lector el texto del concepto (o su
+        -- círculo); si lo aportan varios, en tramos de largo proporcional al
+        -- aporte de cada uno, sin subrayados ni anillos. Cada lector tiene el
+        -- color de su lugar en el filtro, que se puede cambiar con un selector
+        -- de color en su píldora (un círculo del tamaño de los íconos de la
+        -- barra) y se recuerda por navegador; esas píldoras hacen de leyenda
+        -- (decisión 2026-09-29).
 
     @guarantee SharedAndOwnFilter
         -- Con más de un lector filtrado, un selector de la fila de filtros
@@ -1030,8 +1033,9 @@ surface ConceptMap {
 
     @guarantee MapHasLoadLimits
         -- El mapa no se cuelga por mucho que crezca la lectura colectiva: cada
-        -- costo tiene un tope, y cuando un tope actúa el mapa lo avisa sobre el
-        -- lienzo.
+        -- costo tiene un tope, y cuando un tope actúa el mapa lo avisa con un
+        -- mensaje que flota sobre el lienzo, sin ocupar lugar en el diseño, que
+        -- se puede cerrar y se apaga solo pasado un rato.
         --   · Conceptos: la respuesta trae, como mucho, los config.map_max_nodes
         --     más frecuentes (con sus conteos completos), y las aristas se
         --     calculan sólo entre ellos. Filtrar por lector o por página deja
@@ -1040,8 +1044,8 @@ surface ConceptMap {
         --     config.map_max_labels, los más frecuentes; los demás son
         --     círculos (LabelsAreOptional).
         --   · Aristas: si las de los grados con fuerza son más que
-        --     config.map_max_drawn_links, se dibujan sólo las del concepto
-        --     apuntado o elegido, como sin rótulos.
+        --     config.map_max_drawn_links, se dibujan las más fuertes hasta ese
+        --     tope y, además, todas las del concepto apuntado o elegido.
         --   · Lectores: el filtro «Secciones de» admite a lo más
         --     config.map_max_readers (uno por color); lleno, el campo se apaga.
         --   · Por omisión, con más de 80 conceptos el mapa parte en «sólo los
