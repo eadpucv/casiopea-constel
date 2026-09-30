@@ -67,6 +67,13 @@ const CAMERA = 900;
 const GRAVITY = 1.5;
 /** 2D: largo ideal de una arista, en anchos medios de rótulo. */
 const EDGE_IN_LABELS = 1.3;
+/**
+ * Presupuesto del layout de fuerzas: pares de conceptos comparados en total
+ * (iteraciones × n²) y mínimo de iteraciones, para que un mapa grande no
+ * cuelgue la página (spec: ConceptMap.MapHasLoadLimits).
+ */
+const LAYOUT_BUDGET = 3e8;
+const MIN_STEPS = 60;
 /** Margen de la caja de cada rótulo en 2D: igual por los cuatro lados. */
 const PAD = 3;
 /**
@@ -99,6 +106,14 @@ const TAP_SLOP = 6;
 const ZOOM_MAX = 8;
 /** Rótulos que quedan con «sólo los principales» (los de mayor frecuencia). */
 const MAIN_LABELS = 12;
+/**
+ * Topes de carga (spec: ConceptMap.MapHasLoadLimits): aun con «todos los
+ * rótulos», el mapa dibuja sólo los MAX_LABELS más frecuentes (el resto son
+ * círculos), y con más de MAX_LINKS aristas las dibuja sólo para el concepto
+ * apuntado o elegido. Los pone la configuración (view.maxLabels, maxLinks).
+ */
+const MAX_LABELS = 300;
+const MAX_LINKS = 6000;
 /**
  * Sin rótulo, cada concepto es un círculo cuya área sigue la frecuencia: el
  * radio a zoom 1 va de DOT_R_MIN a DOT_R_MAX (unidades del lienzo) según la
@@ -199,7 +214,12 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 	// En 2D, los fijados a mano no se mueven: el resto se acomoda a ellos.
 	const held = ( node ) => dims === 2 && !!node.pin;
 	let temperature = k * ( warm ? WARM_TEMPERATURE : 2 );
-	const steps = warm ? WARM_STEPS : 300;
+	// El costo de cada iteración crece con n² (repulsión de todos contra todos):
+	// con muchos conceptos hay menos iteraciones (LAYOUT_BUDGET pares en total,
+	// con un mínimo) y la temperatura baja más rápido para llegar igual al equilibrio.
+	const affordable = Math.floor( LAYOUT_BUDGET / Math.max( 1, n * n ) );
+	const steps = warm ? WARM_STEPS : Math.max( MIN_STEPS, Math.min( 300, affordable ) );
+	const cooling = warm ? 0.97 : Math.pow( 0.97, 300 / steps );
 	for ( let it = 0; it < steps; it++ ) {
 		for ( const a of nodes ) {
 			// Gravedad al centro: con la repulsión k²/d, el mapa ocupa un
@@ -274,7 +294,7 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 			node.y += node.dy * step;
 			node.z = dims === 2 ? 0 : node.z + node.dz * step;
 		}
-		temperature *= 0.97;
+		temperature *= cooling;
 	}
 	if ( scale ) {
 		// 2D: escala fija (el centrado y el encuadre los hace draw()).
@@ -374,10 +394,24 @@ function collide( nodes, boxes, hold, k ) {
 		return ma + mb ? [ ma / ( ma + mb ), mb / ( ma + mb ) ] : [ 0.5, 0.5 ];
 	};
 	let moved = false;
-	for ( let i = 0; i < n; i++ ) {
-		const a = nodes[ i ];
-		const ba = boxes.get( a.id );
-		for ( let j = i + 1; j < n; j++ ) {
+	// Barrido por x: sólo se comparan las cajas cuyos rangos en x se cruzan (con
+	// miles de conceptos, comparar todas con todas es lo que cuelga la página).
+	const left = ( node ) => node.x - boxes.get( node.id ).w;
+	const byLeft = ( p, q ) => left( nodes[ p ] ) - left( nodes[ q ] );
+	const order = nodes.map( ( node, i ) => i ).sort( byLeft );
+	for ( let s = 0; s < n; s++ ) {
+		const first = order[ s ];
+		const reach = nodes[ first ].x + boxes.get( nodes[ first ].id ).w;
+		for ( let t = s + 1; t < n; t++ ) {
+			const second = order[ t ];
+			if ( left( nodes[ second ] ) >= reach ) {
+				break;
+			}
+			// Con el orden original del par, como siempre (el desempate depende de él).
+			const i = Math.min( first, second );
+			const j = Math.max( first, second );
+			const a = nodes[ i ];
+			const ba = boxes.get( a.id );
 			const b = nodes[ j ];
 			const bb = boxes.get( b.id );
 			const dx = b.x - a.x;
@@ -523,13 +557,18 @@ function draw( container, data, view ) {
 	// su frecuencia (spec: ConceptMap.LabelsAreOptional).
 	const score = scorer( nodes );
 	const mode = [ 'none', 'main' ].includes( view.labels ) ? view.labels : 'all';
-	const mainIds = new Set( mode === 'main' ?
-		nodes.slice()
-			.sort( ( a, b ) => score( b ) - score( a ) || a.label.localeCompare( b.label ) )
-			.slice( 0, view.mainLabels || MAIN_LABELS )
-			.map( ( n ) => n.id ) :
-		[] );
-	const labelled = ( n ) => mode === 'all' || mainIds.has( n.id );
+	// Cuántos rótulos caben: los principales, ninguno, o «todos» hasta el tope.
+	const labelCap = {
+		none: 0,
+		main: view.mainLabels || MAIN_LABELS,
+		all: view.maxLabels || MAX_LABELS
+	}[ mode ];
+	const everyLabel = nodes.length <= labelCap;
+	const mainIds = new Set( everyLabel ? [] : nodes.slice()
+		.sort( ( a, b ) => score( b ) - score( a ) || a.label.localeCompare( b.label ) )
+		.slice( 0, labelCap )
+		.map( ( n ) => n.id ) );
+	const labelled = ( n ) => everyLabel || mainIds.has( n.id );
 	// Radio de un círculo en pantalla al zoom de encuadre: DOT_MIN_PX por el
 	// factor de su frecuencia (el área, proporcional a la frecuencia).
 	const dotK = ( n ) => 1 + ( DOT_MAX_PX / DOT_MIN_PX - 1 ) * Math.sqrt( score( n ) );
@@ -537,7 +576,11 @@ function draw( container, data, view ) {
 	const dotOf0 = ( n ) => labelled( n ) ? null : dotR0( n );
 	// Con los rótulos apagados o reducidos, las aristas se dibujan sólo para
 	// el concepto bajo el cursor (o con el foco) o el elegido.
-	const focusOnly = mode !== 'all';
+	const maxLinks = view.maxLinks || MAX_LINKS;
+	const focusOnly = mode !== 'all' || links.length > maxLinks;
+	// Cuántas aristas activas (fuerza > 0) tendría el mapa con estas fuerzas.
+	const linkCount = ( forces ) => data.links
+		.reduce( ( sum, l ) => sum + ( forceOf( forces, l.kind ) > 0 ? 1 : 0 ), 0 );
 	const root = svg( 'svg', {
 		class: 'constel-graph' + ( is3d ? ' constel-graph--3d' : '' ) +
 			( view.fill ? ' constel-graph--fill' : '' ),
@@ -1599,6 +1642,13 @@ function draw( container, data, view ) {
 		},
 		setForces,
 		addLinks,
+		// Qué recortó el mapa por los topes de carga (para avisarlo) y si con
+		// otras fuerzas habría que redibujar porque las aristas ya no caben.
+		limits: {
+			labels: mode !== 'none' && !everyLabel && mode === 'all' ? labelCap : 0,
+			links: mode === 'all' && focusOnly
+		},
+		overloads: ( forces ) => !focusOnly && linkCount( forces ) > maxLinks,
 		exportSvg: ( meta ) => serialize( root, container, meta ),
 		setAutorotate: ( on ) => {
 			autorotate = on;

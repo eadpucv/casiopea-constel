@@ -152,6 +152,32 @@ principales»; la elección se recuerda por navegador (`labels` en `constel-map`
   hizo que `separate()` dejara de converger. Se conserva el choque por el eje de
   menor traslape.
 
+### Límites de carga
+
+El mapa está pensado para lecturas colectivas muy grandes, así que cada costo
+tiene un tope (`MapHasLoadLimits`), con un valor por omisión que se ajusta en la
+configuración, y un aviso sobre el lienzo cuando el tope actúa.
+
+| Qué | Tope (por omisión) | Qué pasa al pasarlo |
+|---|---|---|
+| Conceptos por respuesta | `ConstelMapMaxNodes` (2 000) | el servidor entrega los más frecuentes, con sus conteos completos, y calcula las aristas sólo entre ellos; el aviso dice «los N más frecuentes de M» |
+| Rótulos con «todos» | `ConstelMapMaxLabels` (300) | los más frecuentes llevan rótulo, el resto son círculos |
+| Aristas dibujadas | `ConstelMapMaxDrawnLinks` (6 000) | se dibujan sólo las del concepto apuntado o elegido; si al subir una fuerza se pasa del tope, el mapa se redibuja así |
+| Lectores en el filtro | 8 (`MAX_READERS`, uno por color) | el campo se apaga («Máximo: 8») |
+| Rótulos por omisión | 80 conceptos (`AUTO_ALL_MAX`) | con más, el mapa parte en «sólo los principales» |
+
+El trazado también está acotado. La repulsión del layout de fuerzas compara todos
+los conceptos entre sí, así que sus iteraciones bajan cuando hay muchos
+(`LAYOUT_BUDGET`, 3·10⁸ pares en total, con un mínimo de 60; hasta ~1 000
+conceptos siguen siendo 300) y la temperatura baja más rápido para llegar igual
+al equilibrio. El choque de cajas (`collide`) ordena por borde izquierdo y sólo
+compara las que se cruzan en x, no todas con todas.
+
+Medición con los 1 006 conceptos de la prueba de carga (redibujar al cambiar el
+control de rótulos, navegador de pruebas): sin tope de rótulos y con todas las
+aristas, más de 15 s; con los topes, entre 2,5 y 3,7 s (layout 1,3 s, `settle`
+0,8 s, DOM 0,1 s).
+
 ### Varios lectores
 
 Con dos o más lectores en «Secciones de», el servidor agrega a cada nodo

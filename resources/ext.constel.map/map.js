@@ -35,6 +35,8 @@ const ANTE_MAX = 80;
 const ANTE_DEFAULT = 50;
 /** Hasta cuántos conceptos el mapa parte con todos los rótulos (después, sólo los principales). */
 const AUTO_ALL_MAX = 80;
+/** Máximo de lectores en el filtro «Secciones de» (uno por color de categoría). */
+const MAX_READERS = 8;
 /** Rótulos del mapa: sin rótulos, sólo los principales, todos. */
 const LABEL_OPTIONS = [
 	{ value: 'none', sign: '−', msg: 'constellation-labels-none' },
@@ -181,6 +183,10 @@ function main( root ) {
 	const canvas = el( 'div', 'constel-map__canvas' );
 	// Moderación del concepto seleccionado: bajo el mapa, no en el panel.
 	const below = el( 'div', 'constel-map__below' );
+	// Avisos de los topes de carga (mapa recortado, rótulos o aristas limitados).
+	const notice = el( 'p', 'constel-map__notice' );
+	notice.setAttribute( 'role', 'status' );
+	notice.hidden = true;
 	// El lienzo va dentro de un visor que lleva, en su esquina superior
 	// derecha, el botón de pantalla completa del puro mapa (maximize ↔
 	// minimize). Se pone en pantalla completa el visor, no el lienzo, para que
@@ -206,7 +212,7 @@ function main( root ) {
 		} );
 		viewport.append( fullscreen );
 	}
-	stage.append( viewport, below );
+	stage.append( notice, viewport, below );
 	const aside = el( 'aside', 'constel-map__side' );
 	// Lo que cambia con la selección; la lista (a pantalla completa) queda.
 	const sideBody = el( 'div', 'constel-map__side-body' );
@@ -354,6 +360,15 @@ function main( root ) {
 					if ( added.length && isFiltered() ) {
 						// El mapa dibuja una copia filtrada: se suman a los datos y se redibuja.
 						added.forEach( ( link ) => state.data.links.push( link ) );
+						render();
+						return;
+					}
+					if ( state.view && state.view.overloads( state.forces ) ) {
+						// Con estas fuerzas las aristas ya no caben: se redibuja, y el
+						// mapa las dibuja sólo al apuntar un concepto.
+						if ( added.length ) {
+							added.forEach( ( link ) => state.data.links.push( link ) );
+						}
 						render();
 						return;
 					}
@@ -580,6 +595,7 @@ function main( root ) {
 		placeholder: mw.msg( 'constellation-add-reader' ),
 		values: state.readers,
 		min: 1,
+		max: MAX_READERS,
 		search: api.searchReaders,
 		describe: api.describeReaders,
 		onChange: ( values ) => {
@@ -724,6 +740,8 @@ function main( root ) {
 				edges: state.edges,
 				labels: effectiveLabels(),
 				mainLabels: cfg.mainLabels,
+				maxLabels: cfg.maxLabels,
+				maxLinks: cfg.maxLinks,
 				forces: state.forces,
 				fill: full,
 				themeOf: themeIndex(),
@@ -738,7 +756,28 @@ function main( root ) {
 		syncLabels();
 		syncScope();
 		syncLegend();
+		syncNotice();
 		renderList();
+	}
+
+	// Lo que el mapa recortó para no colgarse: conceptos, rótulos o aristas.
+	function syncNotice() {
+		const notes = [];
+		const data = state.data;
+		if ( data && data.total > data.nodes.length ) {
+			const shown = mw.language.convertNumber( data.nodes.length );
+			notes.push( mw.msg( 'constellation-notice-nodes', shown, mw.language.convertNumber( data.total ) ) );
+		}
+		const limits = state.view && state.view.limits;
+		if ( limits && limits.labels ) {
+			const shownLabels = mw.language.convertNumber( limits.labels );
+			notes.push( mw.msg( 'constellation-notice-labels', shownLabels ) );
+		}
+		if ( limits && limits.links ) {
+			notes.push( mw.msg( 'constellation-notice-links' ) );
+		}
+		notice.textContent = notes.join( ' ' );
+		notice.hidden = !notes.length;
 	}
 
 	function renderList() {

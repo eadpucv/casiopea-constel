@@ -64,7 +64,8 @@ return [
 			$services->getConnectionProvider(),
 			$services->get( 'CasiopeaConstel.GraphCache' ),
 			$services->get( 'CasiopeaConstel.GraphVersion' ),
-			(int)$services->getMainConfig()->get( 'ConstelOverlapMaxPerPage' )
+			(int)$services->getMainConfig()->get( 'ConstelOverlapMaxPerPage' ),
+			(int)$services->getMainConfig()->get( 'ConstelMapMaxNodes' )
 		);
 	},
 	'CasiopeaConstel.GraphCache' => static function ( MediaWikiServices $services ): WANObjectCache {

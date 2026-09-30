@@ -307,6 +307,10 @@ config {
     gloss_max_length: Integer = 5000             -- caracteres de la glosa de un §
     overlap_max_excerpts_per_page: Integer = 0   -- tope de §§ por página para el traslape; 0 = sin tope
     map_main_labels: Integer = 12                -- rótulos que deja «sólo los principales»
+    map_max_nodes: Integer = 2000                -- conceptos por respuesta del mapa; 0 = sin tope
+    map_max_labels: Integer = 300                -- rótulos que dibuja el mapa aun con «todos»
+    map_max_drawn_links: Integer = 6000          -- aristas que se dibujan a la vez
+    map_max_readers: Integer = 8                 -- lectores en el filtro «Secciones de»
     anchor_context_length: Integer = 32          -- prefix/suffix
     annotate_right: String = "constel-annotate"  -- default: grupo user
     moderate_right: String = "constel-moderate"  -- default: grupo sysop (administradores)
@@ -1008,6 +1012,29 @@ surface ConceptMap {
         -- volver a un solo lector se restauran las de siempre, si no las
         -- tocó. Ver dos lectores lado a lado, con el mismo trazado y colores,
         -- queda como fase posterior (decisión 2026-09-29).
+
+    @guarantee MapHasLoadLimits
+        -- El mapa no se cuelga por mucho que crezca la lectura colectiva: cada
+        -- costo tiene un tope, y cuando un tope actúa el mapa lo avisa sobre el
+        -- lienzo.
+        --   · Conceptos: la respuesta trae, como mucho, los config.map_max_nodes
+        --     más frecuentes (con sus conteos completos), y las aristas se
+        --     calculan sólo entre ellos. Filtrar por lector o por página deja
+        --     ver el resto.
+        --   · Rótulos: aun con «todos», se dibujan a lo más
+        --     config.map_max_labels, los más frecuentes; los demás son
+        --     círculos (LabelsAreOptional).
+        --   · Aristas: si las de los grados con fuerza son más que
+        --     config.map_max_drawn_links, se dibujan sólo las del concepto
+        --     apuntado o elegido, como sin rótulos.
+        --   · Lectores: el filtro «Secciones de» admite a lo más
+        --     config.map_max_readers (uno por color); lleno, el campo se apaga.
+        --   · Por omisión, con más de 80 conceptos el mapa parte en «sólo los
+        --     principales».
+        -- El trabajo del trazado también está acotado: con muchos conceptos hay
+        -- menos iteraciones de fuerzas, y las cajas se comparan sólo con las que
+        -- se cruzan en x. Nada de esto cambia la topología ni el vocabulario
+        -- (decisión 2026-09-29, pedido del usuario).
 
     @guarantee DepthFogIn3D
         -- En la vista 3D los conceptos lejanos se atenúan con una niebla en

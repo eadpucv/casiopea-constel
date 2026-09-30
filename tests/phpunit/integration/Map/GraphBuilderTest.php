@@ -345,4 +345,32 @@ class GraphBuilderTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayNotHasKey( 'by', $one, 'un lector: sin desglose' );
 		$this->assertArrayNotHasKey( 'by', $builder->build( null, null, null )['nodes'][0], 'todos: sin desglose' );
 	}
+
+	public function testNodeCapKeepsTheMostFrequentConceptsAndTheirEdges(): void {
+		// Travesía en 3 §§, Diseño en 2, Acto en 1, todos en la misma página.
+		$this->excerpt( 1, 3, 11, [ 'Travesía', 'Diseño', 'Acto' ], 10 );
+		$this->excerpt( 2, 3, 11, [ 'Travesía', 'Diseño' ], 10 );
+		$this->excerpt( 3, 3, 11, [ 'Travesía' ], 10 );
+		$services = $this->getServiceContainer();
+		$capped = new GraphBuilder(
+			$services->getConnectionProvider(),
+			$services->getMainWANObjectCache(),
+			new GraphVersion( $services->getMainWANObjectCache() ),
+			0,
+			2
+		);
+		$graph = $capped->build( null, null, null );
+		$this->assertSame( 3, $graph['total'], 'cuántos había' );
+		$this->assertSame( [ 'Diseño', 'Travesía' ], $this->sorted( array_column( $graph['nodes'], 'label' ) ) );
+		$this->assertSame( 3, array_column( $graph['nodes'], 'excerpts', 'label' )['Travesía'],
+			'los conteos de los que quedan son completos' );
+		foreach ( $this->linkMap( $graph ) as $key => $weight ) {
+			$this->assertStringNotContainsString( 'Acto', $key, 'sin aristas hacia el que salió' );
+		}
+		$this->assertSame( 2, $this->linkMap( $graph )['co_excerpt:Diseño|Travesía'] );
+
+		$all = $this->constel()->getGraphBuilder()->build( null, null, null );
+		$this->assertSame( 3, $all['total'] );
+		$this->assertCount( 3, $all['nodes'], 'sin tope, todos' );
+	}
 }

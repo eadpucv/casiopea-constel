@@ -29,6 +29,7 @@ function el( tag, className, text ) {
  * @param {string} [opts.empty] texto cuando no hay ninguna
  * @param {string[]} [opts.values] valores iniciales
  * @param {number} [opts.min] mínimo de píldoras (default 0)
+ * @param {number} [opts.max] máximo de píldoras (sin tope por omisión); lleno, el campo se apaga
  * @param {Function} opts.search (typed) => Promise<Array<string|{value, label, hint?}>>
  * @param {Function} [opts.describe] (values) => Promise<Map<value,label>>
  * @param {Function} [opts.onLabels] () => void, cuando llegan los rótulos iniciales
@@ -67,6 +68,7 @@ function create( opts ) {
 	wrap.append( label, box );
 
 	const changed = () => opts.onChange( values.slice() );
+	const full = () => !!opts.max && values.length >= opts.max;
 	const render = () => {
 		list.textContent = '';
 		values.forEach( ( value ) => {
@@ -91,6 +93,9 @@ function create( opts ) {
 			list.append( li );
 		} );
 		emptyNote.hidden = values.length > 0 || !opts.empty;
+		// Con el máximo de píldoras no caben más: el campo se apaga y lo dice.
+		input.disabled = full();
+		input.placeholder = full() ? mw.msg( 'constellation-pills-full', opts.max ) : opts.placeholder;
 	};
 
 	const add = ( value, text ) => {
@@ -98,7 +103,7 @@ function create( opts ) {
 		if ( text ) {
 			labels.set( value, text );
 		}
-		if ( value && !values.includes( value ) ) {
+		if ( value && !values.includes( value ) && !full() ) {
 			values.push( value );
 			render();
 			changed();

@@ -60,12 +60,14 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 			$result->addValue( $path, 'nodes', $this->withReaders( $graph['nodes'] ) );
 			// Enteros y cadenas de la base: nada que validar ni normalizar.
 			$result->addValue( $path, 'runs', $graph['runs'], ApiResult::NO_VALIDATE );
+			$result->addValue( $path, 'total', $graph['total'] );
 			$result->addIndexedTagName( [ ...$path, 'nodes' ], 'node' );
 			return;
 		}
 		$graph = $this->graphBuilder->build( $actors, $pages, $viewer, $kinds );
 		$result->addValue( $path, 'nodes', $this->withReaders( $graph['nodes'] ) );
 		$result->addValue( $path, 'links', $graph['links'], ApiResult::NO_VALIDATE );
+		$result->addValue( $path, 'total', $graph['total'] );
 		$result->addIndexedTagName( [ ...$path, 'nodes' ], 'node' );
 		$result->addIndexedTagName( [ ...$path, 'links' ], 'link' );
 	}

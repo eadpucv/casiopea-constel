@@ -399,6 +399,10 @@
 				"constellation-labels-none",
 				"constellation-labels-main",
 				"constellation-labels-all",
+				"constellation-notice-nodes",
+				"constellation-notice-labels",
+				"constellation-notice-links",
+				"constellation-pills-full",
 				"constellation-scope",
 				"constellation-scope-all",
 				"constellation-scope-shared",
@@ -551,6 +555,18 @@
 		"ConstelGraphCache": {
 			"value": null,
 			"description": "Tipo de caché (clave de $wgObjectCaches, p. ej. CACHE_DB) donde guardar el grafo del mapa. null usa la caché principal de la wiki; con CACHE_NONE en ella, el grafo se calcula en cada lectura."
+		},
+		"ConstelMapMaxNodes": {
+			"value": 2000,
+			"description": "Tope de conceptos por respuesta del mapa: con más, se entregan los más frecuentes y se avisa. 0 = sin tope."
+		},
+		"ConstelMapMaxLabels": {
+			"value": 300,
+			"description": "Tope de rótulos que dibuja el mapa aun con la opción «todos los rótulos»: el resto queda como círculos."
+		},
+		"ConstelMapMaxDrawnLinks": {
+			"value": 6000,
+			"description": "Con más aristas que esto, el mapa las dibuja sólo para el concepto apuntado o elegido."
 		},
 		"ConstelMapMainLabels": {
 			"value": 12,

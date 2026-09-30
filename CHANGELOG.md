@@ -13,6 +13,16 @@
   cajas de choque de los círculos son más chicas y el mapa se compacta: con
   los 1 006 conceptos de la prueba de carga, la extensión baja de 2 617 a 931
   y la proporción alto/ancho de 1,75 a 0,84.
+- **Topes de carga del mapa.** Pensado para lecturas colectivas muy grandes,
+  cada costo tiene un tope configurable y un aviso sobre el lienzo cuando actúa:
+  la respuesta trae a lo más 2 000 conceptos (los más frecuentes,
+  `$wgConstelMapMaxNodes`), «todos los rótulos» dibuja a lo más 300
+  (`$wgConstelMapMaxLabels`), con más de 6 000 aristas se dibujan sólo las del
+  concepto apuntado o elegido (`$wgConstelMapMaxDrawnLinks`) y el filtro de
+  lectores admite 8. El layout de fuerzas hace menos iteraciones con muchos
+  conceptos y el choque de cajas compara sólo las que se cruzan en x. Con los
+  1 006 conceptos de la prueba de carga, redibujar con todos los rótulos pasa
+  de más de 15 s a unos 3 s.
 - **Lectura entre varios lectores.** Con dos o más lectores en «Secciones de»,
   cada concepto muestra quién lo aporta: un anillo segmentado alrededor del
   círculo (o un subrayado bajo el rótulo) con un tramo por lector, del color

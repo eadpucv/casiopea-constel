@@ -28,6 +28,8 @@ use Wikimedia\Rdbms\IConnectionProvider;
  *  - nodes: lista de {id, label, excerpts, pages}, ordenada por id. Si el
  *    filtro nombra a dos o más lectores, cada nodo trae además `by`: cuántos
  *    §§ aporta cada lector filtrado (actor => cantidad).
+ *  - total: cuántos conceptos había antes del tope (ConstelMapMaxNodes);
+ *    `nodes` trae los más frecuentes si eran más que el tope.
  *  - runs: por grado, una cadena de enteros separados por comas que lista
  *    tramos «i,n,j1,w1,…,jn,wn»: la arista entre el nodo de índice i y cada
  *    uno de los n nodos j (con i < j) con su peso w. Los índices son
@@ -54,7 +56,8 @@ class GraphBuilder {
 		private readonly IConnectionProvider $dbProvider,
 		private readonly WANObjectCache $cache,
 		private readonly GraphVersion $version,
-		private readonly int $overlapMaxPerPage = 0
+		private readonly int $overlapMaxPerPage = 0,
+		private readonly int $maxNodes = 0
 	) {
 	}
 
@@ -66,7 +69,7 @@ class GraphBuilder {
 	 * @param int[]|null $pages sólo los §§ de estas páginas (null o vacío = todas)
 	 * @param int|null $viewerActor para marcar los conceptos a los que aportó quien mira
 	 * @param string[]|null $kinds sólo estos grados de arista (null = los tres)
-	 * @return array{nodes: array, links: array}
+	 * @return array{nodes: array, links: array, total: int}
 	 */
 	public function build( ?array $actors, ?array $pages, ?int $viewerActor, ?array $kinds = null ): array {
 		$packed = $this->buildPacked( $actors, $pages, $viewerActor, $kinds );
@@ -89,7 +92,7 @@ class GraphBuilder {
 				$p = $end;
 			}
 		}
-		return [ 'nodes' => $packed['nodes'], 'links' => $links ];
+		return [ 'nodes' => $packed['nodes'], 'links' => $links, 'total' => $packed['total'] ];
 	}
 
 	/**
@@ -99,7 +102,7 @@ class GraphBuilder {
 	 * @param int[]|null $pages
 	 * @param int|null $viewerActor
 	 * @param string[]|null $kinds
-	 * @return array{nodes: array, runs: array<string,string>}
+	 * @return array{nodes: array, runs: array<string,string>, total: int}
 	 */
 	public function buildPacked( ?array $actors, ?array $pages, ?int $viewerActor, ?array $kinds = null ): array {
 		$actors = $actors ? array_values( array_unique( $actors ) ) : null;
@@ -115,7 +118,7 @@ class GraphBuilder {
 		$packed = $this->cache->getWithSetCallback(
 			$this->cache->makeKey(
 				'casiopea-constel', 'graph',
-				md5( json_encode( [ $actors, $pages, $kinds, $this->overlapMaxPerPage ] ) )
+				md5( json_encode( [ $actors, $pages, $kinds, $this->overlapMaxPerPage, $this->maxNodes ] ) )
 			),
 			WANObjectCache::TTL_DAY,
 			fn () => $this->compute( $actors, $pages, $kinds ),
@@ -202,7 +205,7 @@ class GraphBuilder {
 	 * @param int[]|null $actors
 	 * @param int[]|null $pages
 	 * @param string[] $kinds
-	 * @return array{nodes: array, runs: array<string,string>}
+	 * @return array{nodes: array, runs: array<string,string>, total: int}
 	 */
 	private function compute( ?array $actors, ?array $pages, array $kinds ): array {
 		$excerpts = $this->loadExcerpts( $actors, $pages );
@@ -222,6 +225,26 @@ class GraphBuilder {
 				if ( $trackReaders ) {
 					$nodes[$c]['by'][$e['actor']] = ( $nodes[$c]['by'][$e['actor']] ?? 0 ) + 1;
 				}
+			}
+		}
+		// Tope de conceptos (spec: MapHasLoadLimits): con más que el tope se
+		// quedan los más frecuentes y las aristas se calculan sólo entre ellos,
+		// antes de los bucles de pares, que son los que crecen con el cuadrado.
+		$total = count( $nodes );
+		if ( $this->maxNodes > 0 && $total > $this->maxNodes ) {
+			uasort( $nodes, static fn ( $a, $b ) => [ $b['excerpts'], count( $b['pages'] ), $a['id'] ]
+				<=> [ $a['excerpts'], count( $a['pages'] ), $b['id'] ] );
+			$nodes = array_slice( $nodes, 0, $this->maxNodes, true );
+			foreach ( $excerpts as &$e ) {
+				$e['concepts'] = array_values( array_filter(
+					$e['concepts'], static fn ( $c ) => isset( $nodes[$c] )
+				) );
+			}
+			unset( $e );
+		}
+		foreach ( $excerpts as $e ) {
+			if ( !$e['concepts'] ) {
+				continue;
 			}
 			if ( isset( $want['overlap'] ) && $e['status'] === ExcerptRecord::STATUS_ANCHORED ) {
 				$byPage[$e['page']][] = $e;
@@ -296,7 +319,7 @@ class GraphBuilder {
 		foreach ( $kinds as $kind ) {
 			$runs[$kind] = $this->pack( $edges[$kind], $index );
 		}
-		return [ 'nodes' => $list, 'runs' => $runs ];
+		return [ 'nodes' => $list, 'runs' => $runs, 'total' => $total ];
 	}
 
 	/**

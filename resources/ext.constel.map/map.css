@@ -457,6 +457,15 @@
 	text-decoration-color: var( --constel-accent );
 }
 
+/* Aviso de los topes de carga: el mapa recortó conceptos, rótulos o aristas. */
+.constel-map__notice {
+	margin: 0;
+	padding: 0.35rem 0.75rem;
+	background: var( --constel-surface-sunk );
+	color: var( --constel-ink-soft );
+	font-family: var( --constel-font-ui );
+}
+
 /* Leyenda de los lectores filtrados (con varios): un color por lector. */
 .constel-map__legend {
 	display: flex;

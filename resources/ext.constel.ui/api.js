@@ -63,7 +63,7 @@ function unpackGraph( result ) {
 			p = end;
 		}
 	}
-	return { nodes: result.nodes, links };
+	return { nodes: result.nodes, links, total: result.total };
 }
 
 /**
