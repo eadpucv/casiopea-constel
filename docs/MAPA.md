@@ -126,7 +126,8 @@ como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
   como la letra (`FONT_GROWTH`). El círculo es lo que se apunta, lo que recibe
   el foco y lo que se arrastra; el texto sólo aparece al revelarlo.
 - **Cajas de choque.** En 2D la caja de un círculo es un cuadrado de su radio
-  más `PAD`, y reserva el mismo suelo que las letras (un círculo nunca baja de
+  más `PAD`, pero dos círculos chocan como círculos (distancia entre centros ≥
+  suma de radios más `2·PAD`, como entre dos cajas de texto), y reserva el mismo suelo que las letras (un círculo nunca baja de
   `DOT_MIN_PX` al zoom de encuadre). La escala del layout (`EDGE_IN_LABELS`) se
   ancla al ancho medio de las cajas, que con círculos es mucho menor: el mapa
   se compacta.

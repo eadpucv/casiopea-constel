@@ -421,6 +421,26 @@ function collide( nodes, boxes, hold, k ) {
 			if ( overX <= 0 || overY <= 0 ) {
 				continue;
 			}
+			if ( ba.dot && bb.dot ) {
+				// Dos círculos chocan como círculos, con el mismo margen de los
+				// rótulos: si chocaran como cuadrados, en la diagonal quedaría
+				// más aire que entre dos cajas de texto.
+				const d = Math.hypot( dx, dy );
+				const touching = ba.w + bb.w;
+				if ( d >= touching ) {
+					continue;
+				}
+				moved = true;
+				const [ ca, cb ] = share( a, b );
+				const ux = d < 1e-6 ? sign( 0, i, j ) : dx / d;
+				const uy = d < 1e-6 ? 0 : dy / d;
+				const away = ( touching - d + 0.02 ) * k;
+				a.x -= ux * away * ca;
+				a.y -= uy * away * ca;
+				b.x += ux * away * cb;
+				b.y += uy * away * cb;
+				continue;
+			}
 			moved = true;
 			const [ sa, sb ] = share( a, b );
 			if ( overX < overY ) {

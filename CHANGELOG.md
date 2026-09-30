@@ -2,6 +2,10 @@
 
 ## Sin publicar
 
+- **Menos aire entre nodos.** Dos círculos chocan como círculos, con el mismo
+  margen que hay entre dos cajas de texto, y no como cuadrados (que en la
+  diagonal dejaban más espacio). Con los 1 006 conceptos de la prueba de carga,
+  el hueco mediano entre círculos vecinos baja de 3,4 a 2,5 px.
 - **Círculos 40 % más chicos.** El radio de los nodos baja de 5 a 26 px a 3 a
   15,6 px al zoom de encuadre, y el de los círculos de la vista de anillos en
   la misma proporción.

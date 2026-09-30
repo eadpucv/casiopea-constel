@@ -55,4 +55,15 @@ QUnit.module( 'ext.constel.map', () => {
 			'el otro se aparta lo justo'
 		);
 	} );
+
+	QUnit.test( 'dos círculos se separan como círculos, con el margen de los rótulos', ( assert ) => {
+		// En diagonal, dos cajas cuadradas se separarían más de lo necesario.
+		const nodes = [ { id: 1, x: 0, y: 0 }, { id: 2, x: 1, y: 1 } ];
+		const dot = { w: 10, h: 10, dot: true };
+		const boxes = new Map( [ [ 1, dot ], [ 2, dot ] ] );
+		graph.separate( nodes, boxes );
+		const d = Math.hypot( nodes[ 1 ].x - nodes[ 0 ].x, nodes[ 1 ].y - nodes[ 0 ].y );
+		assert.true( d >= 20 - 1e-6, 'no se traslapan' );
+		assert.true( d < 20.5, 'quedan a la distancia justa, sin aire de más: ' + d );
+	} );
 } );
