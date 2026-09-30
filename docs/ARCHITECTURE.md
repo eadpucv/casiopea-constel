@@ -676,9 +676,12 @@ página especial) arma el grafo en una sola consulta sobre codificaciones y
 - **Nodos:** número de §§, número de páginas y `mine` (si quien mira aportó).
 - **Filtros:** lectores (`cgusers`) y páginas (`cgpageids`), cada uno con
   varios valores; vacío = todos.
-- **Lista de respaldo:** `conceptCounts()` da, en una consulta agrupada, cada
-  concepto con sus §§ y páginas, sin armar el grafo (Especial:Constelación ya
-  no lo calcula en el servidor; el cliente lo pide a la API).
+- **Lista de respaldo:** `conceptCounts()` da, en una consulta agrupada (y
+  guardada con la misma clave de contacto), cada concepto con sus §§ y páginas,
+  sin armar el grafo (Especial:Constelación ya no lo calcula en el servidor; el
+  cliente lo pide a la API). Formatear el mensaje de frecuencias, con `PLURAL`,
+  cuesta unos 0,2 ms y con mil conceptos era lo que más pesaba: se formatea una
+  vez por cada par distinto de §§ y páginas.
 
 **Caché** (`GraphIsCached`). El resultado se guarda en `WANObjectCache` con una
 clave por (lectores, páginas, grados pedidos, tope de traslapes) y se descarta

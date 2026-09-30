@@ -142,6 +142,22 @@ class GraphBuilder {
 	 * @return array<int,array{id:int,label:string,excerpts:int,pages:int}>
 	 */
 	public function conceptCounts(): array {
+		return $this->cache->getWithSetCallback(
+			$this->cache->makeKey( 'casiopea-constel', 'concept-counts' ),
+			WANObjectCache::TTL_DAY,
+			fn () => $this->computeConceptCounts(),
+			[
+				'checkKeys' => [ $this->version->checkKey() ],
+				'lockTSE' => 5,
+				'version' => self::CACHE_VERSION,
+			]
+		);
+	}
+
+	/**
+	 * @return array<int,array{id:int,label:string,excerpts:int,pages:int}>
+	 */
+	private function computeConceptCounts(): array {
 		$db = $this->dbProvider->getReplicaDatabase( ConceptStore::DOMAIN );
 		$res = $db->newSelectQueryBuilder()
 			->select( [

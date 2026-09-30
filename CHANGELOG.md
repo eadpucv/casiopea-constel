@@ -21,8 +21,11 @@
   recorra cada arista: el grafo completo sin caché baja de 1 173 ms a unos
   280 ms, y con caché a unos 55 ms.
 - **Especial:Constelación arma su lista sin el grafo.** La lista de conceptos
-  con frecuencias sale de un conteo por concepto (`conceptCounts`) y el
-  servidor deja de calcular el grafo que el cliente vuelve a pedir.
+  con frecuencias sale de un conteo por concepto (`conceptCounts`, también
+  en caché) y el servidor deja de calcular el grafo que el cliente vuelve a
+  pedir. El mensaje de frecuencias, con `PLURAL`, se formatea una vez por cada
+  par distinto de §§ y páginas: la página completa pasa de 525 ms a 162 ms con
+  los 20 000 § de la prueba de carga.
 - **Traslapes con tope.** `$wgConstelOverlapMaxPerPage` (por omisión 0, sin
   tope) limita los §§ anclados que cuentan por página en el cálculo de
   traslape.

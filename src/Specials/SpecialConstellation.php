@@ -65,11 +65,17 @@ class SpecialConstellation extends SpecialPage {
 				$this->msg( 'constellation-empty' )->text() );
 		}
 		$items = '';
+		// Formatear el mensaje (con PLURAL) cuesta unos 0,2 ms; las frecuencias
+		// se repiten mucho (pocos conceptos concentran los §§), así que se
+		// formatea una vez por cada par distinto.
+		$counts = [];
 		foreach ( $concepts as $node ) {
+			$counts["{$node['excerpts']}:{$node['pages']}"] ??= $this->msg( 'constellation-counts' )
+				->numParams( $node['excerpts'], $node['pages'] )->text();
 			$items .= Html::rawElement( 'li', [],
 				Html::element( 'span', [ 'class' => 'constel-map__label' ], $node['label'] ) . ' ' .
 				Html::element( 'span', [ 'class' => 'constel-map__count' ],
-					$this->msg( 'constellation-counts' )->numParams( $node['excerpts'], $node['pages'] )->text() )
+					$counts["{$node['excerpts']}:{$node['pages']}"] )
 			);
 		}
 		return Html::rawElement( 'ol', [ 'class' => 'constel-map__fallback' ], $items );
