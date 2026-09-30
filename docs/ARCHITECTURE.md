@@ -876,6 +876,15 @@ El nombre de un autor oculto (`hideuser`) solo se muestra a quien tiene
 `hideuser`; por eso esas respuestas son `anon-public-user-private`. Los
 mensajes de ayuda y de error viven en `i18n/api/`.
 
+**Autores en lote.** `AuthorFormatter::preload()` carga los autores de toda la
+respuesta con dos consultas (los actores y cuáles están ocultos, con
+`hidden(true)` de `UserSelectQueryBuilder`) en vez de tres o más por autor; las
+lecturas de §§, temas y conceptos con temas lo llaman antes de formatear.
+`ReaderDirectory` arma la lista de lectores con cuatro consultas en total (los
+actores con actividad, sus identidades sin los ocultos, sus nombres reales) y
+corre en cada tecla del buscador. Con 10 autores la lectura de una página pasó
+de 46 `SELECT` a una cantidad constante (`ApiConstelAuthorsTest`).
+
 ## Moderación
 
 `constel-moderate` exige una cuenta registrada con `constel-moderate` (por

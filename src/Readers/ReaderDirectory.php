@@ -52,8 +52,7 @@ class ReaderDirectory {
 	public function search( string $typed, Authority $viewer, int $limit ): array {
 		$needle = $this->normalizer->fold( $typed );
 		$hits = [];
-		foreach ( $this->readers( $viewer ) as $reader ) {
-			$display = $this->displayName( $reader );
+		foreach ( $this->readers( $viewer ) as [ $reader, $display ] ) {
 			$scores = array_filter( array_map(
 				static fn ( $hay ) => $needle === '' ? 0 : mb_strpos( $hay, $needle ),
 				[ $this->normalizer->fold( $display ), $this->normalizer->fold( $reader->getName() ) ]
@@ -96,28 +95,50 @@ class ReaderDirectory {
 	}
 
 	/**
-	 * @return UserIdentity[] quienes tienen al menos una sección o un tema
+	 * Quienes tienen al menos una sección o un tema, con su nombre visible.
+	 * Cuatro consultas en total, cuantos lectores haya (esto corre en cada
+	 * tecla del buscador): los actores con actividad, sus identidades sin los
+	 * ocultos (salvo para quien puede verlos) y sus nombres reales.
+	 *
+	 * @return array<int,array{0:UserIdentity,1:string}> [identidad, nombre visible]
 	 */
 	private function readers( Authority $viewer ): array {
 		$db = $this->dbProvider->getReplicaDatabase( ConceptStore::DOMAIN );
-		$actors = array_unique( array_merge(
+		$actors = array_map( 'intval', array_unique( array_merge(
 			$db->newSelectQueryBuilder()->select( 'ce_actor' )->distinct()->from( 'constel_excerpt' )
 				->caller( __METHOD__ )->fetchFieldValues(),
 			$db->newSelectQueryBuilder()->select( 'ct_actor' )->distinct()->from( 'constel_theme' )
 				->caller( __METHOD__ )->fetchFieldValues()
-		) );
+		) ) );
+		if ( !$actors ) {
+			return [];
+		}
 		$core = $this->dbProvider->getReplicaDatabase();
+		$query = $this->actorStore->newSelectQueryBuilder( $core )
+			->where( [ 'actor_id' => array_values( $actors ) ] );
+		if ( !$viewer->isAllowed( 'hideuser' ) ) {
+			$query->hidden( false );
+		}
+		$identities = iterator_to_array( $query->fetchUserIdentities(), false );
+
+		$real = [];
+		if ( !in_array( 'realname', $this->config->get( MainConfigNames::HiddenPrefs ), true ) ) {
+			$userIds = array_filter( array_map( static fn ( $u ) => $u->getId(), $identities ) );
+			if ( $userIds ) {
+				$rows = $core->newSelectQueryBuilder()
+					->select( [ 'user_id', 'user_real_name' ] )
+					->from( 'user' )
+					->where( [ 'user_id' => array_values( $userIds ) ] )
+					->caller( __METHOD__ )->fetchResultSet();
+				foreach ( $rows as $row ) {
+					$real[(int)$row->user_id] = trim( $row->user_real_name );
+				}
+			}
+		}
 		$readers = [];
-		foreach ( $actors as $actorId ) {
-			$identity = $this->actorStore->getActorById( (int)$actorId, $core );
-			if ( !$identity ) {
-				continue;
-			}
-			$user = $this->userFactory->newFromUserIdentity( $identity );
-			if ( $user->isHidden() && !$viewer->isAllowed( 'hideuser' ) ) {
-				continue;
-			}
-			$readers[] = $identity;
+		foreach ( $identities as $identity ) {
+			$name = $real[$identity->getId()] ?? '';
+			$readers[] = [ $identity, $name !== '' ? $name : $identity->getName() ];
 		}
 		return $readers;
 	}

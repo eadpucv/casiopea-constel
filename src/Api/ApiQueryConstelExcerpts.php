@@ -61,6 +61,7 @@ class ApiQueryConstelExcerpts extends ApiQueryBase {
 		$authors = new AuthorFormatter(
 			$this->actorStore, $this->userFactory, $this->dbProvider, $this->getAuthority()
 		);
+		$authors->preload( array_map( static fn ( $e ) => $e->actorId, $records ) );
 
 		$titles = [];
 		$pageIds = array_values( array_unique( array_map( static fn ( $e ) => $e->pageId, $records ) ) );

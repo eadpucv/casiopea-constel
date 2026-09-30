@@ -58,9 +58,13 @@ class ApiQueryConstelConcepts extends ApiQueryBase {
 			$authors = new AuthorFormatter(
 				$this->actorStore, $this->userFactory, $this->dbProvider, $this->getAuthority()
 			);
-			foreach ( $rows as &$row ) {
+			$listed = array_map( fn ( $row ) => $this->themes->listByConcept( $row['id'] ), $rows );
+			$authors->preload( array_map(
+				static fn ( $theme ) => $theme->actorId, array_merge( [], ...$listed )
+			) );
+			foreach ( $rows as $i => &$row ) {
 				$row['themes'] = [];
-				foreach ( $this->themes->listByConcept( $row['id'] ) as $theme ) {
+				foreach ( $listed[$i] as $theme ) {
 					$author = $authors->format( $theme->actorId );
 					$row['themes'][] = [ 'id' => $theme->id, 'label' => $theme->label, 'author' => $author['name'] ];
 				}

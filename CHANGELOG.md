@@ -26,6 +26,12 @@
 - **Traslapes con tope.** `$wgConstelOverlapMaxPerPage` (por omisión 0, sin
   tope) limita los §§ anclados que cuentan por página en el cálculo de
   traslape.
+- **Autores y lectores en lote.** `list=constelexcerpts` de una página con 13
+  autores hacía 67 consultas: cada autor pedía su actor, su usuario y sus
+  bloqueos por separado. Ahora `AuthorFormatter` carga los autores de la
+  respuesta de una vez, y `ReaderDirectory` resuelve a todos los lectores con
+  cuatro consultas cada vez que se escribe en el buscador. Los usuarios
+  ocultos siguen enmascarados igual.
 
 ## 0.10.0 — 2026-09-25
 

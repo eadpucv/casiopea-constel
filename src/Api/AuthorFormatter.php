@@ -26,6 +26,44 @@ class AuthorFormatter {
 	}
 
 	/**
+	 * Carga de una vez los autores que se van a formatear: dos consultas
+	 * (los actores y cuáles están ocultos) en vez de tres o más por autor.
+	 *
+	 * @param int[] $actorIds
+	 */
+	public function preload( array $actorIds ): void {
+		$need = array_values( array_diff( array_unique( $actorIds ), array_keys( $this->cache ) ) );
+		if ( !$need ) {
+			return;
+		}
+		$db = $this->dbProvider->getReplicaDatabase();
+		$hidden = [];
+		foreach ( $this->actorStore->newSelectQueryBuilder( $db )
+			->where( [ 'actor_id' => $need ] )
+			->hidden( true )
+			->fetchUserIdentities() as $identity
+		) {
+			$hidden[$this->actorStore->findActorId( $identity, $db )] = true;
+		}
+		$seesHidden = $this->viewer->isAllowed( 'hideuser' );
+		foreach ( $this->actorStore->newSelectQueryBuilder( $db )
+			->where( [ 'actor_id' => $need ] )
+			->fetchUserIdentities() as $identity
+		) {
+			$id = $this->actorStore->findActorId( $identity, $db );
+			$isHidden = isset( $hidden[$id] );
+			$this->cache[$id] = [
+				'name' => !$isHidden || $seesHidden ? $identity->getName() : null,
+				'hidden' => $isHidden,
+			];
+		}
+		// Actores que ya no existen: sin nombre y sin ocultar, como antes.
+		foreach ( $need as $id ) {
+			$this->cache[$id] ??= [ 'name' => null, 'hidden' => false ];
+		}
+	}
+
+	/**
 	 * @return array{name:?string,hidden:bool}
 	 */
 	public function format( int $actorId ): array {

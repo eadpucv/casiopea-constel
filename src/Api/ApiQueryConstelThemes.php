@@ -50,6 +50,7 @@ class ApiQueryConstelThemes extends ApiQueryBase {
 		$authors = new AuthorFormatter(
 			$this->actorStore, $this->userFactory, $this->dbProvider, $this->getAuthority()
 		);
+		$authors->preload( array_map( static fn ( $t ) => $t->actorId, $records ) );
 		$path = [ 'query', $this->getModuleName() ];
 		foreach ( $records as $theme ) {
 			$this->getResult()->addValue( $path, null, $this->format( $theme, $authors ) );
