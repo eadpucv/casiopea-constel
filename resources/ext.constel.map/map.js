@@ -622,6 +622,7 @@ function main( root ) {
 	// El interruptor, fuera de la caja, desactiva el filtro: todas.
 	const readers = pills.create( {
 		label: mw.msg( 'constellation-sections' ),
+		hint: mw.msg( 'constellation-sections-hint' ),
 		icon: 'users',
 		placeholder: mw.msg( 'constellation-add-reader' ),
 		values: state.readers,
@@ -684,6 +685,7 @@ function main( root ) {
 	syncReaders();
 	const pages = pills.create( {
 		label: mw.msg( 'constellation-pages' ),
+		hint: mw.msg( 'constellation-pages-hint' ),
 		icon: 'file',
 		placeholder: mw.msg( 'constellation-add-page' ),
 		empty: mw.msg( 'constellation-all-pages' ),
@@ -697,6 +699,7 @@ function main( root ) {
 	// La lente: por defecto quien mira; nunca vacía para una cuenta registrada.
 	const lens = pills.create( {
 		label: mw.msg( 'constellation-lens' ),
+		hint: mw.msg( 'constellation-lens-hint' ),
 		icon: 'tag',
 		placeholder: mw.msg( 'constellation-add-reader' ),
 		empty: mw.msg( 'constellation-no-lens' ),
@@ -957,8 +960,9 @@ function main( root ) {
 				select( kept );
 			}
 		} );
-		const ringsButton = el( 'button', 'constel-button constel-map__rings', mw.msg( 'constellation-rings-open' ) );
-		ringsButton.type = 'button';
+		// Sólo el ícono (círculos concéntricos): el nombre va de tooltip y de nombre accesible.
+		const ringsButton = icons.iconButton( 'disc-2', mw.msg( 'constellation-rings-open' ),
+			'constel-button constel-button--icon constel-map__rings' );
 		ringsButton.hidden = !!state.rings;
 		ringsButton.addEventListener( 'click', () => openRings( node ) );
 		const box = el( 'div' );

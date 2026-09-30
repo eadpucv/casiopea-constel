@@ -123,6 +123,11 @@ const SHAPES = {
 		[ 'path', { d: 'M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2' } ],
 		[ 'path', { d: 'M9 20h6' } ]
 	],
+	'disc-2': [
+		[ 'circle', { cx: 12, cy: 12, r: 10 } ],
+		[ 'circle', { cx: 12, cy: 12, r: 4 } ],
+		[ 'path', { d: 'M12 12h.01' } ]
+	],
 	'circle-dot': [
 		[ 'circle', { cx: 12, cy: 12, r: 1 } ],
 		[ 'circle', { cx: 12, cy: 12, r: 10 } ]

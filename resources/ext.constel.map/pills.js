@@ -25,6 +25,7 @@ function el( tag, className, text ) {
  * @param {string} opts.label nombre del campo
  * @param {string} [opts.icon] ícono Lucide en lugar del rótulo visible (el
  *  nombre queda como tooltip y para lectores de pantalla)
+ * @param {string} [opts.hint] explicación larga para el tooltip del ícono (por omisión, el nombre)
  * @param {string} opts.placeholder
  * @param {string} [opts.empty] texto cuando no hay ninguna
  * @param {string[]} [opts.values] valores iniciales
@@ -51,7 +52,7 @@ function create( opts ) {
 	if ( opts.icon ) {
 		wrap.classList.add( 'constel-pills--icon' );
 		label.classList.add( 'constel-map__icon' );
-		label.title = opts.label;
+		label.title = opts.hint || opts.label;
 		label.append( icons.icon( opts.icon ), el( 'span', 'constel-visually-hidden', opts.label ) );
 	} else {
 		label.textContent = opts.label;

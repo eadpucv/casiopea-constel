@@ -403,6 +403,9 @@
 				"constellation-notice-labels",
 				"constellation-notice-links",
 				"constellation-reader-color",
+				"constellation-sections-hint",
+				"constellation-pages-hint",
+				"constellation-lens-hint",
 				"constellation-notice-close",
 				"constellation-pills-full",
 				"constellation-scope",
@@ -488,6 +491,7 @@
 				"constellation-moderate-concept",
 				"constellation-concept-name",
 				"constellation-merge-with",
+				"constellation-merge-hint",
 				"constellation-unpin"
 			],
 			"dependencies": [

@@ -45,6 +45,9 @@
 	"constellation-as-list": "Summary of the text alternative of the graph.",
 	"constellation-edges": "Label of the checkbox that shows the links.",
 	"constellation-reader-color": "Label of the color picker in a reader pill. $1 is the reader name.",
+	"constellation-sections-hint": "Tooltip of the readers icon in the map filter row.",
+	"constellation-pages-hint": "Tooltip of the pages icon in the map filter row.",
+	"constellation-lens-hint": "Tooltip of the theme lens icon in the map filter row.",
 	"constellation-notice-close": "Label of the button that closes a notice floating over the map.",
 	"constellation-concepts": "Name of the group of controls that sets how concepts are drawn: as words or as nodes (circles).",
 	"constellation-concepts-words": "Option of the concepts switch: each concept is drawn as its word.",
@@ -179,5 +182,6 @@
 	"constellation-moderate-concept": "Accessible name of the merge tool shown under the map for the selected concept. Parameters:\n* $1 - concept label",
 	"constellation-concept-name": "Accessible name and tooltip of the concept title, editable by moderators. $1: current concept label.",
 	"constellation-merge-with": "Label before the merge target field under the map; the field follows it. $1: label of the selected concept (shown in bold).",
+	"constellation-merge-hint": "Tooltip of the merge icon in the moderation line under the map.",
 	"constellation-unpin": "Tooltip of the 2D map button that releases the concepts pinned by dragging and recomputes the layout."
 }

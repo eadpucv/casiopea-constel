@@ -20,6 +20,14 @@
   lectores, qué conceptos). Aristas, palabras ⇄ nodos y girar solo son
   interruptores o casillas, nombrados con íconos. La letra mínima sube de 11
   a 13 px (los rótulos miden de 13 a 33).
+- **Tooltip explicativo en todos los íconos.** Cada ícono de la interfaz del mapa
+  explica qué hace su control (por ejemplo, el de traslape dice cuánto atrae a
+  conceptos de lectores distintos que comparten texto), incluidos los de las
+  píldoras de lectores, páginas y lente, el de fusionar y el de los anillos. Se
+  comprobó en el navegador que ningún ícono quede sin nombre.
+- **Anillos con ícono.** El botón «Ver anillos» del panel, pegado a «Temas», pasa
+  a ser un ícono `disc-2` (círculos concéntricos; `circle-dot` ya significa
+  «Nodos» en la barra).
 - **Íconos Lucide.** Los íconos de la extensión pasan de Feather a Lucide
   (`ext.constel.ui/icons.js`, desde `lucide-static` 1.49): aristas
   (`waypoints`), palabras (`type`), nodos (`circle-dot`), rotular los

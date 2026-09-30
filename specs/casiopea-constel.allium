@@ -965,7 +965,8 @@ surface ConceptMap {
         -- páginas, lente de temas y, con varios lectores, qué conceptos
         -- (todos, compartidos o propios). Lo que se enciende o apaga usa
         -- interruptores y casillas, y las opciones de cómo se ve se nombran
-        -- con un ícono (Lucide), cuyo nombre es el tooltip y el nombre
+        -- con un ícono (Lucide). Todo ícono lleva un tooltip que explica qué
+        -- hace el control, no sólo cómo se llama, y ese mismo texto como nombre
         -- accesible. La vista por omisión es 2D con rótulos (palabras).
         -- (decisión 2026-09-30, pedido del usuario).
 

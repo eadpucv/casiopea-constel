@@ -178,6 +178,7 @@ function moderation( node, ctx ) {
 	const intoId = 'constel-merge-into-' + node.id;
 	const lead = el( 'label', 'constel-map__merge-lead' );
 	lead.htmlFor = intoId;
+	lead.title = mw.msg( 'constellation-merge-hint' );
 	lead.append( icons.icon( 'git-merge' ), ' ' );
 	const [ before, after ] = mw.msg( 'constellation-merge-with', '\u0000' ).split( '\u0000' );
 	lead.append( before, el( 'strong', 'constel-map__merge-concept', node.label ), after );
