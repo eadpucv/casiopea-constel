@@ -154,7 +154,21 @@ frecuencia** (la misma del rótulo). En pantalla mide
 
 y crece al acercar como la letra (`(zoom / fit)^0,5`). El círculo es lo que se
 apunta, recibe el foco y se arrastra; la palabra aparece encima al apuntarlo o
-elegirlo. La casilla <img src="icons/star.svg" width="14" alt=""> deja la palabra de los más frecuentes.
+elegirlo.
+
+#### Rotular los principales
+
+![Nodos con los principales rotulados](img/mapa-nodos-principales.jpg)
+
+La casilla <img src="icons/star.svg" width="14" alt=""> **Rotular los principales**
+aparece junto al interruptor de conceptos sólo con el modo Nodos activo (con
+palabras, todos los conceptos ya llevan su texto). Marcada, deja escrita la
+palabra de los conceptos más frecuentes (`$wgConstelMapMainLabels`, 12 por
+omisión, y a lo más la cuarta parte de los conceptos del mapa); el resto sigue
+como círculo con su palabra al apuntarlo. Desmarcada, ningún concepto lleva
+rótulo fijo. La elección se recuerda en `lead` (sección 11). La imagen muestra el
+mapa de Arturo Chicano (37 conceptos) con la casilla marcada: se rotulan los 9
+más frecuentes.
 
 - **Cajas de choque.** En 2D la caja de un círculo es un cuadrado de su radio más
   `PAD`, pero dos círculos chocan como círculos (distancia entre centros mayor o
@@ -173,7 +187,9 @@ elegirlo. La casilla <img src="icons/star.svg" width="14" alt=""> deja la palabr
 El color de un concepto viene de su tema en la lente: hay 8 categorías de color
 (`constel-graph__node--cat-0…7`), que siguen el orden de los temas de los lectores
 de la lente. Un concepto sin tema usa la tinta suave, y los propios, la tinta
-plena. Con varios lectores el color indica quién lo aporta (sección 7).
+plena.
+El color de cada tema se cambia con el círculo que lleva antes de su nombre en el
+panel de temas (`themeColors`, sección 11). Con varios lectores el color indica quién lo aporta (sección 7).
 
 ## 4. Aristas y proximidad
 
