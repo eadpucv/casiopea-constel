@@ -758,6 +758,25 @@
 	padding: var( --constel-s-4 );
 	color: var( --constel-ink-soft );
 	text-align: center;
+	animation: constel-pulse 1.8s ease-in-out infinite;
+}
+
+/* El texto de carga late levemente: sigue vivo mientras se calcula. */
+@keyframes constel-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.4;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.constel-map__loading {
+		animation: none;
+	}
 }
 
 .constel-theme {

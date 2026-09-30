@@ -68,12 +68,24 @@ del diálogo y ayuda a cada uno a ubicar su aporte entre los de sus pares.
 - **Tres grados de proximidad** unen los conceptos: la *misma sección*, el
   *traslape* entre secciones de lectores distintos y el *mismo texto*. Cada
   grado tiene su propia fuerza (0–100 %), que reacomoda el mapa en vivo
-  mientras se ajusta, y en 0 no se dibuja. Cómo se calculan las distancias
-  y qué hace cada fuerza: [`docs/MAPA.md`](docs/MAPA.md).
-- **Vista 2D (por defecto) o 3D.** En 2D los rótulos nunca se pisan y cada
-  concepto se arrastra con el mapa reaccionando en vivo: sus aristas tiran
-  de los vecinos y los rótulos se empujan. El concepto elegido pasa a ser el
-  centro del mapa, y en 3D «Girar solo» orbita en torno a él.
+  mientras se ajusta, y en 0 no se dibuja. Cómo se calculan las distancias,
+  qué hace cada control (con sus íconos) y qué parámetros tiene el mapa:
+  [`docs/MAPA.md`](docs/MAPA.md).
+- **Vista 2D (por defecto) o 3D**, con un interruptor. En 2D los rótulos
+  nunca se pisan y cada concepto se arrastra con el mapa reaccionando en
+  vivo: sus aristas tiran de los vecinos y los rótulos se empujan. El
+  concepto elegido pasa a ser el centro del mapa, en negrita, y en 3D «Girar
+  solo» orbita en torno a él, con niebla en profundidad.
+- **Palabras o nodos.** Otro interruptor dibuja cada concepto como su palabra
+  (tamaño según su frecuencia) o como un círculo del color de su tema, útil
+  cuando el mapa es denso.
+- **Anillos.** Un concepto al centro y sus vecinos en tres anillos, uno por
+  grado de proximidad.
+- **Varios lectores.** Cada lector tiene un color, que se elige en su píldora,
+  y los conceptos se pintan con el de quien los aporta. Se puede ver sólo lo
+  compartido o sólo lo propio.
+- **Pensado para lecturas muy grandes.** El grafo se guarda en caché y cada
+  costo tiene un tope (conceptos, palabras, aristas dibujadas).
 - **Pantalla completa.** El mapa (*ante*) y el panel de lectura (*dentro*)
   se reparten la pantalla, y la división entre ambos se arrastra.
 - **Filtros** por lectores y por páginas, y una **lente** para leer los temas
@@ -83,7 +95,7 @@ En cada página, el menú de usuario ofrece la lectura en tres posiciones:
 **−** sin marcas, **§** solo las propias, **§\*** las de todos.
 `Especial:MiConstel` reúne la lectura propia y la exporta.
 
-Estado: **versión 0.10.0**. Extensión para MediaWiki 1.43 LTS. La GUI se
+Estado: **versión 0.11.0**. Extensión para MediaWiki 1.43 LTS. La GUI se
 diseña sobre los tokens de [Stella Nova](https://github.com/hspencer/stella-nova)
 y funciona con cualquier skin.
 

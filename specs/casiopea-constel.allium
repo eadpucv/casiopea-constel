@@ -298,7 +298,7 @@ entity ReadingExport {
 ------------------------------------------------------------
 
 config {
-    extension_version: String = "0.10.0"          -- debe coincidir con extension.json
+    extension_version: String = "0.11.0"          -- debe coincidir con extension.json
     concept_max_length: Integer = 80             -- caracteres
     theme_label_max_length: Integer = 80
     note_max_length: Integer = 20000             -- desarrollo de un tema
@@ -973,8 +973,9 @@ surface ConceptMap {
 
     @guarantee LoadingIsStated
         -- Mientras se lee el mapa y se calculan las distancias, el lienzo lo dice
-        -- con un texto al centro, horizontal y verticalmente: «Leyendo conceptos
-        -- y calculando distancias». Un cambio de vista sobre un mapa grande lo
+        -- con un texto al centro, horizontal y verticalmente, que late
+        -- levemente (quieto con prefers-reduced-motion): «Leyendo conceptos y
+        -- calculando distancias». Un cambio de vista sobre un mapa grande lo
         -- muestra antes de calcular, para que no parezca colgado (decisión
         -- 2026-09-30, pedido del usuario).
 

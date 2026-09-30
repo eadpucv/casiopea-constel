@@ -1,6 +1,6 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.11.0 — 2026-09-30
 
 - **Aristas visibles con nodos.** Con el interruptor «Aristas» encendido se
   dibujan también en modo Nodos, siempre debajo de los nodos; con más que el
@@ -24,8 +24,9 @@
   anillos) pasan de botones a texto discreto con su flecha, y en el panel quedan
   alineados con el ícono de los anillos en la misma línea.
 - **Texto de carga al centro.** Mientras se lee el mapa, el lienzo dice «Leyendo
-  conceptos y calculando distancias» en el centro, y un cambio de vista sobre un
-  mapa grande lo muestra antes de calcular.
+  conceptos y calculando distancias» en el centro, latiendo levemente (quieto con
+  `prefers-reduced-motion`), y un cambio de vista sobre un mapa grande lo muestra
+  antes de calcular.
 - **Aristas resaltadas más tenues en conceptos muy conectados.** Con cientos de
   vecinos, las aristas del concepto apuntado o elegido bajan su opacidad (de 1
   a 0,12) para no inundar el mapa.
