@@ -2,14 +2,21 @@
 
 ## Sin publicar
 
-- **Rótulos apagables en el mapa.** Un control de tres posiciones (− · Aa ·
-  Aa*) deja el mapa sin rótulos, con los conceptos de mayor frecuencia
-  (`$wgConstelMapMainLabels`, 12) o con todos. Sin rótulo, un concepto es un
+- **Barra del mapa reorganizada.** La primera fila dice cómo se ve (vista
+  2D/3D, girar solo, aristas, conceptos como palabras o nodos, proximidad y
+  zoom) y la segunda qué se ve (lectores, páginas, lente y, con varios
+  lectores, qué conceptos). Aristas, palabras ⇄ nodos y girar solo son
+  interruptores o casillas con su texto visible en vez de botones. La letra
+  mínima sube de 11 a 13 px (los rótulos miden de 13 a 33).
+- **Conceptos como palabras o nodos.** Un interruptor explícito deja el mapa
+  en palabras o en nodos, y una casilla «Rotular los principales» deja la
+  palabra de los conceptos de mayor frecuencia (`$wgConstelMapMainLabels`,
+  12). Como nodo, un concepto es un
   círculo con el color de su tema y área proporcional a su frecuencia; al
   apuntarlo se lee su rótulo encima y sus vecinos quedan resaltados, y en
   táctil el primer toque revela y el segundo elige. Sin rótulos o con los
   principales, las aristas se dibujan sólo para el concepto apuntado o elegido.
-  Con más de 80 conceptos el mapa parte en «sólo los principales». En 2D las
+  Con más de 80 conceptos el mapa parte como nodos. En 2D las
   cajas de choque de los círculos son más chicas y el mapa se compacta: con
   los 1 006 conceptos de la prueba de carga, la extensión baja de 2 617 a 931
   y la proporción alto/ancho de 1,75 a 0,84.
@@ -26,9 +33,9 @@
 - **Lectura entre varios lectores.** Con dos o más lectores en «Secciones de»,
   cada concepto muestra quién lo aporta: un anillo segmentado alrededor del
   círculo (o un subrayado bajo el rótulo) con un tramo por lector, del color
-  de su lugar en el filtro, y una leyenda. Un control Todo · Compartido ·
-  Propio deja ver sólo los conceptos que comparten dos o más lectores o los
-  de uno solo, y el mapa parte con el traslape al 100 % y el mismo texto en
+  de su lugar en el filtro, y una leyenda. Un selector Todos ·
+  Compartidos · Propios, en la fila de filtros, deja ver sólo los conceptos
+  que comparten dos o más lectores o los de uno solo, y el mapa parte con el traslape al 100 % y el mismo texto en
   0 % (salvo que ya se hayan guardado las fuerzas). `list=constelgraph`
   entrega `readers` por nodo sin nombrar a los usuarios ocultos.
 - **Vista de anillos.** Con un concepto elegido, «Ver anillos» lo pone al

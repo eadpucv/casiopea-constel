@@ -132,6 +132,35 @@
 	height: var( --constel-map-zoom-icon );
 }
 
+/* Interruptor o casilla con su texto visible, y la pareja palabras ⇄ nodos. */
+.constel-map__toggle {
+	display: inline-flex;
+	gap: var( --constel-s-2 );
+	align-items: center;
+	color: var( --constel-ink );
+	cursor: pointer;
+}
+
+.constel-map__toggle[ hidden ] {
+	display: none;
+}
+
+.constel-map__choice {
+	color: var( --constel-ink-soft );
+	cursor: pointer;
+}
+
+.constel-map__choice--on {
+	color: var( --constel-ink );
+	font-weight: 600;
+}
+
+/* Cada grupo de la fila «cómo se ve» se separa del anterior con un filete. */
+.constel-map__row > .constel-map__group + .constel-map__group {
+	padding-left: var( --constel-s-4 );
+	border-left: 1px solid var( --constel-hairline-soft );
+}
+
 /* ── Interruptor (checkbox con role=switch) ──────────────────────────── */
 
 .constel-map__switch {

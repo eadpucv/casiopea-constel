@@ -16,9 +16,9 @@ los números de abajo son decisiones de diseño y pueden ajustarse.
 `GraphBuilder` arma el grafo con los §§ visibles según los filtros (lectores,
 páginas):
 
-- **Nodo** = un concepto con al menos un §. Su rótulo mide entre 11 y 31 px:
+- **Nodo** = un concepto con al menos un §. Su rótulo mide entre 13 y 33 px:
   `11 + 20 · (0.6 · §§/máx§§ + 0.4 · páginas/máxpáginas)` (como constel).
-  Al acercar o alejar, la letra en pantalla se acota a 11–40 px y crece más
+  Al acercar o alejar, la letra en pantalla se acota a 13–40 px y crece más
   lento que el mapa (`FONT_MIN_PX`, `FONT_MAX_PX`, `FONT_GROWTH`).
 - **Aristas**, en tres grados de proximidad. Cada par de conceptos puede tener
   hasta tres aristas, una por grado, y cada una tiene un **peso** entero:
@@ -109,10 +109,15 @@ Los rótulos pueden cruzarse en 3D; la garantía de no traslape es sólo de 2D.
 
 ### Rótulos apagables y círculos
 
-Un control de tres posiciones (**− · Aa · Aa\***, como el del lector) fija cuántos
-rótulos dibuja el mapa: ninguno, los `map_main_labels` (12) conceptos de mayor
-frecuencia, o todos. Con más de 80 conceptos el mapa parte en «sólo los
-principales»; la elección se recuerda por navegador (`labels` en `constel-map`).
+La barra tiene dos filas: la primera dice **cómo se ve** (vista 2D/3D, «Girar
+solo», aristas, conceptos, proximidad, zoom) y la segunda **qué se ve** (lectores,
+páginas, lente y, con varios lectores, qué conceptos). Un interruptor explícito
+**Palabras ⇄ Nodos** elige cómo se dibujan los conceptos, y con nodos una casilla
+«Rotular los principales» deja la palabra de los `map_main_labels` (12) más
+frecuentes (`graph.draw` recibe `labels`: `all` = palabras, `main` = nodos con
+principales, `none` = nodos sin rótulos). Con más de 80 conceptos el mapa parte
+como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
+`constel-map`). La letra de un rótulo no baja de 13 px en pantalla.
 
 - **Círculos.** Un concepto sin rótulo es un `<circle>` del color de su tema
   con **área proporcional a su frecuencia** (la misma `0.6 · §§ + 0.4 · páginas`
@@ -135,7 +140,7 @@ principales»; la elección se recuerda por navegador (`labels` en `constel-map`
 | Rótulos | Ancho × alto | Alto/ancho | Extensión (√área) |
 |---|---|---|---|
 | Todos | 1 979 × 3 461 | 1,75 | 2 617 |
-| Sólo los principales (círculos) | 1 014 × 854 | 0,84 | 931 |
+| Nodos con los principales rotulados | 1 014 × 854 | 0,84 | 931 |
 
   Con todos los rótulos, 703 de los 1 006 quedan en columnas de cinco o más
   con la misma `x` (57 columnas, la mayor de 42): eso es lo que el modo con
@@ -161,10 +166,10 @@ configuración, y un aviso sobre el lienzo cuando el tope actúa.
 | Qué | Tope (por omisión) | Qué pasa al pasarlo |
 |---|---|---|
 | Conceptos por respuesta | `ConstelMapMaxNodes` (2 000) | el servidor entrega los más frecuentes, con sus conteos completos, y calcula las aristas sólo entre ellos; el aviso dice «los N más frecuentes de M» |
-| Rótulos con «todos» | `ConstelMapMaxLabels` (300) | los más frecuentes llevan rótulo, el resto son círculos |
+| Palabras | `ConstelMapMaxLabels` (300) | como palabras, las 300 más frecuentes llevan su palabra y el resto son nodos |
 | Aristas dibujadas | `ConstelMapMaxDrawnLinks` (6 000) | se dibujan sólo las del concepto apuntado o elegido; si al subir una fuerza se pasa del tope, el mapa se redibuja así |
 | Lectores en el filtro | 8 (`MAX_READERS`, uno por color) | el campo se apaga («Máximo: 8») |
-| Rótulos por omisión | 80 conceptos (`AUTO_ALL_MAX`) | con más, el mapa parte en «sólo los principales» |
+| Rótulos por omisión | 80 conceptos (`AUTO_ALL_MAX`) | con más, el mapa parte como nodos con los principales rotulados |
 
 El trazado también está acotado. La repulsión del layout de fuerzas compara todos
 los conceptos entre sí, así que sus iteraciones bajan cuando hay muchos
@@ -188,8 +193,9 @@ para quien mira no se nombran, pero su aporte sigue en `excerpts`). El cliente:
   lector, de largo proporcional a su aporte, con el color de su lugar en el
   filtro (`constel-graph__seg--0…7`, los mismos colores de categoría de los
   temas). Una leyenda bajo los filtros nombra los colores.
-- **Filtro de tres estados.** Todo, Compartido (dos o más lectores aportan al
-  concepto) y Propio (uno solo). Se calcula en el cliente sobre `readers` y deja
+- **Filtro de conceptos.** Un selector en la fila de filtros: todos, sólo los
+  compartidos (dos o más lectores aportan al concepto) o sólo los propios (uno
+  solo). Se calcula en el cliente sobre `readers` y deja
   las aristas entre los conceptos que quedan; al subir una fuerza desde 0 con el
   mapa filtrado, se piden los grados que faltan y se redibuja.
 - **Fuerzas iniciales.** Sin fuerzas guardadas por quien mira, el mapa parte con

@@ -306,7 +306,7 @@ config {
     selection_max_length: Integer = 2000
     gloss_max_length: Integer = 5000             -- caracteres de la glosa de un §
     overlap_max_excerpts_per_page: Integer = 0   -- tope de §§ por página para el traslape; 0 = sin tope
-    map_main_labels: Integer = 12                -- rótulos que deja «sólo los principales»
+    map_main_labels: Integer = 12                -- palabras que deja «Rotular los principales»
     map_max_nodes: Integer = 2000                -- conceptos por respuesta del mapa; 0 = sin tope
     map_max_labels: Integer = 300                -- rótulos que dibuja el mapa aun con «todos»
     map_max_drawn_links: Integer = 6000          -- aristas que se dibujan a la vez
@@ -957,20 +957,31 @@ surface ConceptMap {
         -- ver LabelsAreOptional) una caja de su tamaño con el mismo margen,
         -- y las cajas chocan en vez de traslaparse.
 
+    @guarantee ToolbarSeparatesHowFromWhat
+        -- La barra del mapa tiene dos filas con sentidos distintos. La primera
+        -- dice cómo se ve: vista 2D o 3D (y girar solo, en 3D), aristas,
+        -- conceptos como palabras o nodos (con sus principales rotulados),
+        -- proximidad y navegación. La segunda dice qué se ve: lectores,
+        -- páginas, lente de temas y, con varios lectores, qué conceptos
+        -- (todos, compartidos o propios). Lo que se enciende o apaga usa
+        -- interruptores y casillas con su texto visible, no solo botones ni
+        -- íconos con tooltip. La letra de un rótulo nunca baja de 13 px en
+        -- pantalla (decisión 2026-09-30, pedido del usuario).
+
     @guarantee LabelsAreOptional
-        -- Los rótulos se pueden apagar, como las aristas, con un control de
-        -- tres posiciones: sin rótulos, sólo los principales (los
-        -- config.map_main_labels conceptos de mayor frecuencia) y todos. Un
-        -- concepto sin rótulo es un círculo con el color de su tema y un área
-        -- proporcional a su frecuencia (FrequencyScaling), con un tamaño
-        -- mínimo que se pueda apuntar. Al pasar el cursor o recibir el foco,
+        -- Un interruptor explícito, Palabras o Nodos, elige cómo se dibujan los
+        -- conceptos. Como nodos, cada uno es un círculo con el color de su
+        -- tema y un área proporcional a su frecuencia (FrequencyScaling), con
+        -- un tamaño mínimo que se pueda apuntar; una casilla, «Rotular los
+        -- principales», deja la palabra de los config.map_main_labels
+        -- conceptos de mayor frecuencia (activa por omisión). Al pasar el cursor o recibir el foco,
         -- su rótulo se lee encima del círculo, y sus vecinos quedan
         -- resaltados y el resto atenuado; en pantalla táctil un toque hace lo
-        -- del cursor y el segundo elige el concepto. Sin rótulos o con sólo
-        -- los principales, las aristas se dibujan únicamente para el concepto
-        -- apuntado o elegido; con todos los rótulos, como siempre. Con más de
-        -- 80 conceptos el mapa parte en «sólo los principales», y la elección
-        -- del lector se recuerda por navegador junto con las fuerzas. La
+        -- del cursor y el segundo elige el concepto. Como nodos, las aristas
+        -- se dibujan únicamente para el concepto apuntado o elegido; como
+        -- palabras, como siempre. Con más de 80 conceptos el mapa parte como
+        -- nodos, y la elección se recuerda por navegador junto con las
+        -- fuerzas. La
         -- alternativa textual (AccessibleAlternative) no cambia
         -- (decisión 2026-09-29, pedido del usuario).
 
@@ -999,9 +1010,10 @@ surface ConceptMap {
         -- filtro; una leyenda nombra los colores (decisión 2026-09-29).
 
     @guarantee SharedAndOwnFilter
-        -- Con más de un lector filtrado, un control de tres estados elige qué
-        -- conceptos se ven: todos; sólo los compartidos (con §§ de dos o más
-        -- de los lectores filtrados); o sólo los propios (con §§ de uno solo).
+        -- Con más de un lector filtrado, un selector de la fila de filtros
+        -- elige qué conceptos se ven: todos; sólo los compartidos (con §§ de
+        -- dos o más de los lectores filtrados); o sólo los propios (con §§ de
+        -- uno solo).
         -- Las aristas son las de los conceptos que quedan (decisión
         -- 2026-09-29).
 

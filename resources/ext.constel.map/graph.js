@@ -90,10 +90,10 @@ const GLIDE = 0.25;
  * Cuánto mide una letra en pantalla, pase lo que pase con el zoom (px).
  * Como el mapa de vera: por debajo del suelo un rótulo es una mancha y por
  * encima del techo tapa a sus vecinos. Vera usa 11–31 con una sola letra de
- * mundo; aquí la frecuencia ya reparte 11–31 a zoom 1, así que el techo sube
+ * mundo; aquí la frecuencia ya reparte 13–33 a zoom 1, así que el techo sube
  * para que acercar no aplane esa jerarquía de golpe.
  */
-const FONT_MIN_PX = 11;
+const FONT_MIN_PX = 13;
 const FONT_MAX_PX = 40;
 /**
  * Con qué exponente sigue la letra al zoom al acercar: acercar separa más de
@@ -137,14 +137,14 @@ function svg( tag, attrs ) {
 
 /**
  * Tamaño tipográfico por frecuencia, como constel: 0.6·§§ + 0.4·páginas,
- * normalizados, entre 11 y 31 px (spec: FrequencyScaling).
+ * normalizados, entre 13 y 33 px (spec: FrequencyScaling).
  *
  * @param {Array} nodes
  * @return {Function}
  */
 function sizer( nodes ) {
 	const score = scorer( nodes );
-	return ( n ) => 11 + 20 * score( n );
+	return ( n ) => 13 + 20 * score( n );
 }
 
 /**

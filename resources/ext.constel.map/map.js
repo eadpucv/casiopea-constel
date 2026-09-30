@@ -33,16 +33,10 @@ const full = !!cfg.full;
 const ANTE_MIN = 20;
 const ANTE_MAX = 80;
 const ANTE_DEFAULT = 50;
-/** Hasta cuántos conceptos el mapa parte con todos los rótulos (después, sólo los principales). */
+/** Hasta cuántos conceptos parte como palabras (con más, como nodos con los principales). */
 const AUTO_ALL_MAX = 80;
 /** Máximo de lectores en el filtro «Secciones de» (uno por color de categoría). */
 const MAX_READERS = 8;
-/** Rótulos del mapa: sin rótulos, sólo los principales, todos. */
-const LABEL_OPTIONS = [
-	{ value: 'none', sign: '−', msg: 'constellation-labels-none' },
-	{ value: 'main', sign: 'Aa', msg: 'constellation-labels-main' },
-	{ value: 'all', sign: 'Aa*', msg: 'constellation-labels-all' }
-];
 
 /**
  * Preferencias del mapa por navegador: se fusionan, no se pisan.
@@ -143,9 +137,11 @@ function main( root ) {
 		mode: '2d',
 		autorotate: !!prefs().autorotate,
 		edges: true,
-		// Rótulos: null = automático según el tamaño del mapa (AUTO_ALL_MAX);
-		// la elección se recuerda por navegador.
-		labels: LABEL_OPTIONS.some( ( o ) => o.value === prefs().labels ) ? prefs().labels : null,
+		// Conceptos como 'words' (palabras) o 'nodes' (círculos); null = automático
+		// según el tamaño del mapa (AUTO_ALL_MAX). Con nodos, `lead` rotula los
+		// principales. Ambos se recuerdan por navegador.
+		concepts: [ 'words', 'nodes' ].includes( prefs().concepts ) ? prefs().concepts : null,
+		lead: prefs().lead !== false,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
 		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
 		// Si quien mira ya fijó sus fuerzas, no se le cambian (autoForces).
@@ -246,13 +242,18 @@ function main( root ) {
 		label.append( control );
 		return label;
 	};
-	const checkbox = ( iconName, msg, checked, onChange ) => {
-		const input = el( 'input' );
+	// Interruptor con su texto visible (role=switch) y casilla con su texto:
+	// lo que se activa o apaga se lee en la barra, no sólo en un tooltip.
+	const toggle = ( text, checked, onChange, asSwitch ) => {
+		const label = el( 'label', 'constel-map__toggle' );
+		const input = el( 'input', asSwitch ? 'constel-switch' : null );
 		input.type = 'checkbox';
+		if ( asSwitch ) {
+			input.setAttribute( 'role', 'switch' );
+		}
 		input.checked = checked;
 		input.addEventListener( 'change', () => onChange( input.checked ) );
-		const label = iconLabel( iconName, msg );
-		label.prepend( input );
+		label.append( input, el( 'span', null, text ) );
 		return { label, input };
 	};
 
@@ -265,13 +266,13 @@ function main( root ) {
 	} );
 	mode.value = state.mode;
 	// Girar solo: junto a la vista, sólo en 3D; apagado por defecto.
-	const spin = checkbox( 'rotate-cw', 'constellation-autorotate', state.autorotate, ( on ) => {
+	const spin = toggle( mw.msg( 'constellation-autorotate' ), state.autorotate, ( on ) => {
 		state.autorotate = on;
 		savePref( 'autorotate', on );
 		if ( state.view ) {
 			state.view.setAutorotate( on );
 		}
-	} );
+	}, false );
 	spin.label.hidden = state.mode !== '3d';
 	mode.addEventListener( 'change', () => {
 		state.mode = mode.value;
@@ -285,59 +286,53 @@ function main( root ) {
 	const viewGroup = el( 'div', 'constel-map__group' );
 	viewGroup.append( field( 'eye', 'constellation-mode', mode ), spin.label );
 
-	const edges = checkbox( 'share-2', 'constellation-edges', state.edges, ( on ) => {
+	const edges = toggle( mw.msg( 'constellation-edges' ), state.edges, ( on ) => {
 		state.edges = on;
 		render();
-	} );
+	}, true );
 	const edgesGroup = el( 'div', 'constel-map__group' );
 	edgesGroup.append( edges.label );
 
-	// Rótulos: control de tres posiciones, como el − · § · §* del lector.
-	// Con pocos rótulos los conceptos son círculos de área proporcional a su
-	// frecuencia y las aristas sólo se dibujan al apuntar uno o elegirlo.
-	const effectiveLabels = () => state.labels ||
-		( state.data && state.data.nodes.length > AUTO_ALL_MAX ? 'main' : 'all' );
-	const labelsGroup = el( 'div', 'constel-map__group constel-ui constel-seg' );
-	labelsGroup.setAttribute( 'role', 'radiogroup' );
-	labelsGroup.setAttribute( 'aria-label', mw.msg( 'constellation-labels' ) );
-	labelsGroup.title = mw.msg( 'constellation-labels' );
-	const labelButtons = LABEL_OPTIONS.map( ( option ) => {
-		const b = el( 'button', 'constel-seg__option', option.sign );
-		b.type = 'button';
-		b.setAttribute( 'role', 'radio' );
-		b.setAttribute( 'aria-label', mw.msg( option.msg ) );
-		b.title = mw.msg( option.msg );
-		b.dataset.value = option.value;
-		labelsGroup.append( b );
-		return b;
-	} );
-	const syncLabels = () => {
-		labelButtons.forEach( ( b ) => {
-			const on = b.dataset.value === effectiveLabels();
-			b.setAttribute( 'aria-checked', String( on ) );
-			b.tabIndex = on ? 0 : -1;
-		} );
+	// Conceptos como palabras o como nodos (círculos de área proporcional a su
+	// frecuencia y del color de su tema), con un interruptor que dice las dos
+	// cosas. Con nodos, «Rotular los principales» deja la palabra de los más
+	// frecuentes. Las aristas de un mapa de nodos se dibujan al apuntar uno.
+	const effectiveConcepts = () => state.concepts ||
+		( state.data && state.data.nodes.length > AUTO_ALL_MAX ? 'nodes' : 'words' );
+	// Lo que entiende graph.draw: todos los rótulos, sólo los principales o ninguno.
+	const conceptsMode = () => effectiveConcepts() === 'words' ? 'all' : ( state.lead ? 'main' : 'none' );
+	const conceptsGroup = el( 'div', 'constel-map__group' );
+	conceptsGroup.setAttribute( 'role', 'group' );
+	conceptsGroup.setAttribute( 'aria-label', mw.msg( 'constellation-concepts' ) );
+	const wordsLabel = el( 'span', 'constel-map__choice', mw.msg( 'constellation-concepts-words' ) );
+	const nodesLabel = el( 'span', 'constel-map__choice', mw.msg( 'constellation-concepts-nodes' ) );
+	const conceptsSwitch = el( 'input', 'constel-switch' );
+	conceptsSwitch.type = 'checkbox';
+	conceptsSwitch.setAttribute( 'role', 'switch' );
+	conceptsSwitch.setAttribute( 'aria-label', mw.msg( 'constellation-concepts-nodes' ) );
+	const lead = toggle( mw.msg( 'constellation-lead' ), state.lead, ( on ) => {
+		state.lead = on;
+		savePref( 'lead', on );
+		render();
+	}, false );
+	const syncConcepts = () => {
+		const nodes = effectiveConcepts() === 'nodes';
+		conceptsSwitch.checked = nodes;
+		wordsLabel.classList.toggle( 'constel-map__choice--on', !nodes );
+		nodesLabel.classList.toggle( 'constel-map__choice--on', nodes );
+		lead.label.hidden = !nodes;
 	};
-	const chooseLabels = ( value ) => {
-		state.labels = value;
-		savePref( 'labels', value );
-		syncLabels();
+	const chooseConcepts = ( value ) => {
+		state.concepts = value;
+		savePref( 'concepts', value );
+		syncConcepts();
 		render();
 	};
-	labelButtons.forEach( ( b, i ) => {
-		b.addEventListener( 'click', () => chooseLabels( b.dataset.value ) );
-		b.addEventListener( 'keydown', ( e ) => {
-			const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[ e.key ];
-			if ( step ) {
-				e.preventDefault();
-				const count = labelButtons.length;
-				const next = labelButtons[ ( i + step + count ) % count ];
-				next.focus();
-				chooseLabels( next.dataset.value );
-			}
-		} );
-	} );
-	syncLabels();
+	conceptsSwitch.addEventListener( 'change', () => chooseConcepts( conceptsSwitch.checked ? 'nodes' : 'words' ) );
+	wordsLabel.addEventListener( 'click', () => chooseConcepts( 'words' ) );
+	nodesLabel.addEventListener( 'click', () => chooseConcepts( 'nodes' ) );
+	conceptsGroup.append( wordsLabel, conceptsSwitch, nodesLabel, lead.label );
+	syncConcepts();
 
 	// Proximidad: cada grado con su fuerza (0 = ni arista ni atracción).
 	const forces = el( 'div', 'constel-map__forces' );
@@ -542,49 +537,30 @@ function main( root ) {
 	// se llama Constelación).
 	const brand = el( 'span', 'constel-map__brand', 'con§tel' );
 	brand.setAttribute( 'aria-hidden', 'true' );
-	// Con varios lectores: qué conceptos se ven (todos, los que comparten dos o
-	// más de los lectores filtrados, o los propios de uno solo).
+	// Con varios lectores (fila «qué se ve»): qué conceptos se ven, si todos, los
+	// que comparten dos o más de los lectores filtrados o los propios de uno solo.
 	const SCOPES = [
 		{ value: 'all', msg: 'constellation-scope-all' },
 		{ value: 'shared', msg: 'constellation-scope-shared' },
 		{ value: 'own', msg: 'constellation-scope-own' }
 	];
-	const scopeGroup = el( 'div', 'constel-map__group constel-ui constel-seg' );
-	scopeGroup.setAttribute( 'role', 'radiogroup' );
-	scopeGroup.setAttribute( 'aria-label', mw.msg( 'constellation-scope' ) );
-	scopeGroup.hidden = true;
-	const scopeButtons = SCOPES.map( ( option ) => {
-		const b = el( 'button', 'constel-seg__option', mw.msg( option.msg ) );
-		b.type = 'button';
-		b.setAttribute( 'role', 'radio' );
-		b.dataset.value = option.value;
-		scopeGroup.append( b );
-		return b;
+	const scope = el( 'select', 'constel-input' );
+	SCOPES.forEach( ( option ) => {
+		const o = el( 'option', null, mw.msg( option.msg ) );
+		o.value = option.value;
+		scope.append( o );
 	} );
+	const scopeField = field( 'filter', 'constellation-scope', scope );
+	scopeField.hidden = true;
 	const syncScope = () => {
-		scopeGroup.hidden = !isMulti();
-		scopeButtons.forEach( ( b ) => {
-			const on = b.dataset.value === state.scope;
-			b.setAttribute( 'aria-checked', String( on ) );
-			b.tabIndex = on ? 0 : -1;
-		} );
+		scopeField.hidden = !isMulti();
+		scope.value = state.scope;
 	};
-	scopeButtons.forEach( ( b, i ) => {
-		b.addEventListener( 'click', () => {
-			state.scope = b.dataset.value;
-			syncScope();
-			render();
-		} );
-		b.addEventListener( 'keydown', ( e ) => {
-			const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[ e.key ];
-			if ( step ) {
-				e.preventDefault();
-				scopeButtons[ ( i + step + SCOPES.length ) % SCOPES.length ].click();
-				scopeButtons[ ( i + step + SCOPES.length ) % SCOPES.length ].focus();
-			}
-		} );
+	scope.addEventListener( 'change', () => {
+		state.scope = scope.value;
+		render();
 	} );
-	rowView.append( brand, viewGroup, edgesGroup, labelsGroup, scopeGroup, forces, zoom );
+	rowView.append( brand, viewGroup, edgesGroup, conceptsGroup, forces, zoom );
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
 	// Secciones: como la lente (por defecto quien mira; se suman lectores).
@@ -659,7 +635,7 @@ function main( root ) {
 			loadThemes();
 		}
 	} );
-	rowFilters.append( readers.el, pages.el, lens.el );
+	rowFilters.append( readers.el, pages.el, lens.el, scopeField );
 	// Leyenda de colores de los lectores (sólo con varios): el color de cada
 	// uno es el de su lugar en el filtro, el mismo de sus tramos en el mapa.
 	const legend = el( 'ul', 'constel-map__legend' );
@@ -738,7 +714,7 @@ function main( root ) {
 				mode: state.mode,
 				autorotate: state.autorotate,
 				edges: state.edges,
-				labels: effectiveLabels(),
+				labels: conceptsMode(),
 				mainLabels: cfg.mainLabels,
 				maxLabels: cfg.maxLabels,
 				maxLinks: cfg.maxLinks,
@@ -753,7 +729,7 @@ function main( root ) {
 			}
 		}
 		syncUnpin();
-		syncLabels();
+		syncConcepts();
 		syncScope();
 		syncLegend();
 		syncNotice();
