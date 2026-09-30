@@ -988,9 +988,9 @@ surface ConceptMap {
     @guarantee TextScaleIsConsistent
         -- La letra tiene el mismo criterio en 2D y en 3D: al encuadre (el mapa
         -- entero a la vista, también en 3D) mide lo que reservaron las cajas,
-        -- de 13 a 33 px según la frecuencia del concepto y nunca menos de 13.
+        -- de 12 a 28 px según la frecuencia del concepto y nunca menos de 12.
         -- El zoom la escala desde ahí, más lento que el mapa, dentro de un
-        -- rango de 13 a 40 px, así que acercar siempre la agranda. El
+        -- rango de 12 a 34 px, así que acercar siempre la agranda. El
         -- concepto enfocado (elegido) se destaca con un peso tipográfico
         -- mayor, en negrita, igual en 2D y en 3D, y nunca subrayado
         -- (decisión 2026-09-30, pedido del usuario).

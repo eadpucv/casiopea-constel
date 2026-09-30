@@ -1,5 +1,12 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Letra y círculos más chicos.** Los rótulos miden de 12 a 28 px al encuadre
+  (antes 13 a 33) y hasta 34 px con zoom (antes 40); los círculos, de 2,6 a
+  13,2 px de radio (antes 3 a 15,6). El mapa pesa menos frente al texto de la
+  página.
+
 ## 0.12.0 — 2026-09-30
 
 - **Color de los temas.** Un círculo de color antes del nombre de cada tema

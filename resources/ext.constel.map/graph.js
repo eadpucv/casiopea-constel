@@ -90,11 +90,11 @@ const GLIDE = 0.25;
  * Cuánto mide una letra en pantalla, pase lo que pase con el zoom (px).
  * Como el mapa de vera: por debajo del suelo un rótulo es una mancha y por
  * encima del techo tapa a sus vecinos. Vera usa 11–31 con una sola letra de
- * mundo; aquí la frecuencia ya reparte 13–33 a zoom 1, así que el techo sube
+ * mundo; aquí la frecuencia ya reparte 12–28 a zoom 1, así que el techo sube
  * para que acercar no aplane esa jerarquía de golpe.
  */
-const FONT_MIN_PX = 13;
-const FONT_MAX_PX = 40;
+const FONT_MIN_PX = 12;
+const FONT_MAX_PX = 34;
 /**
  * Con qué exponente sigue la letra al zoom al acercar: acercar separa más de
  * lo que agranda (×4 de zoom, ×2 de letra), y nada se vuelve a pisar.
@@ -120,10 +120,10 @@ const MAX_LINKS = 6000;
  * raíz de la frecuencia combinada. En pantalla el radio se acota entre un
  * mínimo apuntable y un máximo (px), como la letra.
  */
-const DOT_R_MIN = 3;
-const DOT_R_MAX = 9.6;
-const DOT_MIN_PX = 3;
-const DOT_MAX_PX = 15.6;
+const DOT_R_MIN = 2.6;
+const DOT_R_MAX = 8.2;
+const DOT_MIN_PX = 2.6;
+const DOT_MAX_PX = 13.2;
 /** Cuánto pesa el suelo del círculo respecto del de la letra al reservar cajas. */
 const DOT_FLOOR = DOT_MIN_PX / FONT_MIN_PX;
 
@@ -137,14 +137,14 @@ function svg( tag, attrs ) {
 
 /**
  * Tamaño tipográfico por frecuencia, como constel: 0.6·§§ + 0.4·páginas,
- * normalizados, entre 13 y 33 px (spec: FrequencyScaling).
+ * normalizados, entre 12 y 28 px (spec: FrequencyScaling).
  *
  * @param {Array} nodes
  * @return {Function}
  */
 function sizer( nodes ) {
 	const score = scorer( nodes );
-	return ( n ) => 13 + 20 * score( n );
+	return ( n ) => 12 + 16 * score( n );
 }
 
 /**

@@ -743,7 +743,7 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   perspectiva sobre SVG; lo lejano se atenúa y lo cercano se pinta encima. Se
   orbita arrastrando o con las flechas (en 2D se panea). «Girar solo» es
   opcional y viene **apagado** (WCAG 2.2.2); se recuerda por navegador y nunca
-  actúa con `prefers-reduced-motion`. Los rótulos miden entre 13 y 33 px
+  actúa con `prefers-reduced-motion`. Los rótulos miden entre 12 y 28 px
   (0.6·§§ + 0.4·páginas, como constel) y escalan con la perspectiva. Aristas
   con grosor constante en pantalla (`vector-effect: non-scaling-stroke`):
   siempre continuas; el grado (co_excerpt, overlap, co_page) se lee en su
