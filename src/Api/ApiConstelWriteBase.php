@@ -59,6 +59,21 @@ abstract class ApiConstelWriteBase extends ApiBase {
 	}
 
 	/**
+	 * Cuenta una escritura contra el límite de frecuencia de anotar
+	 * (RateLimits['constel-annotate']; el derecho noratelimit de bots y
+	 * administradores lo salta). Las escrituras que pasan por
+	 * checkTitleUserPermissions (crear, codificar, glosar, descodificar) ya
+	 * lo cuentan ahí; esto es para las que no tocan una página (temas y
+	 * desarrollos). Borrar lo propio no cuenta: retirarse nunca se limita
+	 * (spec: RightToWithdraw).
+	 */
+	protected function limitRate(): void {
+		if ( $this->getUser()->pingLimiter( self::RIGHT_ANNOTATE ) ) {
+			$this->dieWithError( 'apierror-ratelimited' );
+		}
+	}
+
+	/**
 	 * Exige un lector, con o sin el derecho de anotar: cuenta registrada y sin
 	 * bloqueo sitewide. Basta para BORRAR lo propio (y, con constel-moderate,
 	 * lo ajeno): quien pierde el derecho no queda atrapado con su lectura

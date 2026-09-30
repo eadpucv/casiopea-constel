@@ -13,6 +13,7 @@ class ApiThemeNote extends ApiThemeWriteBase {
 	public function execute() {
 		$params = $this->extractRequestParams();
 		$actorId = $this->requireAnnotator();
+		$this->limitRate();
 		$theme = $this->requireOwnTheme( $params['theme'], $actorId );
 		$text = trim( $params['text'] ) === '' ? '' :
 			$this->requireText( $params['text'], 'text', 'ConstelNoteMaxLength' );

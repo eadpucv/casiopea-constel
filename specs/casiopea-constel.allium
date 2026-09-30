@@ -112,6 +112,16 @@ contract MediaWikiExtensionConformance {
         -- 2026-09-23). Un moderador borra §§ ajenos con config.moderate_right,
         -- sin necesitar además el de anotar.
 
+    @invariant WritesAreRateLimited
+        -- Crear y modificar la lectura propia (§§, codificaciones, glosas,
+        -- temas, membresías y desarrollos) cuenta contra el límite de
+        -- frecuencia "constel-annotate" del core, el mismo mecanismo de las
+        -- ediciones: por omisión 60 acciones por minuto por usuario y 30 por
+        -- cuenta nueva, ajustables en $wgRateLimits. Quien tiene el derecho
+        -- noratelimit (bots y administradores) queda fuera. Borrar lo propio
+        -- nunca cuenta, para que retirarse no dependa de esperar
+        -- (RightToWithdraw; decisión 2026-09-29).
+
     @invariant AnnotatingIsNotEditing
         -- Anotar una página se autoriza con config.annotate_right sobre ESA
         -- página: cuentan los bloqueos (sitewide y parciales), no la

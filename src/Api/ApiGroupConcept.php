@@ -14,6 +14,7 @@ class ApiGroupConcept extends ApiThemeWriteBase {
 	public function execute() {
 		$params = $this->extractRequestParams();
 		$actorId = $this->requireAnnotator();
+		$this->limitRate();
 		if ( !$this->concepts->getById( $params['concept'] ) ) {
 			$this->dieWithError( [ 'apierror-constel-noconcept', $params['concept'] ], 'noconcept' );
 		}

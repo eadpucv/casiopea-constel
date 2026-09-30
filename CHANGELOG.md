@@ -32,6 +32,13 @@
   respuesta de una vez, y `ReaderDirectory` resuelve a todos los lectores con
   cuatro consultas cada vez que se escribe en el buscador. Los usuarios
   ocultos siguen enmascarados igual.
+- **Límite de frecuencia en las escrituras.** Crear y modificar la lectura
+  propia cuenta contra `RateLimits['constel-annotate']`, con 60 acciones por
+  minuto por usuario y 30 por cuenta nueva por omisión. Los bots y
+  administradores (`noratelimit`) quedan fuera, y borrar lo propio nunca
+  cuenta. Crear, codificar y glosar ya pasaban por la comprobación de página
+  del core, que ahora aplica el límite; los temas, membresías y desarrollos lo
+  cuentan con `limitRate()`.
 
 ## 0.10.0 — 2026-09-25
 

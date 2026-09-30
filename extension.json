@@ -535,5 +535,17 @@
 			"description": "Tope de §§ anclados por página para calcular los traslapes del mapa (0 = sin tope). El barrido crece con el cuadrado de los §§ solapados; con tope, cuentan los más antiguos."
 		}
 	},
+	"RateLimits": {
+		"constel-annotate": {
+			"user": [
+				60,
+				60
+			],
+			"newbie": [
+				30,
+				60
+			]
+		}
+	},
 	"manifest_version": 2
 }

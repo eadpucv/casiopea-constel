@@ -848,7 +848,13 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
   `constel-annotate`). La protección de página no cuenta: sólo restringe
   acciones como `edit` o `move`, y anotar no es editar;
 - que el pasaje o tema pertenezca a quien lo modifica, y que el § no esté
-  congelado (salvo para borrarlo: responde `frozen`).
+  congelado (salvo para borrarlo: responde `frozen`);
+- el límite de frecuencia `constel-annotate` (`WritesAreRateLimited`;
+  `RateLimits` del manifiesto: 60 por minuto por usuario, 30 por cuenta nueva).
+  Crear, codificar, descodificar y glosar lo cuentan al pasar por
+  `checkTitleUserPermissions`; los módulos que no tocan una página (temas,
+  membresías, desarrollos) llaman a `limitRate()`. Borrar lo propio y moderar
+  no cuentan, y `noratelimit` (bots, administradores) lo salta.
 
 | Módulo | Spec |
 |---|---|
