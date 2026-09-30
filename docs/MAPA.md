@@ -129,12 +129,12 @@ cerrado o vencido no vuelve a salir mientras el texto sea el mismo.
 Cada concepto es su texto. El tamaño sigue la frecuencia (`FrequencyScaling`):
 
     frecuencia = 0,6 · §§ / máx§§  +  0,4 · páginas / máxpáginas     (0 a 1)
-    tamaño al encuadre = 12 + 16 · frecuencia                          (12 a 28 px)
+    tamaño al encuadre = 11 + 11 · frecuencia                          (11 a 22 px)
 
 La letra tiene el **mismo criterio en 2D y en 3D** (`fontUnits`): al encuadre mide
-`max(12, tamaño · fit · ppu)` px, o sea lo que reservaron las cajas, y el zoom la
-multiplica por `(zoom / fit)^0,5`, con el resultado acotado entre **12 y 34 px**.
-Acercar siempre agranda el texto, más lento que el mapa, y nunca baja de 12 px.
+`max(11, tamaño · fit · ppu)` px, o sea lo que reservaron las cajas, y el zoom la
+multiplica por `(zoom / fit)^0,5`, con el resultado acotado entre **11 y 22 px**.
+Acercar siempre agranda el texto, más lento que el mapa, y nunca baja de 11 px.
 (Antes el 2D escalaba la letra con el zoom de encuadre, aplastada contra el piso en
 mapas densos, y el 3D partía sin encuadre, así que salía más grande; y como la
 letra crecía desde un tamaño natural bajo el piso, acercar no la cambiaba.)
@@ -150,7 +150,7 @@ Cada concepto es un `<circle>` del color de su tema, con **área proporcional a 
 frecuencia** (la misma del rótulo). En pantalla mide
 
     radio = DOT_MIN_PX · (1 + (DOT_MAX_PX / DOT_MIN_PX − 1) · √frecuencia)
-          = de 2,6 a 13,2 px al encuadre
+          = de 2,4 a 10 px al encuadre
 
 y crece al acercar como la letra (`(zoom / fit)^0,5`). El círculo es lo que se
 apunta, recibe el foco y se arrastra; la palabra aparece encima al apuntarlo o
@@ -303,7 +303,7 @@ Después vienen dos pasos que sólo existen en 2D:
    nada se toque (`LabelsNeverOverlapIn2D`).
 2. **Encuadre** (`settle()`): el mapa se centra y el zoom inicial es el que lo
    encuadra (`min(1, 0,96·ancho/extensión, 0,96·alto/extensión)`). Si a ese zoom una
-   letra quedaría bajo 12 px, su caja se reserva ya de ese tamaño antes de separar,
+   letra quedaría bajo 11 px, su caja se reserva ya de ese tamaño antes de separar,
    así que a ese zoom o más nada se pisa.
 
 Los conceptos **fijados a mano** (arrastrados, o movidos con Alt y las flechas) no se
@@ -518,9 +518,9 @@ páginas.
 | atracción al tema | 0,15 | hacia el centroide del tema |
 | `EDGE_IN_LABELS` | 1,3 | 2D: `k` en anchos medios de caja |
 | `PAD` | 3 | 2D: margen de cada caja (rótulo o círculo) |
-| `FONT_MIN_PX`, `FONT_MAX_PX` | 12, 34 | rango de la letra en pantalla |
+| `FONT_MIN_PX`, `FONT_MAX_PX` | 11, 22 | rango de la letra en pantalla |
 | `FONT_GROWTH` | 0,5 | exponente con que el zoom escala la letra y los nodos |
-| `DOT_MIN_PX`, `DOT_MAX_PX` | 2,6, 13,2 | radio de los nodos al encuadre |
+| `DOT_MIN_PX`, `DOT_MAX_PX` | 2,4, 10 | radio de los nodos al encuadre |
 | `RADIUS` | 210 | 3D: radio base de la esfera (crece con `√(n/60)`, hasta 3×) |
 | `CAMERA` | 900 | 3D: distancia de la cámara |
 | `DEPTH_FOG_MIN` | 0,08 | 3D: opacidad de lo más lejano |
@@ -545,7 +545,7 @@ posiciones a zoom de encuadre, en unidades del lienzo:
 | Nodos | 1 014 × 854 | 0,84 | 931 |
 
 Con todas las palabras, 703 de los 1 006 quedaban en columnas de cinco o más con la
-misma `x` (57 columnas, la mayor de 42). Con 1 006 letras de 12 px como mínimo el mapa
+misma `x` (57 columnas, la mayor de 42). Con 1 006 letras de 11 px como mínimo el mapa
 no cabe en la pantalla, y cada pasada de `settle()` reserva cajas más grandes, así
 que la densidad de fondo la resuelven mejor los nodos. Por eso existe el tope de
 palabras (300) y el aviso.
