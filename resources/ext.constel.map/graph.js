@@ -917,6 +917,18 @@ function draw( container, data, view ) {
 	// y su círculo se pintan con el color del lector que lo aporta; si lo
 	// aportan varios, con un degradado de tramos parejos al borde, de largo
 	// proporcional a lo que aporta cada uno (spec: ConceptMap.ReaderContributions).
+	// Color propio de un tema (view.conceptColors): pinta el texto y el círculo
+	// de sus conceptos; el aporte de los lectores, si lo hay, va por encima.
+	if ( view.conceptColors ) {
+		view.conceptColors.forEach( ( color, id ) => {
+			if ( nodeEls.has( id ) ) {
+				nodeEls.get( id ).style.fill = color;
+			}
+			if ( dotEls.has( id ) ) {
+				dotEls.get( id ).style.fill = color;
+			}
+		} );
+	}
 	const readerNames = view.readers && view.readers.length >= 2 ? view.readers : null;
 	if ( readerNames ) {
 		const defs = svg( 'defs' );
@@ -1100,7 +1112,9 @@ function draw( container, data, view ) {
 			node.depth = z2;
 			const el = nodeEls.get( node.id );
 			const box = boxes && boxes.get( node.id );
-			const font = fontUnits( size( node ) * persp );
+			// La perspectiva agranda el texto a la raíz: el de los conceptos
+			// cercanos no debe crecer tanto como su caja (TextScaleIsConsistent).
+			const font = fontUnits( size( node ) * Math.sqrt( persp ) );
 			const dot = dotEls.get( node.id );
 			if ( dot ) {
 				// Sin rótulo: el círculo va en el punto; su rótulo, si se
@@ -1775,6 +1789,15 @@ function serialize( root, container, meta ) {
 			}
 			node.setAttribute( 'fill', paint( cs.fill ) );
 			node.setAttribute( 'font-family', cs.fontFamily );
+			node.setAttribute( 'font-weight', cs.fontWeight );
+			// El halo de contraste del mapa viaja con el texto: el trazo va
+			// debajo del relleno (paint-order) y con uniones redondeadas.
+			if ( cs.stroke !== 'none' && parseFloat( cs.strokeWidth ) > 0 ) {
+				node.setAttribute( 'stroke', toRgb( cs.stroke ) );
+				node.setAttribute( 'stroke-width', cs.strokeWidth );
+				node.setAttribute( 'stroke-linejoin', 'round' );
+				node.setAttribute( 'paint-order', 'stroke' );
+			}
 			node.removeAttribute( 'tabindex' );
 			node.removeAttribute( 'role' );
 		} else {

@@ -504,12 +504,40 @@ function addConceptPill( theme, fb, ctx, fail ) {
 }
 
 /**
+ * El círculo de color de un tema, antes de su nombre: abre el selector de
+ * color y deja el tema (texto, círculos y título) con el color elegido.
+ *
+ * @param {Object} theme
+ * @param {string} current color actual, #rrggbb
+ * @param {HTMLElement} title para teñir el título al elegir
+ * @param {Object} ctx {onThemeColor}
+ * @return {HTMLElement}
+ */
+function themeSwatch( theme, current, title, ctx ) {
+	const text = mw.msg( 'constellation-theme-color', theme.label );
+	const swatch = el( 'label', 'constel-pill__color constel-theme__color' );
+	swatch.style.background = current;
+	swatch.title = text;
+	const input = el( 'input' );
+	input.type = 'color';
+	input.value = current;
+	input.setAttribute( 'aria-label', text );
+	input.addEventListener( 'input', () => {
+		swatch.style.background = input.value;
+		title.style.color = input.value;
+	} );
+	input.addEventListener( 'change', () => ctx.onThemeColor( theme, input.value ) );
+	swatch.append( input );
+	return swatch;
+}
+
+/**
  * Temas de un lector, con sus conceptos y su desarrollo (uno por tema).
  *
  * @param {HTMLElement} box
  * @param {Array} themes de list=constelthemes
- * @param {Object} ctx {editable, deletable, ownerLabel, colorOffset, onChanged,
- *  onSelectConcept}
+ * @param {Object} ctx {editable, deletable, ownerLabel, colorOffset, themeColor,
+ *  onThemeColor, onChanged, onSelectConcept}
  */
 function themesPanel( box, themes, ctx ) {
 	box.textContent = '';
@@ -528,6 +556,11 @@ function themesPanel( box, themes, ctx ) {
 		const fb = feedbackBox();
 		// El color del tema (el mismo del grafo) va en el título, sin viñeta.
 		const title = el( 'h5', 'constel-theme__title' );
+		if ( ctx.themeColor ) {
+			const current = ctx.themeColor( theme, color );
+			title.style.color = current;
+			title.append( themeSwatch( theme, current, title, ctx ) );
+		}
 		if ( ctx.editable ) {
 			title.append( ...themeTitle( theme, section, fb, ctx, fail ) );
 		} else {

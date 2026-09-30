@@ -290,6 +290,9 @@
 /* ── Lienzo y panel ───────────────────────────────────────────────────── */
 
 .constel-map__layout {
+	/* Sus capas internas (botón de pantalla completa, aviso, división) quedan
+	 * dentro de él y nunca pasan por encima de un desplegable de los filtros. */
+	isolation: isolate;
 	display: grid;
 	grid-template-columns: minmax( 0, 1fr ) minmax( 16rem, 22rem );
 	gap: var( --constel-s-4 );

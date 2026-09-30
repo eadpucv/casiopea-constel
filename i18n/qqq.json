@@ -48,6 +48,7 @@
 	"constellation-as-list": "Summary of the text alternative of the graph.",
 	"constellation-edges": "Label of the checkbox that shows the links.",
 	"constellation-reader-color": "Label of the color picker in a reader pill. $1 is the reader name.",
+	"constellation-theme-color": "Label of the color picker before a theme name. $1 is the theme name.",
 	"constellation-sections-hint": "Tooltip of the readers icon in the map filter row.",
 	"constellation-pages-hint": "Tooltip of the pages icon in the map filter row.",
 	"constellation-lens-hint": "Tooltip of the theme lens icon in the map filter row.",

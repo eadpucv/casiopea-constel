@@ -183,6 +183,7 @@ function main( root ) {
 		// Color elegido para cada lector (usuario → #rrggbb); el que no tiene
 		// usa el de su lugar en el filtro (readerColor).
 		readerColors: prefs().readerColors || {},
+		themeColors: prefs().themeColors || {},
 		// Con varios lectores: todo, sólo lo compartido, o sólo lo propio de cada uno.
 		scope: 'all',
 		readersOn: !!me,
@@ -761,6 +762,19 @@ function main( root ) {
 		state.themes.forEach( ( t, i ) => t.concepts.forEach( ( c ) => map.set( c.id, i ) ) );
 		return map;
 	};
+	// Color de un tema: el que eligió el lector, o el de su categoría.
+	const themeColor = ( theme, index ) => state.themeColors[ theme.id ] ||
+		defaultReaderColor( index );
+	// Concepto → color, sólo de los temas con color propio.
+	const conceptColors = () => {
+		const map = new Map();
+		state.themes.forEach( ( t ) => {
+			if ( state.themeColors[ t.id ] ) {
+				t.concepts.forEach( ( c ) => map.set( c.id, state.themeColors[ t.id ] ) );
+			}
+		} );
+		return map;
+	};
 
 	/**
 	 * Lo que se dibuja: todo, o con varios lectores sólo los conceptos que
@@ -791,7 +805,7 @@ function main( root ) {
 		}
 		if ( state.rings ) {
 			// Con los anillos abiertos el lienzo es de ellos: sólo se repintan los temas.
-			state.rings.setThemes( themeIndex() );
+			state.rings.setThemes( themeIndex(), conceptColors() );
 			renderList();
 			return;
 		}
@@ -820,6 +834,7 @@ function main( root ) {
 				forces: state.forces,
 				fill: full,
 				themeOf: themeIndex(),
+				conceptColors: conceptColors(),
 				onSelect: select,
 				onArrange: syncUnpin
 			} );
@@ -965,6 +980,7 @@ function main( root ) {
 			state.rings = rings.open( canvas, data, {
 				center: node.id,
 				themeOf: themeIndex(),
+				conceptColors: conceptColors(),
 				onSelect: ( chosen ) => select( chosen ),
 				onClose: closeRings
 			} );
@@ -1042,6 +1058,12 @@ function main( root ) {
 				// Borrar lo propio no pide el derecho (spec: RightToWithdraw).
 				deletable: !!me && name === me,
 				colorOffset: offset,
+				themeColor,
+				onThemeColor: ( theme, color ) => {
+					state.themeColors[ theme.id ] = color;
+					savePref( 'themeColors', state.themeColors );
+					render();
+				},
 				ownerLabel: name === me ?
 					mw.msg( 'constellation-my-themes' ) :
 					mw.msg( 'constellation-themes-of', lens.labelOf( name ) ),

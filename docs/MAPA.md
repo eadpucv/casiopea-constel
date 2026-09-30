@@ -77,7 +77,7 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | **Acercar y alejar** | Escalan el mapa por 1,25 (hasta 8 veces) y, con él, la letra, más lento (sección 3) | encuadre |
 | <img src="icons/crosshair.svg" width="18" alt=""> | **Encuadrar todo el mapa** | Vuelve al zoom y la posición de partida, centrado en todo el mapa | |
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | **Volver al orden automático** (sólo en 2D, y sólo si hay conceptos movidos a mano) | Suelta los conceptos que se arrastraron y rehace el layout | |
-| <img src="icons/download.svg" width="18" alt=""> | **Exportar el mapa como SVG** | Descarga el mapa tal como se ve (vista, filtros y zoom), con colores y tipografías ya resueltos | |
+| <img src="icons/download.svg" width="18" alt=""> | **Exportar el mapa como SVG** | Descarga el mapa tal como se ve (vista, filtros y zoom), con colores, tipografías y el halo de contraste de los textos ya resueltos | |
 | <img src="icons/maximize.svg" width="18" alt=""> / <img src="icons/minimize.svg" width="18" alt=""> | **Pantalla completa del mapa** (esquina del mapa) | Pone sólo el mapa a pantalla completa; Esc sale | |
 
 Las tres fuerzas de proximidad se explican en la sección 4; al moverlas el mapa
@@ -474,6 +474,7 @@ Accesibilidad:
 | `lead` | rotular los principales con nodos | `false` |
 | `autorotate` | girar solo en 3D | `false` |
 | `readerColors` | color elegido de cada lector (usuario → `#rrggbb`) | el de su lugar en el filtro |
+| `themeColors` | color elegido de cada tema (id → `#rrggbb`), desde el círculo antes de su nombre en el panel de temas | el de su categoría |
 | `ante` | proporción del mapa en la pantalla completa (20 a 80 %) | 50 |
 
 La vista (2D o 3D), el modo de qué conceptos ver y los filtros de lectores y páginas

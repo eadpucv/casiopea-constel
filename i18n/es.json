@@ -48,6 +48,7 @@
 	"constellation-as-list": "Ver como lista",
 	"constellation-edges": "Mostrar las aristas, que son las relaciones entre conceptos (la atracción entre ellos se mantiene aunque se oculten)",
 	"constellation-reader-color": "Color de $1 en el mapa (clic para cambiarlo)",
+	"constellation-theme-color": "Color del tema «$1» en el mapa (clic para cambiarlo)",
 	"constellation-sections-hint": "Secciones de: sólo los §§ de estos lectores (por omisión, tú)",
 	"constellation-pages-hint": "Páginas: sólo los §§ de estas páginas (vacío: todas)",
 	"constellation-lens-hint": "Lente de temas: colorea y agrupa los conceptos según los temas de estos lectores",

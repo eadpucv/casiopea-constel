@@ -48,6 +48,7 @@
 	"constellation-as-list": "Show as a list",
 	"constellation-edges": "Show the links between concepts (the pull between them stays even when hidden)",
 	"constellation-reader-color": "Color of $1 on the map (click to change it)",
+	"constellation-theme-color": "Color of the theme “$1” on the map (click to change it)",
 	"constellation-sections-hint": "Sections of: only the § of these readers (by default, you)",
 	"constellation-pages-hint": "Pages: only the § on these pages (empty: all)",
 	"constellation-lens-hint": "Theme lens: colors and groups the concepts by the themes of these readers",

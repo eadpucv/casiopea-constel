@@ -342,7 +342,9 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 
 .constel-ac {
 	position: absolute;
-	z-index: 1;
+	/* Un desplegable va siempre por delante de lo que tenga debajo (por ejemplo
+	 * el botón de pantalla completa del mapa): en la capa de popups. */
+	z-index: var( --constel-z-popup );
 	right: 0;
 	left: 0;
 	margin: var( --constel-s-1 ) 0 0;

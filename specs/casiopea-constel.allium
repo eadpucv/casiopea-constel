@@ -994,6 +994,28 @@ surface ConceptMap {
         -- concepto enfocado (elegido) se destaca con un peso tipográfico
         -- mayor, en negrita, igual en 2D y en 3D, y nunca subrayado
         -- (decisión 2026-09-30, pedido del usuario).
+        -- La perspectiva agranda la letra en 3D a la raíz de lo que agranda
+        -- la caja, para que el texto cercano no resulte mucho mayor que en 2D
+        -- (decisión 2026-09-30, pedido del usuario).
+
+    @guarantee ThemeColors
+        -- El color de un tema se elige con un círculo de color antes de su
+        -- nombre en el panel de temas (mismo tamaño y selector que el de las
+        -- píldoras de lectores). Pinta el título del tema, el texto y el
+        -- círculo de sus conceptos en el mapa y en la vista de anillos; con
+        -- varios lectores el color del lector va por encima. Sin elección,
+        -- vale el de su categoría. Se recuerda por navegador, por tema
+        -- (decisión 2026-09-30, pedido del usuario).
+
+    @guarantee ExportedSvgKeepsHalo
+        -- El SVG exportado lleva en cada texto el halo de contraste del mapa
+        -- (trazo bajo el relleno, uniones redondeadas) y su peso tipográfico
+        -- (decisión 2026-09-30, pedido del usuario).
+
+    @guarantee PopupsOverMapControls
+        -- Un desplegable de los filtros va siempre por delante de los
+        -- controles flotantes del mapa, como el botón de pantalla completa
+        -- (decisión 2026-09-30, pedido del usuario).
 
     @guarantee LabelsAreOptional
         -- Un interruptor explícito, Palabras o Nodos, elige cómo se dibujan los

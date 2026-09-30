@@ -186,6 +186,7 @@ function open( container, data, options ) {
 		Math.sqrt( 0.6 * n.excerpts / maxExc + 0.4 * n.pages / maxPages );
 	const reduce = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 	let themeOf = options.themeOf;
+	let colors = options.conceptColors || new Map();
 
 	const wrap = html( 'div', 'constel-rings' );
 	const bar = html( 'div', 'constel-rings__bar' );
@@ -256,6 +257,9 @@ function open( container, data, options ) {
 			// Clases: constel-graph__node--cat-0 … constel-graph__node--cat-7
 			el.setAttribute( 'class', el.getAttribute( 'class' )
 				.replace( /\s*constel-graph__node--cat-\d/g, '' ) + ( cat ? ' ' + cat : '' ) );
+		} );
+		[ entry.dot, entry.text ].forEach( ( el ) => {
+			el.style.fill = colors.get( entry.node.id ) || '';
 		} );
 		entry.dot.setAttribute( 'r', ( isCenter ? DOT_CENTER : dotOf( entry.node ) ).toFixed( 1 ) );
 		entry.g.classList.toggle( 'constel-rings__node--center', isCenter );
@@ -420,8 +424,9 @@ function open( container, data, options ) {
 	center( options.center, true );
 	return {
 		center,
-		setThemes: ( map ) => {
+		setThemes: ( map, custom ) => {
 			themeOf = map;
+			colors = custom || new Map();
 			els.forEach( paint );
 		},
 		centerId: () => centerId,

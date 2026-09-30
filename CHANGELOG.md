@@ -1,5 +1,17 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Color de los temas.** Un círculo de color antes del nombre de cada tema
+  abre el selector de color. El elegido pinta el título, el texto y el círculo
+  de sus conceptos, en el mapa y en los anillos, y se recuerda por navegador.
+- **Texto 3D más chico.** La perspectiva agranda la letra a la raíz de lo que
+  agranda la caja, y el texto cercano deja de verse desmedido frente al 2D.
+- **SVG con halo.** El SVG exportado conserva el contorno de contraste de los
+  textos y su negrita.
+- **Desplegables por delante.** El desplegable del filtro de páginas queda
+  sobre el botón de pantalla completa, y el layout del mapa aísla sus capas.
+
 ## 0.11.0 — 2026-09-30
 
 - **Aristas visibles con nodos.** Con el interruptor «Aristas» encendido se
