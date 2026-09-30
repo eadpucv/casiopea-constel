@@ -5,8 +5,6 @@ namespace MediaWiki\Extension\CasiopeaConstel\Specials;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
 use MediaWiki\Html\Html;
 use MediaWiki\SpecialPage\SpecialPage;
-use MediaWiki\User\ActorNormalization;
-use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Especial:Constelación — el mapa de conceptos de todos los lectores
@@ -20,9 +18,7 @@ use Wikimedia\Rdbms\IConnectionProvider;
 class SpecialConstellation extends SpecialPage {
 
 	public function __construct(
-		private readonly GraphBuilder $graphBuilder,
-		private readonly ActorNormalization $actorNormalization,
-		private readonly IConnectionProvider $dbProvider
+		private readonly GraphBuilder $graphBuilder
 	) {
 		parent::__construct( 'Constellation' );
 	}
@@ -48,29 +44,28 @@ class SpecialConstellation extends SpecialPage {
 		$out->addBodyClasses( [ 'constel-wide', 'constel-full' ] );
 		$out->addModules( [ 'ext.constel.map' ] );
 
-		$viewer = $user->isRegistered()
-			? $this->actorNormalization->findActorId( $user, $this->dbProvider->getReplicaDatabase() )
-			: null;
-		$graph = $this->graphBuilder->build( null, null, $viewer );
+		// La lista sólo necesita frecuencias: un conteo por concepto, sin armar
+		// el grafo (el cliente lo pide a la API).
 		$out->addHTML( Html::rawElement(
 			'div',
 			[ 'id' => 'constel-map', 'class' => 'constel-map' ],
-			$this->fallbackList( $graph )
+			$this->fallbackList( $this->graphBuilder->conceptCounts() )
 		) );
 	}
 
 	/**
-	 * Lista de conceptos por frecuencia: alternativa textual del grafo.
+	 * Lista de conceptos por frecuencia (ya vienen ordenados): alternativa
+	 * textual del grafo.
+	 *
+	 * @param array<int,array{label:string,excerpts:int,pages:int}> $concepts
 	 */
-	private function fallbackList( array $graph ): string {
-		if ( !$graph['nodes'] ) {
+	private function fallbackList( array $concepts ): string {
+		if ( !$concepts ) {
 			return Html::element( 'p', [ 'class' => 'constel-map__empty' ],
 				$this->msg( 'constellation-empty' )->text() );
 		}
-		$nodes = $graph['nodes'];
-		usort( $nodes, static fn ( $a, $b ) => [ $b['excerpts'], $a['label'] ] <=> [ $a['excerpts'], $b['label'] ] );
 		$items = '';
-		foreach ( $nodes as $node ) {
+		foreach ( $concepts as $node ) {
 			$items .= Html::rawElement( 'li', [],
 				Html::element( 'span', [ 'class' => 'constel-map__label' ], $node['label'] ) . ' ' .
 				Html::element( 'span', [ 'class' => 'constel-map__count' ],

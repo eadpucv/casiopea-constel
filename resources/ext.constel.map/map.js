@@ -140,6 +140,11 @@ function main( root ) {
 		pages: pageParam ? [ pageParam ] : [],
 		lens: me ? [ me ] : [],
 		data: null,
+		// Grados de arista ya pedidos a la API (sólo se piden los que tienen
+		// fuerza), los filtros con que se pidieron y la vuelta de carga vigente.
+		kinds: new Set(),
+		graphParams: {},
+		epoch: 0,
 		themes: [],
 		myThemes: [],
 		selected: null,
@@ -274,9 +279,20 @@ function main( root ) {
 		if ( !pendingForces ) {
 			pendingForces = requestAnimationFrame( () => {
 				pendingForces = null;
-				if ( state.view ) {
-					state.view.setForces( state.forces );
-				}
+				// Un grado que estaba en 0 y recién tiene fuerza aún no se
+				// pidió: se pide y se suma sin redibujar el mapa.
+				ensureKinds().then( ( added ) => {
+					if ( state.view ) {
+						if ( added.length ) {
+							state.view.addLinks( added );
+						} else {
+							state.view.setForces( state.forces );
+						}
+					}
+					if ( added.length ) {
+						renderList();
+					}
+				} );
 			} );
 		}
 	};
@@ -670,8 +686,43 @@ function main( root ) {
 		} );
 	}
 
+	/**
+	 * Grados de arista con fuerza mayor que cero: los únicos que el mapa
+	 * usa (con 0 no dibujan ni atraen), así que los únicos que se piden.
+	 *
+	 * @param {Set<string>} [except] grados que no hace falta pedir
+	 * @return {string[]}
+	 */
+	function wantedKinds( except ) {
+		return Object.keys( graph.FORCES )
+			.filter( ( kind ) => state.forces[ kind ] > 0 && !( except && except.has( kind ) ) );
+	}
+
+	/**
+	 * Pide los grados con fuerza que aún no se cargaron, con los mismos
+	 * filtros del mapa vigente.
+	 *
+	 * @return {Promise<Array>} las aristas que llegaron (vacío si no faltaba nada)
+	 */
+	function ensureKinds() {
+		const missing = wantedKinds( state.kinds );
+		if ( !missing.length || !state.data ) {
+			return Promise.resolve( [] );
+		}
+		const epoch = state.epoch;
+		missing.forEach( ( kind ) => state.kinds.add( kind ) );
+		const params = Object.assign( {}, state.graphParams, { cgkinds: missing } );
+		// Si mientras tanto cambiaron los filtros, estas aristas son de otro mapa.
+		const fresh = ( found ) => epoch === state.epoch ? found.links : [];
+		return api.graph( params ).then( fresh, () => {
+			missing.forEach( ( kind ) => state.kinds.delete( kind ) );
+			return [];
+		} );
+	}
+
 	function loadGraph() {
 		canvas.textContent = mw.msg( 'constellation-loading' );
+		const epoch = ++state.epoch;
 		return api.pageIds( state.pages ).then( ( ids ) => {
 			const params = {};
 			if ( state.readersOn && state.readers.length ) {
@@ -681,8 +732,18 @@ function main( root ) {
 				// Páginas inexistentes: filtro imposible, no "todas".
 				params.cgpageids = ids.length ? ids : [ 0 ];
 			}
-			return api.graph( params );
+			state.graphParams = params;
+			const kinds = wantedKinds();
+			return api.graph( Object.assign( { cgkinds: kinds }, params ) ).then( ( data ) => {
+				if ( epoch === state.epoch ) {
+					state.kinds = new Set( kinds );
+				}
+				return data;
+			} );
 		} ).then( ( data ) => {
+			if ( epoch !== state.epoch ) {
+				return;
+			}
 			state.data = data;
 			render();
 		} );

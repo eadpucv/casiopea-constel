@@ -394,7 +394,7 @@ function forceOf( forces, kind ) {
  *  forces: {co_excerpt, overlap, co_page} (0–1; 0 = sin arista ni atracción),
  *  themeOf: Map, onSelect}
  * @return {Object} controles: zoomIn, zoomOut, reset, select, setForces,
- *  setAutorotate, destroy
+ *  addLinks, setAutorotate, destroy
  */
 function draw( container, data, view ) {
 	container.textContent = '';
@@ -464,22 +464,23 @@ function draw( container, data, view ) {
 	const neighbours = new Map( nodes.map( ( n ) => [ n.id, new Set() ] ) );
 	const linkEls = [];
 	const linkLayer = svg( 'g', { class: 'constel-graph__links' } );
+	const addLinkEl = ( l ) => {
+		// Clases: constel-graph__link--co_excerpt, --overlap, --co_page
+		const line = svg( 'line', {
+			class: 'constel-graph__link constel-graph__link--' + l.kind,
+			'stroke-width': l.kind === 'co_page' ?
+				1 :
+				Math.min( 5, 1 + Math.log2( 1 + l.weight ) ),
+			'vector-effect': 'non-scaling-stroke'
+		} );
+		linkEls.push( {
+			el: line, kind: l.kind, a: byId.get( l.source ), b: byId.get( l.target )
+		} );
+	};
 	if ( view.edges ) {
 		// Todas las aristas se crean; las de un grado en 0 quedan fuera del
 		// lienzo (styleLinks), así una fuerza puede volver sin redibujar.
-		data.links.forEach( ( l ) => {
-			// Clases: constel-graph__link--co_excerpt, --overlap, --co_page
-			const line = svg( 'line', {
-				class: 'constel-graph__link constel-graph__link--' + l.kind,
-				'stroke-width': l.kind === 'co_page' ?
-					1 :
-					Math.min( 5, 1 + Math.log2( 1 + l.weight ) ),
-				'vector-effect': 'non-scaling-stroke'
-			} );
-			linkEls.push( {
-				el: line, kind: l.kind, a: byId.get( l.source ), b: byId.get( l.target )
-			} );
-		} );
+		data.links.forEach( addLinkEl );
 	}
 	// Vecinos, visibilidad y opacidad de cada arista, según las fuerzas.
 	const styleLinks = () => {
@@ -1208,6 +1209,18 @@ function draw( container, data, view ) {
 		gliding = false;
 		zoomGoal = null;
 	}
+	// Suma aristas de un grado que aún no se había pedido (el cliente sólo pide
+	// los grados con fuerza): entran a data.links y, con las aristas visibles,
+	// a la capa de líneas; setForces las dispone según las fuerzas de ahora.
+	function addLinks( more ) {
+		for ( const l of more ) {
+			data.links.push( l );
+			if ( view.edges ) {
+				addLinkEl( l );
+			}
+		}
+		setForces( view.forces );
+	}
 	function setForces( forces ) {
 		if ( !document.contains( root ) ) {
 			return;
@@ -1289,6 +1302,7 @@ function draw( container, data, view ) {
 			aim( selected );
 		},
 		setForces,
+		addLinks,
 		exportSvg: ( meta ) => serialize( root, container, meta ),
 		setAutorotate: ( on ) => {
 			autorotate = on;

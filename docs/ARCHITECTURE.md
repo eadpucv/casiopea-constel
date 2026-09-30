@@ -481,12 +481,12 @@ sequenceDiagram
     participant G as GraphBuilder
 
     V->>SP: Especial:Constelación
-    SP->>G: grafo de todos
+    SP->>G: conceptCounts (un conteo por concepto, sin grafo)
     SP-->>V: lista de conceptos (respaldo sin JS)<br/>+ body.constel-wide
     SP-->>M: ext.constel.map
-    M->>API: list=constelgraph (lectores, páginas)
-    API->>G: build(lectores, páginas, quien mira)
-    G-->>API: nodos + aristas co_excerpt · overlap · co_page
+    M->>API: list=constelgraph (lectores, páginas, grados con fuerza)
+    API->>G: buildPacked(lectores, páginas, quien mira, grados)
+    G-->>API: nodos + aristas empaquetadas (de la caché si sigue vigente)
     M->>API: list=constelthemes (lectores de la lente)
     M-->>V: grafo 3D + lista accesible + panel de temas
     V->>M: elige un concepto
@@ -676,9 +676,46 @@ página especial) arma el grafo en una sola consulta sobre codificaciones y
 - **Nodos:** número de §§, número de páginas y `mine` (si quien mira aportó).
 - **Filtros:** lectores (`cgusers`) y páginas (`cgpageids`), cada uno con
   varios valores; vacío = todos.
+- **Lista de respaldo:** `conceptCounts()` da, en una consulta agrupada, cada
+  concepto con sus §§ y páginas, sin armar el grafo (Especial:Constelación ya
+  no lo calcula en el servidor; el cliente lo pide a la API).
 
-Hoy se calcula al vuelo. Si el volumen crece, se cachea en `WANObjectCache` con
-una *check key* que tocan las escrituras.
+**Caché** (`GraphIsCached`). El resultado se guarda en `WANObjectCache` con una
+clave por (lectores, páginas, grados pedidos, tope de traslapes) y se descarta
+con una *check key* (`GraphVersion`) que tocan todas las escrituras que cambian
+lo que el mapa dibuja: en `ExcerptStore` crear, codificar, descodificar, borrar,
+re-anclar, perder, congelar y adoptar; en `ConceptStore` renombrar y fusionar.
+El contacto ocurre al resolverse la transacción (`onTransactionResolution`;
+sin transacción abierta, de inmediato) y una sola vez por transacción. Lo que
+depende de quien mira (`mine`) no entra en la caché: sale de una consulta
+aparte (`viewerConcepts`) sobre el grafo guardado. Detalles de WANObjectCache
+que importan: la marca de contacto se redondea al segundo, y tras cada
+contacto hay una espera (`HOLDOFF_TTL`, unos 11 s) en que el grafo se recalcula
+en cada lectura en vez de reutilizarse, para no guardar datos de una réplica
+atrasada; `lockTSE` (5 s) evita que varias lecturas simultáneas lo recalculen
+a la vez. `$wgConstelGraphCache` (por omisión `null`: la caché principal de la
+wiki) permite dedicar al grafo otro tipo de caché de `$wgObjectCaches` (p. ej.
+`CACHE_DB` cuando la principal es `CACHE_NONE`, como en la réplica local).
+
+**Forma empaquetada.** Los nodos van como objetos (`id`, `label`, `excerpts`,
+`pages`, `mine`), ordenados por id. Con `cgcompact`, las aristas van por grado
+(`runs`) como una cadena de enteros separados por comas que lista tramos
+`i,n,j1,w1,…,jn,wn`: las aristas del nodo de posición `i` (en `nodes`) a `n`
+nodos `j` (con `i < j`), cada una con su peso. Va como cadena y no como lista
+porque `ApiResult` recorre cada elemento de cada lista al serializar (la
+transformación `Types`, unos 2,5 µs por entero: con 120 000 aristas costaba
+más de medio segundo, casi todo el tiempo de la respuesta). `cgkinds` limita
+los grados: el cliente pide sólo los de fuerza mayor que cero y, si una fuerza
+sube desde 0, pide los que faltan (`addLinks` los suma al grafo dibujado). La
+salida verbosa (sin `cgcompact`) se conserva para otros consumidores.
+
+**Costos que importan** (medidos con 20 000 §§; ver `carga-mediciones.csv`).
+El bucle de pares de `co_page` es el más caliente: las claves de par
+`a·base + b` usan como base el mayor id de concepto más uno, no una potencia de
+dos, porque la tabla hash de PHP indexa por los bits bajos de la clave y con
+una base grande casi todas colisionan (el mismo bucle tardaba el doble). Los
+traslapes barren cada página ordenada por inicio, con costo proporcional a los
+pares solapados; `$wgConstelOverlapMaxPerPage` los acota por página.
 
 **Especial:Constelación** (`SpecialConstellation`, pública; los anónimos ven y
 navegan, pero no operan). El servidor emite la lista de conceptos por
@@ -832,7 +869,7 @@ CSRF y están en modo escritura. Antes de tocar datos comprueban:
 | `list=constelexcerpts` | `cepageid` (anclados de una página), `ceuser` (todos los de un lector, incl. perdidos), `ceconcept` (los de un concepto), `ceids` (por id). Los congelados sólo salen para su autor y para quien tiene `deletedtext` |
 | `list=constelconcepts` | `ccsearch` (autocompletado tolerante, por uso), `ccvariantsof`, `ccids`, `ccthemes` (temas que lo contienen) |
 | `list=constelthemes` | `ctuser` (uno o varios), `ctids` (con conceptos y `development`) |
-| `list=constelgraph` | `cgusers` (lectores), `cgpageids` (páginas); vacío = todos |
+| `list=constelgraph` | `cgusers` (lectores), `cgpageids` (páginas); vacío = todos. `cgkinds` (grados de arista; por omisión los tres), `cgcompact` (aristas empaquetadas en `runs`) |
 | `list=constelreaders` | `crsearch` (nombre real o de usuario, sin tildes) o `crnames` (describe); devuelve `{name, display}` |
 
 El nombre de un autor oculto (`hideuser`) solo se muestra a quien tiene
@@ -941,7 +978,7 @@ src/
   Domain/                     ConceptNormalizer · TextAnchor · AnchorLocator · CanonicalText
   Store/                      ConceptStore · ExcerptStore · ThemeStore (+ registros)
   Page/                       RenderedTextProvider
-  Map/                        GraphBuilder
+  Map/                        GraphBuilder · GraphVersion
   Export/                     ExportBuilder
   Moderation/                 ModerationLog
   Api/                        12 módulos + bases (ConstelWrite, ExcerptWrite, ThemeWrite)

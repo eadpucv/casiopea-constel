@@ -5,6 +5,7 @@ use MediaWiki\Extension\CasiopeaConstel\Domain\CanonicalText;
 use MediaWiki\Extension\CasiopeaConstel\Domain\ConceptNormalizer;
 use MediaWiki\Extension\CasiopeaConstel\Export\ExportBuilder;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
+use MediaWiki\Extension\CasiopeaConstel\Map\GraphVersion;
 use MediaWiki\Extension\CasiopeaConstel\Moderation\ModerationLog;
 use MediaWiki\Extension\CasiopeaConstel\Page\RenderedTextProvider;
 use MediaWiki\Extension\CasiopeaConstel\Readers\ReaderDirectory;
@@ -13,6 +14,7 @@ use MediaWiki\Extension\CasiopeaConstel\Store\ExcerptStore;
 use MediaWiki\Extension\CasiopeaConstel\Store\ThemeStore;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 /** @phpcs-require-sorted-array */
 return [
@@ -32,13 +34,15 @@ return [
 	'CasiopeaConstel.ConceptStore' => static function ( MediaWikiServices $services ): ConceptStore {
 		return new ConceptStore(
 			$services->getConnectionProvider(),
-			$services->get( 'CasiopeaConstel.ConceptNormalizer' )
+			$services->get( 'CasiopeaConstel.ConceptNormalizer' ),
+			$services->get( 'CasiopeaConstel.GraphVersion' )
 		);
 	},
 	'CasiopeaConstel.ExcerptStore' => static function ( MediaWikiServices $services ): ExcerptStore {
 		return new ExcerptStore(
 			$services->getConnectionProvider(),
-			$services->get( 'CasiopeaConstel.ConceptStore' )
+			$services->get( 'CasiopeaConstel.ConceptStore' ),
+			$services->get( 'CasiopeaConstel.GraphVersion' )
 		);
 	},
 	'CasiopeaConstel.ExportBuilder' => static function ( MediaWikiServices $services ): ExportBuilder {
@@ -53,8 +57,25 @@ return [
 			$services->getTitleFormatter()
 		);
 	},
+	// La caché del grafo: la principal de la wiki o, si ConstelGraphCache
+	// nombra un tipo de $wgObjectCaches (p. ej. CACHE_DB), una propia.
 	'CasiopeaConstel.GraphBuilder' => static function ( MediaWikiServices $services ): GraphBuilder {
-		return new GraphBuilder( $services->getConnectionProvider() );
+		return new GraphBuilder(
+			$services->getConnectionProvider(),
+			$services->get( 'CasiopeaConstel.GraphCache' ),
+			$services->get( 'CasiopeaConstel.GraphVersion' ),
+			(int)$services->getMainConfig()->get( 'ConstelOverlapMaxPerPage' )
+		);
+	},
+	'CasiopeaConstel.GraphCache' => static function ( MediaWikiServices $services ): WANObjectCache {
+		$type = $services->getMainConfig()->get( 'ConstelGraphCache' );
+		if ( $type === null ) {
+			return $services->getMainWANObjectCache();
+		}
+		return new WANObjectCache( [ 'cache' => $services->getObjectCacheFactory()->getInstance( $type ) ] );
+	},
+	'CasiopeaConstel.GraphVersion' => static function ( MediaWikiServices $services ): GraphVersion {
+		return new GraphVersion( $services->get( 'CasiopeaConstel.GraphCache' ) );
 	},
 	'CasiopeaConstel.ModerationLog' => static function ( MediaWikiServices $services ): ModerationLog {
 		return new ModerationLog(

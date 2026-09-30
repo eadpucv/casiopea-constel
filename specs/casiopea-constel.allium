@@ -295,6 +295,7 @@ config {
     selection_min_length: Integer = 3            -- como constel (popup.js)
     selection_max_length: Integer = 2000
     gloss_max_length: Integer = 5000             -- caracteres de la glosa de un §
+    overlap_max_excerpts_per_page: Integer = 0   -- tope de §§ por página para el traslape; 0 = sin tope
     anchor_context_length: Integer = 32          -- prefix/suffix
     annotate_right: String = "constel-annotate"  -- default: grupo user
     moderate_right: String = "constel-moderate"  -- default: grupo sysop (administradores)
@@ -974,7 +975,11 @@ surface ConceptMap {
         --     compartidos (doctrina constel: decisiones del lector).
         --   overlap: codifican §§ ANCLADOS de lectores DISTINTOS sobre la
         --     misma página cuyos rangos comparten al menos un carácter;
-        --     peso = nº de pares.
+        --     peso = nº de pares. Con config.overlap_max_excerpts_per_page
+        --     mayor que 0, en una página con más §§ anclados que el tope sólo
+        --     cuentan los más antiguos: el barrido crece con el cuadrado de
+        --     los solapados y una página muy anotada no debe frenar el mapa
+        --     (decisión 2026-09-29).
         --   co_page: fueron anotados en la MISMA página (por cualquier
         --     lector, en cualquier §); peso = nº de páginas compartidas
         --     (decisión 2026-09-22: un mapa de §§ de un solo concepto
@@ -1018,9 +1023,30 @@ surface ConceptMap {
         -- otros lectores y quitarlos, pero para una cuenta registrada la
         -- lente nunca queda vacía. Sólo los temas propios son editables.
 
+    @guarantee GraphIsCached
+        -- El grafo se calcula una vez por conjunto de lectores, de páginas y
+        -- de grados de arista pedidos, y se guarda en caché. Toda escritura
+        -- que cambia lo que el mapa dibuja (crear, codificar, descodificar o
+        -- borrar un §, perderlo, congelarlo o re-anclarlo, renombrar o fusionar
+        -- un concepto) lo descarta. Lo que depende de quien mira, que son los
+        -- conceptos a los que aportó, se calcula aparte sobre el grafo
+        -- guardado: la caché no distingue personas. La respuesta es la misma
+        -- con o sin caché (decisión 2026-09-29).
+
+    @guarantee GraphAsksWhatItDraws
+        -- El mapa pide sólo los grados de arista con fuerza mayor que cero, y
+        -- las aristas viajan empaquetadas. Si una fuerza sube desde 0, se
+        -- piden y se suman los grados que faltan sin redibujar el mapa. Esto
+        -- describe el transporte: la topología queda como en
+        -- TopologyCoExcerptOverlapAndPage y el mapa que se ve es el mismo
+        -- (decisión 2026-09-29).
+
     @guarantee AccessibleAlternative
         -- El grafo (2D o 3D) tiene una alternativa textual navegable con
-        -- la misma información (conceptos, frecuencias, aristas, temas).
+        -- la misma información (conceptos, frecuencias, aristas, temas). La
+        -- lista de conceptos con sus frecuencias la emite el servidor con un
+        -- conteo por concepto, sin armar el grafo; las aristas las completa
+        -- el cliente con los datos que ya pidió.
 }
 
 -- Panel de temas: síntesis del lector (tab "Mapa" de constel, derecha).

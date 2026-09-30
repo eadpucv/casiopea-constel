@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\CasiopeaConstel\Store;
 
 use MediaWiki\Extension\CasiopeaConstel\Domain\ConceptNormalizer;
+use MediaWiki\Extension\CasiopeaConstel\Map\GraphVersion;
 use stdClass;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IDatabase;
@@ -23,7 +24,8 @@ class ConceptStore {
 
 	public function __construct(
 		private readonly IConnectionProvider $dbProvider,
-		private readonly ConceptNormalizer $normalizer
+		private readonly ConceptNormalizer $normalizer,
+		private readonly GraphVersion $graphVersion
 	) {
 	}
 
@@ -146,6 +148,7 @@ class ConceptStore {
 			->set( [ 'cc_key' => $key, 'cc_fold' => $this->normalizer->fold( $key ) ] )
 			->where( [ 'cc_id' => $id ] )
 			->caller( __METHOD__ )->execute();
+		$this->graphVersion->touch( $dbw );
 		return $dbw->affectedRows() > 0 || $holder !== false;
 	}
 
@@ -171,6 +174,7 @@ class ConceptStore {
 			->deleteFrom( 'constel_concept' )
 			->where( [ 'cc_id' => $absorbedId ] )
 			->caller( __METHOD__ )->execute();
+		$this->graphVersion->touch( $dbw );
 
 		$dbw->endAtomic( __METHOD__ );
 	}

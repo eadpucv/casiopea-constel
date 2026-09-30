@@ -7,6 +7,7 @@ use MediaWiki\Extension\CasiopeaConstel\Domain\CanonicalText;
 use MediaWiki\Extension\CasiopeaConstel\Domain\ConceptNormalizer;
 use MediaWiki\Extension\CasiopeaConstel\Export\ExportBuilder;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
+use MediaWiki\Extension\CasiopeaConstel\Map\GraphVersion;
 use MediaWiki\Extension\CasiopeaConstel\Moderation\ModerationLog;
 use MediaWiki\Extension\CasiopeaConstel\Page\RenderedTextProvider;
 use MediaWiki\Extension\CasiopeaConstel\Readers\ReaderDirectory;
@@ -58,6 +59,10 @@ class ConstelServices {
 
 	public function getGraphBuilder(): GraphBuilder {
 		return $this->services->get( 'CasiopeaConstel.GraphBuilder' );
+	}
+
+	public function getGraphVersion(): GraphVersion {
+		return $this->services->get( 'CasiopeaConstel.GraphVersion' );
 	}
 
 	public function getModerationLog(): ModerationLog {

@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\CasiopeaConstel\Api;
 
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
+use MediaWiki\Api\ApiResult;
 use MediaWiki\Extension\CasiopeaConstel\Map\GraphBuilder;
 use MediaWiki\User\ActorStore;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -15,6 +16,11 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * Filtros por lectores y por páginas; vacío = todos (spec:
  * ReaderAndPageFilters). Lectura pública: los anónimos ven el mapa
  * (spec: ReadOnlyForAnonymous).
+ *
+ * cgkinds pide sólo algunos grados de arista (el cliente sólo pide los que
+ * tienen fuerza). cgcompact entrega las aristas empaquetadas en tramos por
+ * grado (ver GraphBuilder): unas seis veces menos JSON, y sin que ApiResult
+ * valide una a una decenas de miles de aristas.
  */
 class ApiQueryConstelGraph extends ApiQueryBase {
 
@@ -43,11 +49,21 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 			) ) ) ?: [ -1 ];
 		}
 
-		$graph = $this->graphBuilder->build( $actors, $params['pageids'] ?: null, $viewer );
+		$pages = $params['pageids'] ?: null;
+		$kinds = $params['kinds'];
 		$result = $this->getResult();
 		$path = [ 'query', $this->getModuleName() ];
+		if ( $params['compact'] ) {
+			$graph = $this->graphBuilder->buildPacked( $actors, $pages, $viewer, $kinds );
+			$result->addValue( $path, 'nodes', $graph['nodes'] );
+			// Enteros y cadenas de la base: nada que validar ni normalizar.
+			$result->addValue( $path, 'runs', $graph['runs'], ApiResult::NO_VALIDATE );
+			$result->addIndexedTagName( [ ...$path, 'nodes' ], 'node' );
+			return;
+		}
+		$graph = $this->graphBuilder->build( $actors, $pages, $viewer, $kinds );
 		$result->addValue( $path, 'nodes', $graph['nodes'] );
-		$result->addValue( $path, 'links', $graph['links'] );
+		$result->addValue( $path, 'links', $graph['links'], ApiResult::NO_VALIDATE );
 		$result->addIndexedTagName( [ ...$path, 'nodes' ], 'node' );
 		$result->addIndexedTagName( [ ...$path, 'links' ], 'link' );
 	}
@@ -69,6 +85,15 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_ISMULTI => true,
 			],
+			'kinds' => [
+				ParamValidator::PARAM_TYPE => GraphBuilder::KINDS,
+				ParamValidator::PARAM_ISMULTI => true,
+				ParamValidator::PARAM_DEFAULT => implode( '|', GraphBuilder::KINDS ),
+			],
+			'compact' => [
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_DEFAULT => false,
+			],
 		];
 	}
 
@@ -77,6 +102,8 @@ class ApiQueryConstelGraph extends ApiQueryBase {
 		return [
 			'action=query&list=constelgraph' => 'apihelp-query+constelgraph-example-all',
 			'action=query&list=constelgraph&cgusers=Example' => 'apihelp-query+constelgraph-example-users',
+			'action=query&list=constelgraph&cgkinds=co_excerpt|overlap&cgcompact=1' =>
+				'apihelp-query+constelgraph-example-compact',
 		];
 	}
 }

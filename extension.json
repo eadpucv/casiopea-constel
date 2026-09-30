@@ -219,9 +219,7 @@
 		"Constellation": {
 			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Specials\\SpecialConstellation",
 			"services": [
-				"CasiopeaConstel.GraphBuilder",
-				"ActorNormalization",
-				"ConnectionProvider"
+				"CasiopeaConstel.GraphBuilder"
 			]
 		},
 		"ConstellationSvg": {
@@ -527,6 +525,14 @@
 		"ConstelAnchorContextLength": {
 			"value": 32,
 			"description": "Caracteres de contexto (prefix/suffix) que se guardan a cada lado del pasaje para reanclarlo."
+		},
+		"ConstelGraphCache": {
+			"value": null,
+			"description": "Tipo de caché (clave de $wgObjectCaches, p. ej. CACHE_DB) donde guardar el grafo del mapa. null usa la caché principal de la wiki; con CACHE_NONE en ella, el grafo se calcula en cada lectura."
+		},
+		"ConstelOverlapMaxPerPage": {
+			"value": 0,
+			"description": "Tope de §§ anclados por página para calcular los traslapes del mapa (0 = sin tope). El barrido crece con el cuadrado de los §§ solapados; con tope, cuentan los más antiguos."
 		}
 	},
 	"manifest_version": 2

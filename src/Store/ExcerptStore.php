@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\CasiopeaConstel\Store;
 
 use MediaWiki\Extension\CasiopeaConstel\Domain\TextAnchor;
+use MediaWiki\Extension\CasiopeaConstel\Map\GraphVersion;
 use stdClass;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IDatabase;
@@ -30,7 +31,8 @@ class ExcerptStore {
 
 	public function __construct(
 		private readonly IConnectionProvider $dbProvider,
-		private readonly ConceptStore $concepts
+		private readonly ConceptStore $concepts,
+		private readonly GraphVersion $graphVersion
 	) {
 	}
 
@@ -63,6 +65,7 @@ class ExcerptStore {
 			->caller( __METHOD__ )->execute();
 		$id = $dbw->insertId();
 		$this->insertCoding( $dbw, $id, $concept->id );
+		$this->graphVersion->touch( $dbw );
 		$dbw->endAtomic( __METHOD__ );
 
 		return new ExcerptRecord(
@@ -88,6 +91,7 @@ class ExcerptStore {
 		$already = in_array( $concept->id, $this->conceptIds( $excerptId, $dbw ), true );
 		if ( !$already ) {
 			$this->insertCoding( $dbw, $excerptId, $concept->id );
+			$this->graphVersion->touch( $dbw );
 		}
 		$dbw->endAtomic( __METHOD__ );
 		return $already ? null : $concept;
@@ -119,6 +123,7 @@ class ExcerptStore {
 			$this->deleteRow( $dbw, $excerptId );
 		}
 		$this->concepts->purgeUnused( [ $conceptId ] );
+		$this->graphVersion->touch( $dbw );
 		$dbw->endAtomic( __METHOD__ );
 	}
 
@@ -135,6 +140,7 @@ class ExcerptStore {
 			->caller( __METHOD__ )->execute();
 		$this->deleteRow( $dbw, $excerptId );
 		$this->concepts->purgeUnused( $conceptIds );
+		$this->graphVersion->touch( $dbw );
 		$dbw->endAtomic( __METHOD__ );
 	}
 
@@ -144,7 +150,8 @@ class ExcerptStore {
 	 * congelado vuelve a estar anclado.
 	 */
 	public function relocate( int $excerptId, int $revId, TextAnchor $anchor ): void {
-		$this->primary()->newUpdateQueryBuilder()
+		$dbw = $this->primary();
+		$dbw->newUpdateQueryBuilder()
 			->update( 'constel_excerpt' )
 			->set( [
 				'ce_rev' => $revId,
@@ -158,6 +165,7 @@ class ExcerptStore {
 			] )
 			->where( [ 'ce_id' => $excerptId, 'ce_status' => self::REANCHORABLE ] )
 			->caller( __METHOD__ )->execute();
+		$this->graphVersion->touch( $dbw );
 	}
 
 	/**
@@ -176,6 +184,7 @@ class ExcerptStore {
 			->set( [ 'ce_status' => ExcerptRecord::STATUS_LOST, 'ce_lost' => $dbw->timestamp() ] )
 			->where( [ 'ce_id' => $excerptIds, 'ce_status' => self::REANCHORABLE ] )
 			->caller( __METHOD__ )->execute();
+		$this->graphVersion->touch( $dbw );
 	}
 
 	/**
@@ -205,6 +214,7 @@ class ExcerptStore {
 				'ce_status' => [ ExcerptRecord::STATUS_ANCHORED, ExcerptRecord::STATUS_LOST ],
 			] )
 			->caller( __METHOD__ )->execute();
+		$this->graphVersion->touch( $dbw );
 	}
 
 	/**
@@ -218,11 +228,13 @@ class ExcerptStore {
 		if ( !$oldPageIds ) {
 			return;
 		}
-		$this->primary()->newUpdateQueryBuilder()
+		$dbw = $this->primary();
+		$dbw->newUpdateQueryBuilder()
 			->update( 'constel_excerpt' )
 			->set( [ 'ce_page' => $pageId ] )
 			->where( [ 'ce_page' => array_values( $oldPageIds ), 'ce_status' => ExcerptRecord::STATUS_FROZEN ] )
 			->caller( __METHOD__ )->execute();
+		$this->graphVersion->touch( $dbw );
 	}
 
 	/**

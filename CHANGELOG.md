@@ -1,5 +1,32 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **El grafo del mapa se calcula una vez y se guarda.** `GraphBuilder` guarda
+  su resultado en `WANObjectCache`, con una clave por conjunto de lectores, de
+  páginas y de grados pedidos, y lo descarta cuando una escritura cambia lo que
+  el mapa dibuja (crear, codificar, descodificar o borrar un §, perderlo,
+  congelarlo, re-anclarlo, renombrar o fusionar un concepto). La marca de
+  aporte de quien mira se calcula aparte. `$wgConstelGraphCache` permite
+  dedicar al grafo otro tipo de caché; por omisión usa la principal.
+- **`list=constelgraph` entrega menos.** El parámetro `cgkinds` pide sólo
+  algunos grados de arista y `cgcompact` empaqueta las aristas por grado en
+  una cadena de enteros: con los 20 000 § de la prueba de carga, el grafo
+  completo pasa de 6,9 MB a 0,8 MB. El mapa pide sólo los grados con fuerza
+  mayor que cero y, si una fuerza sube desde 0, pide y suma los que faltan sin
+  redibujar.
+- **Menos tiempo de servidor.** El bucle de pares de `co_page` usa claves con
+  una base cercana a los ids de concepto (con una potencia de dos, la tabla
+  hash de PHP colisionaba) y la respuesta empaquetada evita que `ApiResult`
+  recorra cada arista: el grafo completo sin caché baja de 1 173 ms a unos
+  280 ms, y con caché a unos 55 ms.
+- **Especial:Constelación arma su lista sin el grafo.** La lista de conceptos
+  con frecuencias sale de un conteo por concepto (`conceptCounts`) y el
+  servidor deja de calcular el grafo que el cliente vuelve a pedir.
+- **Traslapes con tope.** `$wgConstelOverlapMaxPerPage` (por omisión 0, sin
+  tope) limita los §§ anclados que cuentan por página en el cálculo de
+  traslape.
+
 ## 0.10.0 — 2026-09-25
 
 - **Minimap de secciones en la página.** Un trazo vertical fijo al borde

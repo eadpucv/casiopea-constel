@@ -40,9 +40,43 @@ function describeError( code, result ) {
 	};
 }
 
+/**
+ * Aristas de la respuesta compacta de list=constelgraph. Cada grado viene
+ * como una cadena de enteros separados por comas que lista tramos
+ * «i,n,j1,w1,…,jn,wn»: las aristas del nodo de posición i a n nodos j
+ * (posiciones en `nodes`), cada una con su peso.
+ *
+ * @param {Object} result {nodes, runs}
+ * @return {{nodes: Array, links: Array}} aristas como {source, target, kind, weight}
+ */
+function unpackGraph( result ) {
+	const ids = result.nodes.map( ( node ) => node.id );
+	const links = [];
+	for ( const kind of Object.keys( result.runs || {} ) ) {
+		const run = result.runs[ kind ] ? result.runs[ kind ].split( ',' ).map( Number ) : [];
+		for ( let p = 0; p < run.length; ) {
+			const source = ids[ run[ p ] ];
+			const end = p + 2 + 2 * run[ p + 1 ];
+			for ( let q = p + 2; q < end; q += 2 ) {
+				links.push( { source, target: ids[ run[ q ] ], kind, weight: run[ q + 1 ] } );
+			}
+			p = end;
+		}
+	}
+	return { nodes: result.nodes, links };
+}
+
+/**
+ * El grafo de conceptos. Sólo se piden los grados de arista que se usan
+ * (params.cgkinds) y viajan empaquetados (cgcompact): en un mapa grande las
+ * aristas son casi todo el peso de la respuesta.
+ *
+ * @param {Object} params cgusers, cgpageids, cgkinds
+ * @return {Promise<{nodes: Array, links: Array}>}
+ */
 function graph( params ) {
-	return get().get( Object.assign( { action: 'query', list: 'constelgraph' }, params ) )
-		.then( ( r ) => r.query.constelgraph );
+	return get().get( Object.assign( { action: 'query', list: 'constelgraph', cgcompact: 1 }, params ) )
+		.then( ( r ) => unpackGraph( r.query.constelgraph ) );
 }
 
 function excerptsOfConcept( conceptId ) {
