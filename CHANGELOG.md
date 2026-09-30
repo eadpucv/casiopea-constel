@@ -1,6 +1,6 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.13.0 — 2026-09-30
 
 - **«Todos» como un lector más.** Se elimina el interruptor del filtro
   «Secciones de»: ahora se escribe «Todos» en la caja y se elige del
