@@ -120,10 +120,10 @@ const MAX_LINKS = 6000;
  * raíz de la frecuencia combinada. En pantalla el radio se acota entre un
  * mínimo apuntable y un máximo (px), como la letra.
  */
-const DOT_R_MIN = 5;
-const DOT_R_MAX = 16;
-const DOT_MIN_PX = 5;
-const DOT_MAX_PX = 26;
+const DOT_R_MIN = 3;
+const DOT_R_MAX = 9.6;
+const DOT_MIN_PX = 3;
+const DOT_MAX_PX = 15.6;
 /** Cuánto pesa el suelo del círculo respecto del de la letra al reservar cajas. */
 const DOT_FLOOR = DOT_MIN_PX / FONT_MIN_PX;
 

@@ -122,7 +122,7 @@ como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
 - **Círculos.** Un concepto sin rótulo es un `<circle>` del color de su tema
   con **área proporcional a su frecuencia** (la misma `0.6 · §§ + 0.4 · páginas`
   del rótulo). En pantalla mide `DOT_MIN_PX · (1 + (DOT_MAX_PX/DOT_MIN_PX − 1) ·
-  √frecuencia)` píxeles de radio al zoom de encuadre (5 a 26) y crece al acercar
+  √frecuencia)` píxeles de radio al zoom de encuadre (3 a 15,6) y crece al acercar
   como la letra (`FONT_GROWTH`). El círculo es lo que se apunta, lo que recibe
   el foco y lo que se arrastra; el texto sólo aparece al revelarlo.
 - **Cajas de choque.** En 2D la caja de un círculo es un cuadrado de su radio

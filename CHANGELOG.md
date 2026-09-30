@@ -2,6 +2,9 @@
 
 ## Sin publicar
 
+- **Círculos 40 % más chicos.** El radio de los nodos baja de 5 a 26 px a 3 a
+  15,6 px al zoom de encuadre, y el de los círculos de la vista de anillos en
+  la misma proporción.
 - **Barra del mapa reorganizada.** La primera fila dice cómo se ve (vista
   2D/3D, girar solo, aristas, conceptos como palabras o nodos, proximidad y
   zoom) y la segunda qué se ve (lectores, páginas, lente y, con varios

@@ -34,9 +34,9 @@ const VIEW_H = 800;
 /** Duración del deslizamiento al cambiar de centro (ms). */
 const GLIDE_MS = 450;
 /** Radio del círculo de un concepto: del menor al mayor, y el del centro. */
-const DOT_MIN = 5;
-const DOT_MAX = 14;
-const DOT_CENTER = 18;
+const DOT_MIN = 3;
+const DOT_MAX = 8.4;
+const DOT_CENTER = 11;
 
 function svg( tag, attrs ) {
 	const el = document.createElementNS( SVG, tag );
