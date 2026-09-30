@@ -113,8 +113,8 @@ La barra tiene dos filas: la primera dice **cómo se ve** (vista 2D/3D, «Girar
 solo», aristas, conceptos, proximidad, zoom) y la segunda **qué se ve** (lectores,
 páginas, lente y, con varios lectores, qué conceptos). Un interruptor explícito
 **Palabras ⇄ Nodos** elige cómo se dibujan los conceptos, y con nodos una casilla
-«Rotular los principales» deja la palabra de los `map_main_labels` (12) más
-frecuentes (`graph.draw` recibe `labels`: `all` = palabras, `main` = nodos con
+«Rotular los principales» (apagada por omisión) deja la palabra de los
+`map_main_labels` (12) más frecuentes, a lo más la cuarta parte del mapa (`graph.draw` recibe `labels`: `all` = palabras, `main` = nodos con
 principales, `none` = nodos sin rótulos). Con más de 80 conceptos el mapa parte
 como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
 `constel-map`). La letra de un rótulo no baja de 13 px en pantalla.
@@ -132,8 +132,9 @@ como nodos; la elección se recuerda por navegador (`concepts` y `lead` en
   se compacta.
 - **Aristas.** Sin rótulos o con los principales, no se crea ninguna línea al
   dibujar: al apuntar o elegir un concepto se dibujan sólo sus aristas
-  (`adjacency`), y sus vecinos quedan resaltados. En táctil, el primer toque
-  revela y el segundo elige.
+  (`adjacency`), y sus vecinos quedan resaltados. Donde no se puede apuntar
+  (`hover: none`: teléfono, tableta) el primer toque revela y el segundo elige;
+  con mouse, o una pantalla táctil que también apunta, un clic elige directo.
 - **Medición** (`Especial:Constelación`, 1 006 conceptos, todos los lectores;
   posiciones de los conceptos a zoom de encuadre, en unidades del lienzo):
 

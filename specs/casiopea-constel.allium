@@ -974,10 +974,13 @@ surface ConceptMap {
         -- tema y un área proporcional a su frecuencia (FrequencyScaling), con
         -- un tamaño mínimo que se pueda apuntar; una casilla, «Rotular los
         -- principales», deja la palabra de los config.map_main_labels
-        -- conceptos de mayor frecuencia (activa por omisión). Al pasar el cursor o recibir el foco,
+        -- conceptos de mayor frecuencia, y nunca de más de la cuarta parte del
+        -- mapa (apagada por omisión: Nodos muestra nodos). Al pasar el cursor o recibir el foco,
         -- su rótulo se lee encima del círculo, y sus vecinos quedan
-        -- resaltados y el resto atenuado; en pantalla táctil un toque hace lo
-        -- del cursor y el segundo elige el concepto. Como nodos, las aristas
+        -- resaltados y el resto atenuado; en un dispositivo que no puede
+        -- apuntar sin tocar (teléfono, tableta) un toque hace lo del cursor y
+        -- el segundo elige el concepto, y con mouse o puntero un clic elige
+        -- directamente. Como nodos, las aristas
         -- se dibujan únicamente para el concepto apuntado o elegido; como
         -- palabras, como siempre. Con más de 80 conceptos el mapa parte como
         -- nodos, y la elección se recuerda por navegador junto con las

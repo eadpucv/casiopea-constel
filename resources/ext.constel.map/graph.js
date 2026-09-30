@@ -558,9 +558,12 @@ function draw( container, data, view ) {
 	const score = scorer( nodes );
 	const mode = [ 'none', 'main' ].includes( view.labels ) ? view.labels : 'all';
 	// Cuántos rótulos caben: los principales, ninguno, o «todos» hasta el tope.
+	const quarter = Math.max( 1, Math.floor( nodes.length / 4 ) );
 	const labelCap = {
 		none: 0,
-		main: view.mainLabels || MAIN_LABELS,
+		// Los principales son los de mayor frecuencia, y nunca más de la cuarta
+		// parte del mapa: con pocos conceptos «principales» no es casi todos.
+		main: Math.min( view.mainLabels || MAIN_LABELS, quarter ),
 		all: view.maxLabels || MAX_LABELS
 	}[ mode ];
 	const everyLabel = nodes.length <= labelCap;
@@ -676,6 +679,10 @@ function draw( container, data, view ) {
 	// Concepto bajo el cursor o con el foco; en táctil, el del primer toque.
 	let hoverNode = null;
 	let lastPointer = 'mouse';
+	// El primer toque revela y el segundo elige sólo donde no se puede apuntar
+	// sin tocar (teléfono, tableta): con un mouse, o con una laptop táctil que
+	// también apunta, un clic o un toque eligen directamente.
+	const peeksByTap = () => lastPointer === 'touch' && window.matchMedia( '(hover: none)' ).matches;
 	// Revela el rótulo de los conceptos sin rótulo que tienen el cursor o la
 	// selección.
 	const peekLabels = () => {
@@ -751,7 +758,7 @@ function draw( container, data, view ) {
 			const activate = () => {
 				// Táctil sin rótulos: el primer toque revela el concepto (su
 				// rótulo y sus aristas), el segundo lo elige.
-				if ( lastPointer === 'touch' && focusOnly && hoverNode !== node ) {
+				if ( peeksByTap() && focusOnly && hoverNode !== node ) {
 					setHover( node );
 					return;
 				}
@@ -832,12 +839,12 @@ function draw( container, data, view ) {
 			el.addEventListener( 'mouseleave', () => setHover( null ) );
 			// El foco no revela en táctil: allí manda el primer toque (activate).
 			el.addEventListener( 'focus', () => {
-				if ( lastPointer !== 'touch' ) {
+				if ( !peeksByTap() ) {
 					setHover( node );
 				}
 			} );
 			el.addEventListener( 'blur', () => {
-				if ( lastPointer !== 'touch' ) {
+				if ( !peeksByTap() ) {
 					setHover( null );
 				}
 			} );
@@ -1346,7 +1353,7 @@ function draw( container, data, view ) {
 	root.addEventListener( 'pointerdown', ( e ) => {
 		lastPointer = e.pointerType;
 		// Táctil sin rótulos: tocar el fondo suelta el concepto revelado.
-		if ( e.pointerType === 'touch' && hoverNode && !e.target.closest( '.constel-graph__node' ) ) {
+		if ( peeksByTap() && hoverNode && !e.target.closest( '.constel-graph__node' ) ) {
 			setHover( null );
 		}
 		// Un concepto que se arrastra (2D) se atiende en su rótulo.

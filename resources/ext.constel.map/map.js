@@ -138,10 +138,11 @@ function main( root ) {
 		autorotate: !!prefs().autorotate,
 		edges: true,
 		// Conceptos como 'words' (palabras) o 'nodes' (círculos); null = automático
-		// según el tamaño del mapa (AUTO_ALL_MAX). Con nodos, `lead` rotula los
-		// principales. Ambos se recuerdan por navegador.
+		// según el tamaño del mapa (AUTO_ALL_MAX). Con nodos, `lead` (apagado por
+		// omisión: nodos son nodos) rotula los principales. Ambos se recuerdan
+		// por navegador.
 		concepts: [ 'words', 'nodes' ].includes( prefs().concepts ) ? prefs().concepts : null,
-		lead: prefs().lead !== false,
+		lead: prefs().lead === true,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
 		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
 		// Si quien mira ya fijó sus fuerzas, no se le cambian (autoForces).

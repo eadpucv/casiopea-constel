@@ -9,12 +9,14 @@
   interruptores o casillas con su texto visible en vez de botones. La letra
   mínima sube de 11 a 13 px (los rótulos miden de 13 a 33).
 - **Conceptos como palabras o nodos.** Un interruptor explícito deja el mapa
-  en palabras o en nodos, y una casilla «Rotular los principales» deja la
-  palabra de los conceptos de mayor frecuencia (`$wgConstelMapMainLabels`,
-  12). Como nodo, un concepto es un
+  en palabras o en nodos, y una casilla «Rotular los principales», apagada por
+  omisión, deja la palabra de los conceptos de mayor frecuencia
+  (`$wgConstelMapMainLabels`, 12, y a lo más la cuarta parte del mapa). Como
+  nodo, un concepto es un
   círculo con el color de su tema y área proporcional a su frecuencia; al
   apuntarlo se lee su rótulo encima y sus vecinos quedan resaltados, y en
-  táctil el primer toque revela y el segundo elige. Sin rótulos o con los
+  un dispositivo que no puede apuntar el primer toque revela y el segundo
+  elige; con mouse un clic elige. Sin rótulos o con los
   principales, las aristas se dibujan sólo para el concepto apuntado o elegido.
   Con más de 80 conceptos el mapa parte como nodos. En 2D las
   cajas de choque de los círculos son más chicas y el mapa se compacta: con
