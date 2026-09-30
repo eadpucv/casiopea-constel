@@ -94,7 +94,7 @@ const GLIDE = 0.25;
  * para que acercar no aplane esa jerarquía de golpe.
  */
 const FONT_MIN_PX = 11;
-const FONT_MAX_PX = 22;
+const FONT_MAX_PX = 24;
 /**
  * Con qué exponente sigue la letra al zoom al acercar: acercar separa más de
  * lo que agranda (×4 de zoom, ×2 de letra), y nada se vuelve a pisar.
@@ -1121,7 +1121,7 @@ function draw( container, data, view ) {
 				// revela, va encima.
 				// Al zoom de encuadre mide DOT_MIN_PX·dotK px; al acercar crece
 				// como la letra (FONT_GROWTH), y en 3D con la perspectiva.
-				const r = Math.min( 2 * DOT_MAX_PX,
+				const r = Math.min( DOT_MAX_PX,
 					DOT_MIN_PX * dotK( node ) * persp * Math.pow( zoom / fit, FONT_GROWTH ) ) / ppu;
 				dot.setAttribute( 'cx', node.px.toFixed( 1 ) );
 				dot.setAttribute( 'cy', node.py.toFixed( 1 ) );

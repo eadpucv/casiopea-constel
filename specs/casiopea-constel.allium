@@ -990,7 +990,7 @@ surface ConceptMap {
         -- entero a la vista, también en 3D) mide lo que reservaron las cajas,
         -- de 11 a 22 px según la frecuencia del concepto y nunca menos de 11.
         -- El zoom la escala desde ahí, más lento que el mapa, dentro de un
-        -- rango de 11 a 22 px (decisión 2026-09-30, pedido del usuario), así
+        -- rango de 11 a 24 px (decisión 2026-09-30, pedido del usuario), así
         -- que acercar agranda la letra hasta ese techo. El concepto enfocado (elegido) se destaca con un peso tipográfico
         -- mayor, en negrita, igual en 2D y en 3D, y nunca subrayado
         -- (decisión 2026-09-30, pedido del usuario).

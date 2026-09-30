@@ -133,7 +133,7 @@ Cada concepto es su texto. El tamaño sigue la frecuencia (`FrequencyScaling`):
 
 La letra tiene el **mismo criterio en 2D y en 3D** (`fontUnits`): al encuadre mide
 `max(11, tamaño · fit · ppu)` px, o sea lo que reservaron las cajas, y el zoom la
-multiplica por `(zoom / fit)^0,5`, con el resultado acotado entre **11 y 22 px**.
+multiplica por `(zoom / fit)^0,5`, con el resultado acotado entre **11 y 24 px**.
 Acercar siempre agranda el texto, más lento que el mapa, y nunca baja de 11 px.
 (Antes el 2D escalaba la letra con el zoom de encuadre, aplastada contra el piso en
 mapas densos, y el 3D partía sin encuadre, así que salía más grande; y como la
@@ -152,7 +152,7 @@ frecuencia** (la misma del rótulo). En pantalla mide
     radio = DOT_MIN_PX · (1 + (DOT_MAX_PX / DOT_MIN_PX − 1) · √frecuencia)
           = de 2,4 a 10 px al encuadre
 
-y crece al acercar como la letra (`(zoom / fit)^0,5`). El círculo es lo que se
+y crece al acercar como la letra (`(zoom / fit)^0,5`), sin pasar nunca de 10 px de radio (`DOT_MAX_PX`). El círculo es lo que se
 apunta, recibe el foco y se arrastra; la palabra aparece encima al apuntarlo o
 elegirlo.
 
@@ -518,7 +518,7 @@ páginas.
 | atracción al tema | 0,15 | hacia el centroide del tema |
 | `EDGE_IN_LABELS` | 1,3 | 2D: `k` en anchos medios de caja |
 | `PAD` | 3 | 2D: margen de cada caja (rótulo o círculo) |
-| `FONT_MIN_PX`, `FONT_MAX_PX` | 11, 22 | rango de la letra en pantalla |
+| `FONT_MIN_PX`, `FONT_MAX_PX` | 11, 24 | rango de la letra en pantalla |
 | `FONT_GROWTH` | 0,5 | exponente con que el zoom escala la letra y los nodos |
 | `DOT_MIN_PX`, `DOT_MAX_PX` | 2,4, 10 | radio de los nodos al encuadre |
 | `RADIUS` | 210 | 3D: radio base de la esfera (crece con `√(n/60)`, hasta 3×) |

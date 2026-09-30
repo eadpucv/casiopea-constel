@@ -2,8 +2,8 @@
 
 ## Sin publicar
 
-- **Letra y círculos más chicos.** Los rótulos miden de 11 a 22 px, al
-  encuadre y con zoom (antes 13 a 33 y hasta 40); los círculos, de 2,4 a 10 px de radio (antes 3 a 15,6). El mapa
+- **Letra y círculos más chicos.** Los rótulos miden de 11 a 22 px al
+  encuadre y hasta 24 px con zoom (antes 13 a 33 y hasta 40); los círculos, de 2,4 a 10 px de radio (antes 3 a 15,6). El mapa
   pesa menos frente al texto de la página.
 
 ## 0.12.0 — 2026-09-30
