@@ -306,6 +306,7 @@ config {
     selection_max_length: Integer = 2000
     gloss_max_length: Integer = 5000             -- caracteres de la glosa de un §
     overlap_max_excerpts_per_page: Integer = 0   -- tope de §§ por página para el traslape; 0 = sin tope
+    map_main_labels: Integer = 12                -- rótulos que deja «sólo los principales»
     anchor_context_length: Integer = 32          -- prefix/suffix
     annotate_right: String = "constel-annotate"  -- default: grupo user
     moderate_right: String = "constel-moderate"  -- default: grupo sysop (administradores)
@@ -946,9 +947,35 @@ surface ConceptMap {
         ThemesPanel(viewer)
 
     @guarantee LabelsNeverOverlapIn2D
-        -- En la vista 2D ningún rótulo pisa a otro: cada uno ocupa una caja
-        -- ajustada a su texto con un margen breve e igual por los cuatro
-        -- lados, y las cajas chocan en vez de traslaparse.
+        -- En la vista 2D ningún rótulo visible pisa a otro, ni a un círculo:
+        -- cada rótulo ocupa una caja ajustada a su texto con un margen breve
+        -- e igual por los cuatro lados, cada círculo (concepto sin rótulo,
+        -- ver LabelsAreOptional) una caja de su tamaño con el mismo margen,
+        -- y las cajas chocan en vez de traslaparse.
+
+    @guarantee LabelsAreOptional
+        -- Los rótulos se pueden apagar, como las aristas, con un control de
+        -- tres posiciones: sin rótulos, sólo los principales (los
+        -- config.map_main_labels conceptos de mayor frecuencia) y todos. Un
+        -- concepto sin rótulo es un círculo con el color de su tema y un área
+        -- proporcional a su frecuencia (FrequencyScaling), con un tamaño
+        -- mínimo que se pueda apuntar. Al pasar el cursor o recibir el foco,
+        -- su rótulo se lee encima del círculo, y sus vecinos quedan
+        -- resaltados y el resto atenuado; en pantalla táctil un toque hace lo
+        -- del cursor y el segundo elige el concepto. Sin rótulos o con sólo
+        -- los principales, las aristas se dibujan únicamente para el concepto
+        -- apuntado o elegido; con todos los rótulos, como siempre. Con más de
+        -- 80 conceptos el mapa parte en «sólo los principales», y la elección
+        -- del lector se recuerda por navegador junto con las fuerzas. La
+        -- alternativa textual (AccessibleAlternative) no cambia
+        -- (decisión 2026-09-29, pedido del usuario).
+
+    @guarantee DepthFogIn3D
+        -- En la vista 3D los conceptos lejanos se atenúan con una niebla en
+        -- profundidad que apaga rápido lo del fondo, y la esfera del layout
+        -- crece con la cantidad de conceptos, para que un mapa grande se abra
+        -- y los rótulos del frente no compitan con los del fondo
+        -- (decisión 2026-09-29).
 
     @guarantee ArrangeByHandIn2D
         -- En la vista 2D quien mira puede mover cada concepto (arrastrándolo,

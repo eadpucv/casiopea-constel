@@ -32,6 +32,14 @@ const full = !!cfg.full;
 const ANTE_MIN = 20;
 const ANTE_MAX = 80;
 const ANTE_DEFAULT = 50;
+/** Hasta cuántos conceptos el mapa parte con todos los rótulos (después, sólo los principales). */
+const AUTO_ALL_MAX = 80;
+/** Rótulos del mapa: sin rótulos, sólo los principales, todos. */
+const LABEL_OPTIONS = [
+	{ value: 'none', sign: '−', msg: 'constellation-labels-none' },
+	{ value: 'main', sign: 'Aa', msg: 'constellation-labels-main' },
+	{ value: 'all', sign: 'Aa*', msg: 'constellation-labels-all' }
+];
 
 /**
  * Preferencias del mapa por navegador: se fusionan, no se pisan.
@@ -132,6 +140,9 @@ function main( root ) {
 		mode: '2d',
 		autorotate: !!prefs().autorotate,
 		edges: true,
+		// Rótulos: null = automático según el tamaño del mapa (AUTO_ALL_MAX);
+		// la elección se recuerda por navegador.
+		labels: LABEL_OPTIONS.some( ( o ) => o.value === prefs().labels ) ? prefs().labels : null,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
 		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
 		readersOn: !!me,
@@ -266,6 +277,53 @@ function main( root ) {
 	} );
 	const edgesGroup = el( 'div', 'constel-map__group' );
 	edgesGroup.append( edges.label );
+
+	// Rótulos: control de tres posiciones, como el − · § · §* del lector.
+	// Con pocos rótulos los conceptos son círculos de área proporcional a su
+	// frecuencia y las aristas sólo se dibujan al apuntar uno o elegirlo.
+	const effectiveLabels = () => state.labels ||
+		( state.data && state.data.nodes.length > AUTO_ALL_MAX ? 'main' : 'all' );
+	const labelsGroup = el( 'div', 'constel-map__group constel-ui constel-seg' );
+	labelsGroup.setAttribute( 'role', 'radiogroup' );
+	labelsGroup.setAttribute( 'aria-label', mw.msg( 'constellation-labels' ) );
+	labelsGroup.title = mw.msg( 'constellation-labels' );
+	const labelButtons = LABEL_OPTIONS.map( ( option ) => {
+		const b = el( 'button', 'constel-seg__option', option.sign );
+		b.type = 'button';
+		b.setAttribute( 'role', 'radio' );
+		b.setAttribute( 'aria-label', mw.msg( option.msg ) );
+		b.title = mw.msg( option.msg );
+		b.dataset.value = option.value;
+		labelsGroup.append( b );
+		return b;
+	} );
+	const syncLabels = () => {
+		labelButtons.forEach( ( b ) => {
+			const on = b.dataset.value === effectiveLabels();
+			b.setAttribute( 'aria-checked', String( on ) );
+			b.tabIndex = on ? 0 : -1;
+		} );
+	};
+	const chooseLabels = ( value ) => {
+		state.labels = value;
+		savePref( 'labels', value );
+		syncLabels();
+		render();
+	};
+	labelButtons.forEach( ( b, i ) => {
+		b.addEventListener( 'click', () => chooseLabels( b.dataset.value ) );
+		b.addEventListener( 'keydown', ( e ) => {
+			const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[ e.key ];
+			if ( step ) {
+				e.preventDefault();
+				const count = labelButtons.length;
+				const next = labelButtons[ ( i + step + count ) % count ];
+				next.focus();
+				chooseLabels( next.dataset.value );
+			}
+		} );
+	} );
+	syncLabels();
 
 	// Proximidad: cada grado con su fuerza (0 = ni arista ni atracción).
 	const forces = el( 'div', 'constel-map__forces' );
@@ -434,7 +492,7 @@ function main( root ) {
 	// se llama Constelación).
 	const brand = el( 'span', 'constel-map__brand', 'con§tel' );
 	brand.setAttribute( 'aria-hidden', 'true' );
-	rowView.append( brand, viewGroup, edgesGroup, forces, zoom );
+	rowView.append( brand, viewGroup, edgesGroup, labelsGroup, forces, zoom );
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
 	// Secciones: como la lente (por defecto quien mira; se suman lectores).
@@ -532,6 +590,8 @@ function main( root ) {
 				mode: state.mode,
 				autorotate: state.autorotate,
 				edges: state.edges,
+				labels: effectiveLabels(),
+				mainLabels: cfg.mainLabels,
 				forces: state.forces,
 				fill: full,
 				themeOf: themeIndex(),
@@ -543,6 +603,7 @@ function main( root ) {
 			}
 		}
 		syncUnpin();
+		syncLabels();
 		renderList();
 	}
 
@@ -758,3 +819,6 @@ $( () => {
 		main( root );
 	}
 } );
+
+// Para las pruebas QUnit (la lógica pura del grafo).
+module.exports = { graph };

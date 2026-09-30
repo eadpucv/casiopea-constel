@@ -107,6 +107,61 @@ se escala por `900 / (900 − z)` tras rotarlo (yaw, pitch). La letra sigue esa
 escala y lo lejano se atenúa (opacidad de 0,45 a 1 según la profundidad).
 Los rótulos pueden cruzarse en 3D; la garantía de no traslape es sólo de 2D.
 
+### Rótulos apagables y círculos
+
+Un control de tres posiciones (**− · Aa · Aa\***, como el del lector) fija cuántos
+rótulos dibuja el mapa: ninguno, los `map_main_labels` (12) conceptos de mayor
+frecuencia, o todos. Con más de 80 conceptos el mapa parte en «sólo los
+principales»; la elección se recuerda por navegador (`labels` en `constel-map`).
+
+- **Círculos.** Un concepto sin rótulo es un `<circle>` del color de su tema
+  con **área proporcional a su frecuencia** (la misma `0.6 · §§ + 0.4 · páginas`
+  del rótulo). En pantalla mide `DOT_MIN_PX · (1 + (DOT_MAX_PX/DOT_MIN_PX − 1) ·
+  √frecuencia)` píxeles de radio al zoom de encuadre (5 a 26) y crece al acercar
+  como la letra (`FONT_GROWTH`). El círculo es lo que se apunta, lo que recibe
+  el foco y lo que se arrastra; el texto sólo aparece al revelarlo.
+- **Cajas de choque.** En 2D la caja de un círculo es un cuadrado de su radio
+  más `PAD`, y reserva el mismo suelo que las letras (un círculo nunca baja de
+  `DOT_MIN_PX` al zoom de encuadre). La escala del layout (`EDGE_IN_LABELS`) se
+  ancla al ancho medio de las cajas, que con círculos es mucho menor: el mapa
+  se compacta.
+- **Aristas.** Sin rótulos o con los principales, no se crea ninguna línea al
+  dibujar: al apuntar o elegir un concepto se dibujan sólo sus aristas
+  (`adjacency`), y sus vecinos quedan resaltados. En táctil, el primer toque
+  revela y el segundo elige.
+- **Medición** (`Especial:Constelación`, 1 006 conceptos, todos los lectores;
+  posiciones de los conceptos a zoom de encuadre, en unidades del lienzo):
+
+| Rótulos | Ancho × alto | Alto/ancho | Extensión (√área) |
+|---|---|---|---|
+| Todos | 1 979 × 3 461 | 1,75 | 2 617 |
+| Sólo los principales (círculos) | 1 014 × 854 | 0,84 | 931 |
+
+  Con todos los rótulos, 703 de los 1 006 quedan en columnas de cinco o más
+  con la misma `x` (57 columnas, la mayor de 42): eso es lo que el modo con
+  círculos evita. Con 1 006 letras de 11 px como mínimo el mapa no cabe en la
+  pantalla, y cada pasada de `settle()` reserva cajas más grandes, así que la
+  densidad de fondo la resuelve mejor el modo con círculos.
+- **Choque por la línea de centros: descartado.** Se probó empujar cada par por
+  la línea que une sus centros, en vez de por el eje de menor traslape. Quitaba
+  las columnas (55 rótulos en columnas de cinco o más) pero abría el mapa en una
+  franja ancha y baja (6 373 × 551, alto/ancho 0,09): una caja de rótulo es seis
+  veces más ancha que alta, y un montón denso que se abre se ensancha en esa
+  proporción. Estirar en vertical antes del choque, o debilitar la gravedad
+  vertical, no cambiaron la proporción, y inclinar el empuje hacia la vertical
+  hizo que `separate()` dejara de converger. Se conserva el choque por el eje de
+  menor traslape.
+
+### 3D: separación y niebla
+
+En 3D la esfera del layout crece con la cantidad de conceptos
+(`sphereRadius`: `RADIUS · √(n/60)`, entre 1 y 3 veces `RADIUS`) y su escala la
+fija el percentil 92 de las distancias, no el máximo, para que un concepto
+lejano no apriete al resto contra el centro. La **niebla** (`fog`) da a cada
+concepto una opacidad de 0,08 (lo más lejano) a 1 (lo más cercano), con una
+curva cuadrática: lo del fondo se apaga rápido y hace de telón. La letra ya
+encogía con la perspectiva.
+
 ## 3. Los controles de fuerza
 
 La barra tiene un control por grado. Todos van de **0 a 100 %, en pasos de

@@ -382,6 +382,31 @@
 	text-decoration: underline;
 }
 
+/* Sin rótulo, el concepto es un círculo (con el color de su tema y el
+ * mismo halo del rótulo); el texto sólo aparece al apuntarlo o elegirlo,
+ * encima del círculo y sin quitarle los eventos. */
+.constel-graph__node--unlabelled:not( .constel-graph__node--peek ) {
+	display: none;
+}
+
+.constel-graph__node--peek {
+	pointer-events: none;
+}
+
+.constel-graph__dot {
+	stroke-width: 2px;
+}
+
+.constel-graph__dot:focus-visible {
+	stroke: var( --constel-accent );
+	stroke-width: 3px;
+}
+
+.constel-graph__dot.constel-graph__node--selected {
+	stroke: var( --constel-accent );
+	stroke-width: 3px;
+}
+
 .constel-graph--focus .constel-graph__node:not( .constel-graph__node--near ),
 .constel-graph--focus .constel-graph__link:not( .constel-graph__link--near ) {
 	opacity: 0.25;

@@ -393,6 +393,10 @@
 				"constellation-empty",
 				"constellation-as-list",
 				"constellation-edges",
+				"constellation-labels",
+				"constellation-labels-none",
+				"constellation-labels-main",
+				"constellation-labels-all",
 				"constellation-proximity",
 				"constellation-force-coexcerpt",
 				"constellation-force-overlap",
@@ -491,10 +495,12 @@
 		"localBasePath": "",
 		"remoteExtPath": "casiopea-constel",
 		"packageFiles": [
-			"tests/qunit/reader.test.js"
+			"tests/qunit/reader.test.js",
+			"tests/qunit/graph.test.js"
 		],
 		"dependencies": [
-			"ext.constel.reader"
+			"ext.constel.reader",
+			"ext.constel.map"
 		]
 	},
 	"config": {
@@ -529,6 +535,10 @@
 		"ConstelGraphCache": {
 			"value": null,
 			"description": "Tipo de caché (clave de $wgObjectCaches, p. ej. CACHE_DB) donde guardar el grafo del mapa. null usa la caché principal de la wiki; con CACHE_NONE en ella, el grafo se calcula en cada lectura."
+		},
+		"ConstelMapMainLabels": {
+			"value": 12,
+			"description": "Cuántos rótulos deja el mapa con la opción «sólo los principales»: los conceptos de mayor frecuencia."
 		},
 		"ConstelOverlapMaxPerPage": {
 			"value": 0,

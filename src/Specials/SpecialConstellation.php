@@ -34,6 +34,7 @@ class SpecialConstellation extends SpecialPage {
 			'canAnnotate' => $user->isNamed() && $this->getAuthority()->isAllowed( 'constel-annotate' ),
 			'canModerate' => $this->getAuthority()->isAllowed( 'constel-moderate' ),
 			'full' => true,
+			'mainLabels' => max( 1, (int)$this->getConfig()->get( 'ConstelMapMainLabels' ) ),
 		] );
 		$out->addModuleStyles( [ 'ext.constel.map.styles' ] );
 		// Pantalla completa: el mapa posee el viewport (barra arriba; grafo y

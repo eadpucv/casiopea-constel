@@ -2,6 +2,21 @@
 
 ## Sin publicar
 
+- **Rótulos apagables en el mapa.** Un control de tres posiciones (− · Aa ·
+  Aa*) deja el mapa sin rótulos, con los conceptos de mayor frecuencia
+  (`$wgConstelMapMainLabels`, 12) o con todos. Sin rótulo, un concepto es un
+  círculo con el color de su tema y área proporcional a su frecuencia; al
+  apuntarlo se lee su rótulo encima y sus vecinos quedan resaltados, y en
+  táctil el primer toque revela y el segundo elige. Sin rótulos o con los
+  principales, las aristas se dibujan sólo para el concepto apuntado o elegido.
+  Con más de 80 conceptos el mapa parte en «sólo los principales». En 2D las
+  cajas de choque de los círculos son más chicas y el mapa se compacta: con
+  los 1 006 conceptos de la prueba de carga, la extensión baja de 2 617 a 931
+  y la proporción alto/ancho de 1,75 a 0,84.
+- **Mapa 3D más abierto y con niebla.** La esfera del layout crece con la
+  cantidad de conceptos, su escala la fija el percentil 92 de las distancias
+  y los conceptos lejanos se atenúan con niebla en profundidad, así que los
+  rótulos del frente no compiten con los del fondo.
 - **El grafo del mapa se calcula una vez y se guarda.** `GraphBuilder` guarda
   su resultado en `WANObjectCache`, con una clave por conjunto de lectores, de
   páginas y de grados pedidos, y lo descarta cuando una escritura cambia lo que

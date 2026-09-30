@@ -34,6 +34,33 @@ const WIDTH = 800;
 const HEIGHT = 500;
 /** Radio de la esfera donde se normaliza el layout. */
 const RADIUS = 210;
+/**
+ * Radio de la esfera del layout 3D: crece con la raíz de la cantidad de
+ * conceptos (con 60 o menos, RADIUS; con 540 o más, el triple), así un mapa
+ * grande se abre en vez de amontonarse. El límite lo pone la cámara.
+ *
+ * @param {number} count
+ * @return {number}
+ */
+function sphereRadius( count ) {
+	return RADIUS * Math.min( 3, Math.max( 1, Math.sqrt( count / 60 ) ) );
+}
+/** Opacidad mínima de lo más lejano en 3D (niebla). */
+const DEPTH_FOG_MIN = 0.08;
+/**
+ * Niebla en profundidad (3D): opacidad de un concepto según su lejanía, de
+ * DEPTH_FOG_MIN en lo más lejano a 1 en lo más cercano, con una curva
+ * cuadrática que apaga rápido lo del fondo: lo lejano hace de telón y no
+ * compite con los rótulos de adelante.
+ *
+ * @param {number} z profundidad (−radio, lejos, a +radio, cerca)
+ * @param {number} radius
+ * @return {number}
+ */
+function fog( z, radius ) {
+	const near = Math.min( 1, Math.max( 0, ( z + radius ) / ( 2 * radius ) ) );
+	return DEPTH_FOG_MIN + ( 1 - DEPTH_FOG_MIN ) * near * near;
+}
 /** Distancia de la cámara (perspectiva). */
 const CAMERA = 900;
 /** Gravedad al centro del layout (ver layout()). */
@@ -70,6 +97,20 @@ const FONT_GROWTH = 0.5;
 const TAP_SLOP = 6;
 /** Techo del zoom (el suelo depende del encuadre, ver draw()). */
 const ZOOM_MAX = 8;
+/** Rótulos que quedan con «sólo los principales» (los de mayor frecuencia). */
+const MAIN_LABELS = 12;
+/**
+ * Sin rótulo, cada concepto es un círculo cuya área sigue la frecuencia: el
+ * radio a zoom 1 va de DOT_R_MIN a DOT_R_MAX (unidades del lienzo) según la
+ * raíz de la frecuencia combinada. En pantalla el radio se acota entre un
+ * mínimo apuntable y un máximo (px), como la letra.
+ */
+const DOT_R_MIN = 5;
+const DOT_R_MAX = 16;
+const DOT_MIN_PX = 5;
+const DOT_MAX_PX = 26;
+/** Cuánto pesa el suelo del círculo respecto del de la letra al reservar cajas. */
+const DOT_FLOOR = DOT_MIN_PX / FONT_MIN_PX;
 
 function svg( tag, attrs ) {
 	const el = document.createElementNS( SVG, tag );
@@ -87,9 +128,22 @@ function svg( tag, attrs ) {
  * @return {Function}
  */
 function sizer( nodes ) {
+	const score = scorer( nodes );
+	return ( n ) => 11 + 20 * score( n );
+}
+
+/**
+ * Frecuencia combinada de un concepto, entre 0 y 1: 0.6·§§ + 0.4·páginas,
+ * normalizados (spec: FrequencyScaling). La usan el tamaño de la letra y el
+ * área del círculo.
+ *
+ * @param {Array} nodes
+ * @return {Function}
+ */
+function scorer( nodes ) {
 	const maxExc = Math.max( 1, ...nodes.map( ( n ) => n.excerpts ) );
 	const maxPages = Math.max( 1, ...nodes.map( ( n ) => n.pages ) );
-	return ( n ) => 11 + 20 * ( 0.6 * n.excerpts / maxExc + 0.4 * n.pages / maxPages );
+	return ( n ) => 0.6 * n.excerpts / maxExc + 0.4 * n.pages / maxPages;
 }
 
 /**
@@ -241,11 +295,17 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 	const cy = nodes.reduce( ( s, v ) => s + v.y, 0 ) / Math.max( 1, n );
 	const cz = nodes.reduce( ( s, v ) => s + v.z, 0 ) / Math.max( 1, n );
 	const dist = ( v ) => Math.hypot( v.x - cx, v.y - cy, v.z - cz );
-	const reach = Math.max( 1, ...nodes.map( dist ) );
+	// La escala la fija el percentil 92 de las distancias, no el máximo: un
+	// concepto lejano no debe apretar al resto contra el centro (el que queda
+	// fuera de la esfera se ve más lejos, con niebla).
+	const dists = nodes.map( dist ).sort( ( a, b ) => a - b );
+	const rank = n > 30 ? Math.floor( 0.92 * ( n - 1 ) ) : n - 1;
+	const reach = Math.max( 1, dists[ rank ] || 1 );
+	const sphere = sphereRadius( n );
 	for ( const node of nodes ) {
-		node.x = ( node.x - cx ) / reach * RADIUS;
-		node.y = ( node.y - cy ) / reach * RADIUS;
-		node.z = ( node.z - cz ) / reach * RADIUS;
+		node.x = ( node.x - cx ) / reach * sphere;
+		node.y = ( node.y - cy ) / reach * sphere;
+		node.z = ( node.z - cz ) / reach * sphere;
 	}
 }
 
@@ -258,15 +318,24 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
  * @param {Array} nodes
  * @param {Map<number,SVGTextElement>} nodeEls
  * @param {Function} size
+ * @param {Function} [dotOf] radio del círculo de un concepto sin rótulo (null
+ *  si lo tiene): su caja es la del círculo
  * @return {Map<number,Object>} id → {s, w, h, ox, oy} a zoom 1 (s: la letra
  *  con que se midió; el desplazamiento de la tinta es proporcional a ella)
  */
-function inkBoxes( nodes, nodeEls, size ) {
+function inkBoxes( nodes, nodeEls, size, dotOf ) {
 	const ctx = document.createElement( 'canvas' ).getContext( '2d' );
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'alphabetic';
 	const boxes = new Map();
 	nodes.forEach( ( node ) => {
+		const radius = dotOf ? dotOf( node ) : null;
+		if ( radius !== null ) {
+			// Sin rótulo: la caja es la del círculo, centrada en su punto.
+			const half = radius + PAD;
+			boxes.set( node.id, { s: size( node ), w: half, h: half, ox: 0, oy: 0, dot: true } );
+			return;
+		}
 		const style = getComputedStyle( nodeEls.get( node.id ) );
 		ctx.font = `${ style.fontStyle } ${ style.fontWeight } ${ size( node ) }px ${ style.fontFamily }`;
 		const m = ctx.measureText( node.label );
@@ -449,6 +518,26 @@ function draw( container, data, view ) {
 	const viewBox = () => `${ -W / 2 } ${ -H / 2 } ${ W } ${ H }`;
 
 	const size = sizer( nodes );
+	// Rótulos: todos, sólo los principales (los de mayor frecuencia) o
+	// ninguno. Sin rótulo cada concepto es un círculo de área proporcional a
+	// su frecuencia (spec: ConceptMap.LabelsAreOptional).
+	const score = scorer( nodes );
+	const mode = [ 'none', 'main' ].includes( view.labels ) ? view.labels : 'all';
+	const mainIds = new Set( mode === 'main' ?
+		nodes.slice()
+			.sort( ( a, b ) => score( b ) - score( a ) || a.label.localeCompare( b.label ) )
+			.slice( 0, view.mainLabels || MAIN_LABELS )
+			.map( ( n ) => n.id ) :
+		[] );
+	const labelled = ( n ) => mode === 'all' || mainIds.has( n.id );
+	// Radio de un círculo en pantalla al zoom de encuadre: DOT_MIN_PX por el
+	// factor de su frecuencia (el área, proporcional a la frecuencia).
+	const dotK = ( n ) => 1 + ( DOT_MAX_PX / DOT_MIN_PX - 1 ) * Math.sqrt( score( n ) );
+	const dotR0 = ( n ) => DOT_R_MIN + ( DOT_R_MAX - DOT_R_MIN ) * Math.sqrt( score( n ) );
+	const dotOf0 = ( n ) => labelled( n ) ? null : dotR0( n );
+	// Con los rótulos apagados o reducidos, las aristas se dibujan sólo para
+	// el concepto bajo el cursor (o con el foco) o el elegido.
+	const focusOnly = mode !== 'all';
 	const root = svg( 'svg', {
 		class: 'constel-graph' + ( is3d ? ' constel-graph--3d' : '' ) +
 			( view.fill ? ' constel-graph--fill' : '' ),
@@ -477,14 +566,47 @@ function draw( container, data, view ) {
 			el: line, kind: l.kind, a: byId.get( l.source ), b: byId.get( l.target )
 		} );
 	};
-	if ( view.edges ) {
+	if ( view.edges && !focusOnly ) {
 		// Todas las aristas se crean; las de un grado en 0 quedan fuera del
 		// lienzo (styleLinks), así una fuerza puede volver sin redibujar.
 		data.links.forEach( addLinkEl );
 	}
+	// Con focusOnly: las aristas de cada concepto (de los grados con fuerza) y
+	// el concepto cuyas aristas se ven ahora (el del cursor, o el elegido).
+	const adjacency = new Map( nodes.map( ( n ) => [ n.id, [] ] ) );
+	let edgeFocus = null;
+	const showEdgesOf = ( id ) => {
+		edgeFocus = id;
+		for ( const l of linkEls ) {
+			l.el.remove();
+		}
+		linkEls.length = 0;
+		if ( id === null || !view.edges ) {
+			return;
+		}
+		for ( const l of adjacency.get( id ) ) {
+			addLinkEl( l );
+			const shown = linkEls[ linkEls.length - 1 ];
+			shown.el.classList.add( 'constel-graph__link--near' );
+			linkLayer.appendChild( shown.el );
+		}
+	};
 	// Vecinos, visibilidad y opacidad de cada arista, según las fuerzas.
 	const styleLinks = () => {
 		neighbours.forEach( ( set ) => set.clear() );
+		if ( focusOnly ) {
+			adjacency.forEach( ( list ) => {
+				list.length = 0;
+			} );
+			for ( const l of links ) {
+				neighbours.get( l.source ).add( l.target );
+				neighbours.get( l.target ).add( l.source );
+				adjacency.get( l.source ).push( l );
+				adjacency.get( l.target ).push( l );
+			}
+			showEdgesOf( edgeFocus );
+			return;
+		}
 		for ( const l of linkEls ) {
 			const force = forceOf( view.forces, l.kind );
 			if ( force <= 0 ) {
@@ -506,6 +628,41 @@ function draw( container, data, view ) {
 
 	const nodeLayer = svg( 'g', { class: 'constel-graph__nodes' } );
 	const nodeEls = new Map();
+	const dotEls = new Map();
+	const dotLayer = svg( 'g', { class: 'constel-graph__dots' } );
+	// Concepto bajo el cursor o con el foco; en táctil, el del primer toque.
+	let hoverNode = null;
+	let lastPointer = 'mouse';
+	// Revela el rótulo de los conceptos sin rótulo que tienen el cursor o la
+	// selección.
+	const peekLabels = () => {
+		dotEls.forEach( ( dot, id ) => {
+			const on = ( hoverNode && hoverNode.id === id ) || ( selected && selected.id === id );
+			nodeEls.get( id ).classList.toggle( 'constel-graph__node--peek', !!on );
+		} );
+	};
+	const focusEdges = () => {
+		if ( focusOnly ) {
+			showEdgesOf( hoverNode ? hoverNode.id : ( selected ? selected.id : null ) );
+			render();
+		}
+	};
+	function setHover( node ) {
+		hoverNode = node;
+		hovering = node !== null;
+		root.classList.toggle( 'constel-graph--focus', node !== null );
+		const near = ( id ) => !!node && ( id === node.id || neighbours.get( node.id ).has( id ) );
+		nodeEls.forEach( ( el, id ) => el.classList.toggle( 'constel-graph__node--near', near( id ) ) );
+		dotEls.forEach( ( dot, id ) => dot.classList.toggle( 'constel-graph__node--near', near( id ) ) );
+		linkEls.forEach( ( l ) => l.el.classList.toggle(
+			'constel-graph__link--near', !!node && ( l.a.id === node.id || l.b.id === node.id )
+		) );
+		peekLabels();
+		focusEdges();
+		if ( !node ) {
+			resume();
+		}
+	}
 	nodes.forEach( ( node ) => {
 		const theme = view.themeOf.get( node.id );
 		const classes = [ 'constel-graph__node' ];
@@ -530,95 +687,126 @@ function draw( container, data, view ) {
 			'aria-label': mw.msg( 'constellation-node-label', node.label, node.excerpts, node.pages )
 		} );
 		text.textContent = node.label;
-		const activate = () => view.onSelect( node );
-		text.addEventListener( 'click', ( e ) => {
-			// Soltar después de arrastrar (el concepto, o el mapa) no es elegir.
-			if ( moved === node || performance.now() < swallowUntil ) {
-				moved = null;
-				e.stopPropagation();
-				return;
-			}
-			activate();
-		} );
-		text.addEventListener( 'keydown', ( e ) => {
-			if ( e.key === 'Enter' || e.key === ' ' ) {
-				e.preventDefault();
+		let dot = null;
+		if ( !labelled( node ) ) {
+			// Sin rótulo: el círculo es el concepto (lleva el nombre accesible y
+			// los eventos); el texto sólo aparece al revelarlo.
+			text.classList.add( 'constel-graph__node--unlabelled' );
+			text.setAttribute( 'aria-hidden', 'true' );
+			text.removeAttribute( 'tabindex' );
+			dot = svg( 'circle', {
+				class: classes.join( ' ' ) + ' constel-graph__dot',
+				r: DOT_R_MIN,
+				tabindex: '0',
+				role: 'button',
+				'aria-label': mw.msg( 'constellation-node-label', node.label, node.excerpts, node.pages )
+			} );
+			dotLayer.appendChild( dot );
+			dotEls.set( node.id, dot );
+		}
+		const wire = ( el ) => {
+			const activate = () => {
+				// Táctil sin rótulos: el primer toque revela el concepto (su
+				// rótulo y sus aristas), el segundo lo elige.
+				if ( lastPointer === 'touch' && focusOnly && hoverNode !== node ) {
+					setHover( node );
+					return;
+				}
+				view.onSelect( node );
+			};
+			el.addEventListener( 'click', ( e ) => {
+				// Soltar después de arrastrar (el concepto, o el mapa) no es elegir.
+				if ( moved === node || performance.now() < swallowUntil ) {
+					moved = null;
+					e.stopPropagation();
+					return;
+				}
 				activate();
-			} else if ( !is3d && e.altKey && ARROWS[ e.key ] ) {
-				// Alternativa de teclado al arrastre (WCAG 2.5.7): el mismo
-				// empujón, con la simulación reaccionando.
-				e.preventDefault();
-				hold( node );
-				node.x += ARROWS[ e.key ][ 0 ] * 12 / zoom;
-				node.y += ARROWS[ e.key ][ 1 ] * 12 / zoom;
-				release( node );
-			}
-		} );
-		if ( !is3d ) {
-			text.addEventListener( 'pointerdown', ( e ) => {
-				// Con otro dedo ya en el lienzo, esto es parte de un pellizco.
-				if ( e.button !== 0 || pointers.size ) {
-					return;
-				}
-				e.preventDefault();
-				grab = { node, x: e.clientX, y: e.clientY, nx: node.x, ny: node.y, far: false };
-				text.setPointerCapture( e.pointerId );
 			} );
-			text.addEventListener( 'pointermove', ( e ) => {
-				if ( !grab || grab.node !== node ) {
-					return;
-				}
-				const s = 1 / ( ppu * zoom );
-				const dx = ( e.clientX - grab.x ) * s;
-				const dy = ( e.clientY - grab.y ) * s;
-				const far = Math.hypot( e.clientX - grab.x, e.clientY - grab.y );
-				if ( !grab.far && far < TAP_SLOP ) {
-					return;
-				}
-				if ( !grab.far ) {
-					grab.far = true;
-					root.classList.add( 'constel-graph--dragging' );
+			el.addEventListener( 'keydown', ( e ) => {
+				if ( e.key === 'Enter' || e.key === ' ' ) {
+					e.preventDefault();
+					activate();
+				} else if ( !is3d && e.altKey && ARROWS[ e.key ] ) {
+					// Alternativa de teclado al arrastre (WCAG 2.5.7): el mismo
+					// empujón, con la simulación reaccionando.
+					e.preventDefault();
 					hold( node );
-				}
-				node.x = grab.nx + dx;
-				node.y = grab.ny + dy;
-				if ( reduce ) {
-					render();
-				} else {
-					resume();
-				}
-			} );
-			const letGo = () => {
-				if ( !grab || grab.node !== node ) {
-					return;
-				}
-				root.classList.remove( 'constel-graph--dragging' );
-				if ( grab.far ) {
-					moved = node;
+					node.x += ARROWS[ e.key ][ 0 ] * 12 / zoom;
+					node.y += ARROWS[ e.key ][ 1 ] * 12 / zoom;
 					release( node );
 				}
-				grab = null;
-			};
-			text.addEventListener( 'pointerup', letGo );
-			text.addEventListener( 'pointercancel', letGo );
-		}
-		const focus = ( on ) => {
-			hovering = on;
-			root.classList.toggle( 'constel-graph--focus', on );
-			nodeEls.forEach( ( el, id ) => el.classList.toggle(
-				'constel-graph__node--near', on && ( id === node.id || neighbours.get( node.id ).has( id ) )
-			) );
-			linkEls.forEach( ( l ) => l.el.classList.toggle(
-				'constel-graph__link--near', on && ( l.a.id === node.id || l.b.id === node.id )
-			) );
+			} );
+			if ( !is3d ) {
+				el.addEventListener( 'pointerdown', ( e ) => {
+					// Con otro dedo ya en el lienzo, esto es parte de un pellizco.
+					if ( e.button !== 0 || pointers.size ) {
+						return;
+					}
+					e.preventDefault();
+					grab = { node, x: e.clientX, y: e.clientY, nx: node.x, ny: node.y, far: false };
+					el.setPointerCapture( e.pointerId );
+				} );
+				el.addEventListener( 'pointermove', ( e ) => {
+					if ( !grab || grab.node !== node ) {
+						return;
+					}
+					const s = 1 / ( ppu * zoom );
+					const dx = ( e.clientX - grab.x ) * s;
+					const dy = ( e.clientY - grab.y ) * s;
+					const far = Math.hypot( e.clientX - grab.x, e.clientY - grab.y );
+					if ( !grab.far && far < TAP_SLOP ) {
+						return;
+					}
+					if ( !grab.far ) {
+						grab.far = true;
+						root.classList.add( 'constel-graph--dragging' );
+						hold( node );
+					}
+					node.x = grab.nx + dx;
+					node.y = grab.ny + dy;
+					if ( reduce ) {
+						render();
+					} else {
+						resume();
+					}
+				} );
+				const letGo = () => {
+					if ( !grab || grab.node !== node ) {
+						return;
+					}
+					root.classList.remove( 'constel-graph--dragging' );
+					if ( grab.far ) {
+						moved = node;
+						release( node );
+					}
+					grab = null;
+				};
+				el.addEventListener( 'pointerup', letGo );
+				el.addEventListener( 'pointercancel', letGo );
+			}
+			el.addEventListener( 'mouseenter', () => setHover( node ) );
+			el.addEventListener( 'mouseleave', () => setHover( null ) );
+			// El foco no revela en táctil: allí manda el primer toque (activate).
+			el.addEventListener( 'focus', () => {
+				if ( lastPointer !== 'touch' ) {
+					setHover( node );
+				}
+			} );
+			el.addEventListener( 'blur', () => {
+				if ( lastPointer !== 'touch' ) {
+					setHover( null );
+				}
+			} );
 		};
-		text.addEventListener( 'mouseenter', () => focus( true ) );
-		text.addEventListener( 'mouseleave', () => focus( false ) );
-		text.addEventListener( 'focus', () => focus( true ) );
-		text.addEventListener( 'blur', () => focus( false ) );
+		wire( text );
+		if ( dot ) {
+			wire( dot );
+		}
 		nodeLayer.appendChild( text );
 		nodeEls.set( node.id, text );
 	} );
+	stage.appendChild( dotLayer );
 	stage.appendChild( nodeLayer );
 	container.appendChild( root );
 	const measurePpu = () => {
@@ -633,13 +821,13 @@ function draw( container, data, view ) {
 	// página): una arista ideal mide EDGE_IN_LABELS anchos medios de rótulo.
 	let edgeLength = 0;
 	if ( !is3d && nodes.length ) {
-		const measured0 = inkBoxes( nodes, nodeEls, size );
+		const measured0 = inkBoxes( nodes, nodeEls, size, dotOf0 );
 		let wide = 0;
 		measured0.forEach( ( b ) => {
 			wide += 2 * b.w;
 		} );
 		edgeLength = EDGE_IN_LABELS * wide / measured0.size;
-		layout( nodes, links, view.themeOf, 2, view.forces, edgeLength );
+		layout( nodes, links, view.themeOf, 2, view.forces, edgeLength, false );
 	}
 
 	// 2D: rótulos sin traslapes, centrados y encuadrados en el lienzo.
@@ -682,17 +870,24 @@ function draw( container, data, view ) {
 		measurePpu();
 		// Letra reservada: la natural, o el suelo al zoom del encuadre anterior.
 		const reservedSize = ( floor ) => ( n ) => Math.max( size( n ), floor );
+		// Un círculo reserva su radio (o el suelo, que es una fracción del de la letra).
+		const dotFloor = ( n, floor ) => floor * DOT_FLOOR * dotK( n );
+		const reservedDot = ( floor ) => ( n ) => Math.max( dotR0( n ), dotFloor( n, floor ) );
 		let reserved = 0;
 		let used = 0;
 		let z = 1;
 		for ( let pass = 0; pass < 4; pass++ ) {
 			used = reserved;
 			const at = reservedSize( used );
-			boxes = inkBoxes( nodes, nodeEls, at );
+			const dotAt = reservedDot( used );
+			boxes = inkBoxes( nodes, nodeEls, at, ( n ) => labelled( n ) ? null : dotAt( n ) );
 			separate( nodes, boxes );
 			z = frameAll();
 			const need = FONT_MIN_PX / ( ppu * z );
-			if ( nodes.every( ( n ) => at( n ) >= need - 1e-6 ) ) {
+			if ( nodes.every( ( n ) => labelled( n ) ?
+				at( n ) >= need - 1e-6 :
+				dotAt( n ) >= need * DOT_FLOOR * dotK( n ) - 1e-6
+			) ) {
 				fit = z;
 				return;
 			}
@@ -721,6 +916,7 @@ function draw( container, data, view ) {
 	const settling = () => Math.abs( target.x - center.x ) + Math.abs( target.y - center.y ) +
 		Math.abs( target.z - center.z ) > 0.5;
 
+	const sphere3d = sphereRadius( nodes.length );
 	function render() {
 		const cy = Math.cos( yaw );
 		const sy = Math.sin( yaw );
@@ -741,6 +937,25 @@ function draw( container, data, view ) {
 			const el = nodeEls.get( node.id );
 			const box = boxes && boxes.get( node.id );
 			const font = fontUnits( size( node ) * persp );
+			const dot = dotEls.get( node.id );
+			if ( dot ) {
+				// Sin rótulo: el círculo va en el punto; su rótulo, si se
+				// revela, va encima.
+				// Al zoom de encuadre mide DOT_MIN_PX·dotK px; al acercar crece
+				// como la letra (FONT_GROWTH), y en 3D con la perspectiva.
+				const r = Math.min( 2 * DOT_MAX_PX,
+					DOT_MIN_PX * dotK( node ) * persp * Math.pow( zoom / fit, FONT_GROWTH ) ) / ppu;
+				dot.setAttribute( 'cx', node.px.toFixed( 1 ) );
+				dot.setAttribute( 'cy', node.py.toFixed( 1 ) );
+				dot.setAttribute( 'r', r.toFixed( 2 ) );
+				el.setAttribute( 'x', node.px.toFixed( 1 ) );
+				el.setAttribute( 'y', ( node.py - r - 3 / ppu ).toFixed( 1 ) );
+				el.setAttribute( 'font-size', font.toFixed( 2 ) );
+				if ( is3d ) {
+					dot.style.opacity = fog( z2, sphere3d ).toFixed( 2 );
+				}
+				continue;
+			}
 			// La tinta se centra con el desplazamiento medido, a esta letra.
 			const ink = box ? font / box.s : 0;
 			el.setAttribute( 'x', ( node.px + ( box ? box.ox * ink : 0 ) ).toFixed( 1 ) );
@@ -748,7 +963,7 @@ function draw( container, data, view ) {
 			el.setAttribute( 'font-size', font.toFixed( 2 ) );
 			if ( is3d ) {
 				// Lo lejano se atenúa: da profundidad sin perder legibilidad.
-				el.style.opacity = ( 0.45 + 0.55 * ( z2 + RADIUS ) / ( 2 * RADIUS ) ).toFixed( 2 );
+				el.style.opacity = fog( z2, sphere3d ).toFixed( 2 );
 			}
 		}
 		for ( const l of linkEls ) {
@@ -930,6 +1145,9 @@ function draw( container, data, view ) {
 	function release( node ) {
 		node.pin = { x: node.x, y: node.y };
 		nodeEls.get( node.id ).classList.add( 'constel-graph__node--pinned' );
+		if ( dotEls.has( node.id ) ) {
+			dotEls.get( node.id ).classList.add( 'constel-graph__node--pinned' );
+		}
 		sim.held = null;
 		sim.last = node;
 		sim.target = 0;
@@ -1015,6 +1233,11 @@ function draw( container, data, view ) {
 		render();
 	}
 	root.addEventListener( 'pointerdown', ( e ) => {
+		lastPointer = e.pointerType;
+		// Táctil sin rótulos: tocar el fondo suelta el concepto revelado.
+		if ( e.pointerType === 'touch' && hoverNode && !e.target.closest( '.constel-graph__node' ) ) {
+			setHover( null );
+		}
 		// Un concepto que se arrastra (2D) se atiende en su rótulo.
 		if ( grab || ( e.pointerType === 'mouse' && e.button !== 0 && e.button !== 1 ) ) {
 			return;
@@ -1215,7 +1438,7 @@ function draw( container, data, view ) {
 	function addLinks( more ) {
 		for ( const l of more ) {
 			data.links.push( l );
-			if ( view.edges ) {
+			if ( view.edges && !focusOnly ) {
 				addLinkEl( l );
 			}
 		}
@@ -1288,14 +1511,19 @@ function draw( container, data, view ) {
 		zoomOut: () => zoomAt( 1 / 1.25, { x: 0, y: 0 } ),
 		reset: () => {
 			selected = null;
+			peekLabels();
+			focusEdges();
 			resetView();
 		},
 		// El concepto elegido pasa a ser el foco y el centro del mapa.
 		select: ( id ) => {
 			nodeEls.forEach( ( el, nid ) => el.classList.toggle( 'constel-graph__node--selected', nid === id ) );
+			dotEls.forEach( ( dot, nid ) => dot.classList.toggle( 'constel-graph__node--selected', nid === id ) );
 			pan = { x: 0, y: 0 };
 			applyPan();
 			selected = byId.get( id ) || null;
+			peekLabels();
+			focusEdges();
 			if ( gliding ) {
 				land();
 			}
@@ -1357,10 +1585,18 @@ function serialize( root, container, meta ) {
 	clone.setAttribute( 'width', String( Math.round( box.width ) ) );
 	clone.setAttribute( 'height', String( Math.round( box.height ) ) );
 
-	const originals = root.querySelectorAll( 'text, line' );
-	Array.from( clone.querySelectorAll( 'text, line' ) ).forEach( ( node, i ) => {
+	const originals = root.querySelectorAll( 'text, line, circle' );
+	Array.from( clone.querySelectorAll( 'text, line, circle' ) ).forEach( ( node, i ) => {
 		const cs = getComputedStyle( originals[ i ] );
-		if ( node.tagName === 'text' ) {
+		if ( node.tagName === 'circle' ) {
+			node.setAttribute( 'fill', toRgb( cs.fill ) );
+			node.setAttribute( 'stroke', toRgb( cs.stroke ) );
+			node.removeAttribute( 'tabindex' );
+			node.removeAttribute( 'role' );
+		} else if ( node.tagName === 'text' ) {
+			if ( cs.display === 'none' ) {
+				node.setAttribute( 'display', 'none' );
+			}
 			node.setAttribute( 'fill', toRgb( cs.fill ) );
 			node.setAttribute( 'font-family', cs.fontFamily );
 			node.removeAttribute( 'tabindex' );
@@ -1394,4 +1630,4 @@ function serialize( root, container, meta ) {
 	return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString( clone );
 }
 
-module.exports = { draw, CATEGORIES, FORCES };
+module.exports = { draw, CATEGORIES, FORCES, collide, separate, layout };
