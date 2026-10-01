@@ -3,7 +3,7 @@
  * SVG inline, con el trazo (1.75) y el color de token de Stella Nova. Sólo la
  * geometría de los que usa con§tel, tal cual el original (24×24); se pintan
  * con currentColor. Algunos nombres de aquí difieren de los de Lucide, que los
- * renombró: «filter» es `funnel` y «align-left» es `text-align-start`.
+ * renombró: «filter» es `funnel`.
  */
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -75,10 +75,9 @@ const SHAPES = {
 	filter: [
 		[ 'path', { d: 'M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z' } ]
 	],
-	'align-left': [
-		[ 'path', { d: 'M21 5H3' } ],
-		[ 'path', { d: 'M15 12H3' } ],
-		[ 'path', { d: 'M17 19H3' } ]
+	section: [
+		[ 'path', { d: 'M16 5a4 3 0 0 0-8 0c0 4 8 3 8 7a4 3 0 0 1-8 0' } ],
+		[ 'path', { d: 'M8 19a4 3 0 0 0 8 0c0-4-8-3-8-7a4 3 0 0 1 8 0' } ]
 	],
 	layers: [
 		[ 'path', { d: 'M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z' } ],

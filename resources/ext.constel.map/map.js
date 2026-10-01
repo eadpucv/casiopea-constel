@@ -473,7 +473,7 @@ function main( root ) {
 		}
 	};
 	const forceInputs = {};
-	[ [ 'co_excerpt', 'constellation-force-coexcerpt', 'align-left' ],
+	[ [ 'co_excerpt', 'constellation-force-coexcerpt', 'section' ],
 		[ 'overlap', 'constellation-force-overlap', 'layers' ],
 		[ 'co_page', 'constellation-force-copage', 'file-text' ]
 	].forEach( ( [ kind, msg, iconName ] ) => {

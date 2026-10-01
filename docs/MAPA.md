@@ -70,7 +70,7 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/rotate-3d.svg" width="18" alt=""> | **Girar solo** (casilla, sólo en 3D) | El mapa 3D gira por sí mismo y se detiene al apuntarlo. Nunca gira con `prefers-reduced-motion` | apagado |
 | <img src="icons/waypoints.svg" width="18" alt=""> | **Mostrar aristas** (interruptor) | Dibuja u oculta las relaciones entre conceptos. Ocultas, la atracción entre conceptos se mantiene | encendido |
 | <img src="icons/type.svg" width="18" alt=""> ⇄ <img src="icons/circle-dot.svg" width="18" alt=""> | **Conceptos como palabras ⇄ como nodos**, un interruptor con un ícono a cada lado | Palabras dibuja cada concepto con su texto. Nodos lo dibuja como un círculo del color de su tema y de área según su frecuencia, y la palabra aparece al apuntarlo (sección 3) | palabras |
-| <img src="icons/text-align-start.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 100 % |
+| <img src="icons/section.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 100 % |
 | <img src="icons/layers.svg" width="18" alt=""> | **Proximidad: traslape** (deslizador) | Lo mismo para conceptos de secciones de lectores distintos que comparten texto | 60 % |
 | <img src="icons/file-text.svg" width="18" alt=""> | **Proximidad: mismo texto** (deslizador) | Lo mismo para conceptos anotados en una misma página | 35 % |
 | <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | **Acercar y alejar** | Escalan el mapa por 1,25 (hasta 8 veces) y, con él, la letra, más lento (sección 3) | encuadre |
@@ -204,7 +204,7 @@ Hay uno por grado, de **0 a 100 %, en pasos de 5 %** (internamente `valor / 100`
 
 | Control | Grado | Por omisión | Opacidad base de su arista |
 |---|---|---|---|
-| <img src="icons/text-align-start.svg" width="14" alt=""> misma sección | `co_excerpt` | 100 % | 0,85 |
+| <img src="icons/section.svg" width="14" alt=""> misma sección | `co_excerpt` | 100 % | 0,85 |
 | <img src="icons/layers.svg" width="14" alt=""> traslape | `overlap` | 60 % | 0,60 |
 | <img src="icons/file-text.svg" width="14" alt=""> mismo texto | `co_page` | 35 % | 0,40 |
 
@@ -576,7 +576,7 @@ los SVG en `docs/icons/` (con su `LICENSE`).
 | <img src="icons/type.svg" width="18" alt=""> | `type` | `type` | conceptos como palabras |
 | <img src="icons/circle-dot.svg" width="18" alt=""> | `circle-dot` | `circle-dot` | conceptos como nodos |
 | <img src="icons/globe.svg" width="18" alt=""> | `globe` | `globe` | «Todos» en el filtro de lectores (lista y píldora) |
-| <img src="icons/text-align-start.svg" width="18" alt=""> | `align-left` | `text-align-start` | proximidad: misma sección |
+| <img src="icons/section.svg" width="18" alt=""> | `section` | `section` | proximidad: misma sección |
 | <img src="icons/layers.svg" width="18" alt=""> | `layers` | `layers` | proximidad: traslape |
 | <img src="icons/file-text.svg" width="18" alt=""> | `file-text` | `file-text` | proximidad: mismo texto |
 | <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | `zoom-in`, `zoom-out` | igual | acercar y alejar |

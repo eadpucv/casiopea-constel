@@ -2,6 +2,9 @@
 
 ## Sin publicar
 
+- **Ícono de «misma sección».** El primer deslizador de proximidad usa el ícono
+  `section` (§) de Lucide, en lugar de `text-align-start`.
+
 - **Se retira «Rotular los principales».** La casilla de la estrella resultaba
   confusa: con nodos, el rótulo se lee al apuntar cada círculo. Se eliminan la
   casilla, la preferencia `lead`, el ícono `star` y la opción
