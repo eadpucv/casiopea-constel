@@ -398,7 +398,6 @@
 				"constellation-concepts",
 				"constellation-concepts-words",
 				"constellation-concepts-nodes",
-				"constellation-lead",
 				"constellation-notice-nodes",
 				"constellation-notice-labels",
 				"constellation-notice-links",
@@ -578,10 +577,6 @@
 		"ConstelMapMaxDrawnLinks": {
 			"value": 6000,
 			"description": "Con más aristas que esto, el mapa las dibuja sólo para el concepto apuntado o elegido."
-		},
-		"ConstelMapMainLabels": {
-			"value": 12,
-			"description": "Cuántos rótulos deja el mapa con la opción «sólo los principales»: los conceptos de mayor frecuencia."
 		},
 		"ConstelOverlapMaxPerPage": {
 			"value": 0,

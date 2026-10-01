@@ -56,7 +56,6 @@
 	"constellation-concepts": "Name of the group of controls that sets how concepts are drawn: as words or as nodes (circles).",
 	"constellation-concepts-words": "Option of the concepts switch: each concept is drawn as its word.",
 	"constellation-concepts-nodes": "Option of the concepts switch: each concept is drawn as a circle.",
-	"constellation-lead": "Checkbox, shown when concepts are nodes: the most frequent ones keep their word.",
 	"constellation-notice-nodes": "Notice above the map when the server sent fewer concepts than exist. $1 is how many are shown, $2 the total.",
 	"constellation-notice-labels": "Notice above the map when only the most frequent concepts carry a label. $1 is how many.",
 	"constellation-notice-links": "Notice above the map when only the strongest links are drawn, plus those of the concept pointed at or chosen. $1 is how many are drawn.",

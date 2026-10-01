@@ -104,8 +104,6 @@ const FONT_GROWTH = 0.5;
 const TAP_SLOP = 6;
 /** Techo del zoom (el suelo depende del encuadre, ver draw()). */
 const ZOOM_MAX = 8;
-/** Rótulos que quedan con «sólo los principales» (los de mayor frecuencia). */
-const MAIN_LABELS = 12;
 /**
  * Topes de carga (spec: ConceptMap.MapHasLoadLimits): aun con «todos los
  * rótulos», el mapa dibuja sólo los MAX_LABELS más frecuentes (el resto son
@@ -572,18 +570,13 @@ function draw( container, data, view ) {
 	const viewBox = () => `${ -W / 2 } ${ -H / 2 } ${ W } ${ H }`;
 
 	const size = sizer( nodes );
-	// Rótulos: todos, sólo los principales (los de mayor frecuencia) o
-	// ninguno. Sin rótulo cada concepto es un círculo de área proporcional a
+	// Rótulos: todos o ninguno. Sin rótulo cada concepto es un círculo de área proporcional a
 	// su frecuencia (spec: ConceptMap.LabelsAreOptional).
 	const score = scorer( nodes );
-	const mode = [ 'none', 'main' ].includes( view.labels ) ? view.labels : 'all';
-	// Cuántos rótulos caben: los principales, ninguno, o «todos» hasta el tope.
-	const quarter = Math.max( 1, Math.floor( nodes.length / 4 ) );
+	const mode = view.labels === 'none' ? 'none' : 'all';
+	// Cuántos rótulos caben: ninguno, o «todos» hasta el tope.
 	const labelCap = {
 		none: 0,
-		// Los principales son los de mayor frecuencia, y nunca más de la cuarta
-		// parte del mapa: con pocos conceptos «principales» no es casi todos.
-		main: Math.min( view.mainLabels || MAIN_LABELS, quarter ),
 		all: view.maxLabels || MAX_LABELS
 	}[ mode ];
 	const everyLabel = nodes.length <= labelCap;

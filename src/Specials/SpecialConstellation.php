@@ -34,7 +34,6 @@ class SpecialConstellation extends SpecialPage {
 			'canAnnotate' => $user->isNamed() && $this->getAuthority()->isAllowed( 'constel-annotate' ),
 			'canModerate' => $this->getAuthority()->isAllowed( 'constel-moderate' ),
 			'full' => true,
-			'mainLabels' => max( 1, (int)$this->getConfig()->get( 'ConstelMapMainLabels' ) ),
 			'maxLabels' => max( 1, (int)$this->getConfig()->get( 'ConstelMapMaxLabels' ) ),
 			'maxLinks' => max( 1, (int)$this->getConfig()->get( 'ConstelMapMaxDrawnLinks' ) ),
 		] );

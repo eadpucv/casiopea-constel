@@ -70,7 +70,6 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/rotate-3d.svg" width="18" alt=""> | **Girar solo** (casilla, sólo en 3D) | El mapa 3D gira por sí mismo y se detiene al apuntarlo. Nunca gira con `prefers-reduced-motion` | apagado |
 | <img src="icons/waypoints.svg" width="18" alt=""> | **Mostrar aristas** (interruptor) | Dibuja u oculta las relaciones entre conceptos. Ocultas, la atracción entre conceptos se mantiene | encendido |
 | <img src="icons/type.svg" width="18" alt=""> ⇄ <img src="icons/circle-dot.svg" width="18" alt=""> | **Conceptos como palabras ⇄ como nodos**, un interruptor con un ícono a cada lado | Palabras dibuja cada concepto con su texto. Nodos lo dibuja como un círculo del color de su tema y de área según su frecuencia, y la palabra aparece al apuntarlo (sección 3) | palabras |
-| <img src="icons/star.svg" width="18" alt=""> | **Rotular los principales** (casilla, sólo con nodos) | Deja escrita la palabra de los conceptos más frecuentes (12 por omisión, a lo más la cuarta parte del mapa) | apagada |
 | <img src="icons/text-align-start.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 100 % |
 | <img src="icons/layers.svg" width="18" alt=""> | **Proximidad: traslape** (deslizador) | Lo mismo para conceptos de secciones de lectores distintos que comparten texto | 60 % |
 | <img src="icons/file-text.svg" width="18" alt=""> | **Proximidad: mismo texto** (deslizador) | Lo mismo para conceptos anotados en una misma página | 35 % |
@@ -155,20 +154,6 @@ frecuencia** (la misma del rótulo). En pantalla mide
 y crece al acercar como la letra (`(zoom / fit)^0,5`), sin pasar nunca de 10 px de radio (`DOT_MAX_PX`). El círculo es lo que se
 apunta, recibe el foco y se arrastra; la palabra aparece encima al apuntarlo o
 elegirlo.
-
-#### Rotular los principales
-
-![Nodos con los principales rotulados](img/mapa-nodos-principales.jpg)
-
-La casilla <img src="icons/star.svg" width="14" alt=""> **Rotular los principales**
-aparece junto al interruptor de conceptos sólo con el modo Nodos activo (con
-palabras, todos los conceptos ya llevan su texto). Marcada, deja escrita la
-palabra de los conceptos más frecuentes (`$wgConstelMapMainLabels`, 12 por
-omisión, y a lo más la cuarta parte de los conceptos del mapa); el resto sigue
-como círculo con su palabra al apuntarlo. Desmarcada, ningún concepto lleva
-rótulo fijo. La elección se recuerda en `lead` (sección 11). La imagen muestra el
-mapa de Arturo Chicano (37 conceptos) con la casilla marcada: se rotulan los 9
-más frecuentes.
 
 - **Cajas de choque.** En 2D la caja de un círculo es un cuadrado de su radio más
   `PAD`, pero dos círculos chocan como círculos (distancia entre centros mayor o
@@ -493,7 +478,6 @@ Accesibilidad:
 |---|---|---|
 | `forces` | fuerza de cada grado (0 a 1) | 1 / 0,6 / 0,35 (con varios lectores y sin valor guardado, 1 / 1 / 0) |
 | `concepts` | `words` o `nodes` | `words` |
-| `lead` | rotular los principales con nodos | `false` |
 | `autorotate` | girar solo en 3D | `false` |
 | `readerColors` | color elegido de cada lector (usuario → `#rrggbb`) | el de su lugar en el filtro |
 | `themeColors` | color elegido de cada tema (id → `#rrggbb`), desde el círculo antes de su nombre en el panel de temas | el de su categoría |
@@ -507,7 +491,6 @@ páginas.
 
 | Variable | Por omisión | Qué fija |
 |---|---|---|
-| `$wgConstelMapMainLabels` | 12 | cuántas palabras deja «Rotular los principales» |
 | `$wgConstelMapMaxNodes` | 2000 | conceptos por respuesta del mapa (0 = sin tope) |
 | `$wgConstelMapMaxLabels` | 300 | palabras que dibuja el mapa aun como palabras |
 | `$wgConstelMapMaxDrawnLinks` | 6000 | aristas dibujadas a la vez |
@@ -592,7 +575,6 @@ los SVG en `docs/icons/` (con su `LICENSE`).
 | <img src="icons/waypoints.svg" width="18" alt=""> | `waypoints` | `waypoints` | aristas |
 | <img src="icons/type.svg" width="18" alt=""> | `type` | `type` | conceptos como palabras |
 | <img src="icons/circle-dot.svg" width="18" alt=""> | `circle-dot` | `circle-dot` | conceptos como nodos |
-| <img src="icons/star.svg" width="18" alt=""> | `star` | `star` | rotular los principales |
 | <img src="icons/globe.svg" width="18" alt=""> | `globe` | `globe` | «Todos» en el filtro de lectores (lista y píldora) |
 | <img src="icons/text-align-start.svg" width="18" alt=""> | `align-left` | `text-align-start` | proximidad: misma sección |
 | <img src="icons/layers.svg" width="18" alt=""> | `layers` | `layers` | proximidad: traslape |

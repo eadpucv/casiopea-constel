@@ -306,7 +306,6 @@ config {
     selection_max_length: Integer = 2000
     gloss_max_length: Integer = 5000             -- caracteres de la glosa de un §
     overlap_max_excerpts_per_page: Integer = 0   -- tope de §§ por página para el traslape; 0 = sin tope
-    map_main_labels: Integer = 12                -- palabras que deja «Rotular los principales»
     map_max_nodes: Integer = 2000                -- conceptos por respuesta del mapa; 0 = sin tope
     map_max_labels: Integer = 300                -- rótulos que dibuja el mapa aun con «todos»
     map_max_drawn_links: Integer = 6000          -- aristas que se dibujan a la vez
@@ -961,7 +960,7 @@ surface ConceptMap {
         -- La barra del mapa tiene dos filas con sentidos distintos. La primera
         -- dice cómo se ve: vista plana (2D) o en el espacio (3D), como un
         -- interruptor con un ícono a cada lado (y girar solo, en 3D), aristas,
-        -- conceptos como palabras o nodos (con sus principales rotulados),
+        -- conceptos como palabras o nodos,
         -- proximidad y navegación. La segunda dice qué se ve: lectores,
         -- páginas, lente de temas y, con varios lectores, qué conceptos
         -- (todos, compartidos o propios). Lo que se enciende o apaga usa
@@ -1021,10 +1020,9 @@ surface ConceptMap {
         -- Un interruptor explícito, Palabras o Nodos, elige cómo se dibujan los
         -- conceptos. Como nodos, cada uno es un círculo con el color de su
         -- tema y un área proporcional a su frecuencia (FrequencyScaling), con
-        -- un tamaño mínimo que se pueda apuntar; una casilla, «Rotular los
-        -- principales», deja la palabra de los config.map_main_labels
-        -- conceptos de mayor frecuencia, y nunca de más de la cuarta parte del
-        -- mapa (apagada por omisión: Nodos muestra nodos). Al pasar el cursor o recibir el foco,
+        -- un tamaño mínimo que se pueda apuntar, sin palabra fija (la casilla
+        -- «Rotular los principales» se retiró el 2026-09-30, por confusa).
+        -- Al pasar el cursor o recibir el foco,
         -- su rótulo se lee encima del círculo, y sus vecinos quedan
         -- resaltados y el resto atenuado; en un dispositivo que no puede
         -- apuntar sin tocar (teléfono, tableta) un toque hace lo del cursor y

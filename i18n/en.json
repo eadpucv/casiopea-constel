@@ -56,7 +56,6 @@
 	"constellation-concepts": "Concepts as",
 	"constellation-concepts-words": "Concepts as words: each concept is drawn as its word",
 	"constellation-concepts-nodes": "Concepts as nodes: circles in the color of their theme, sized by frequency; the word shows when pointed at",
-	"constellation-lead": "Label the main ones: with nodes, keep the word of the most frequent concepts",
 	"constellation-notice-nodes": "The map shows the $1 most frequent concepts of $2. Filtering by reader or by page shows the rest.",
 	"constellation-notice-labels": "With this many concepts, only the $1 most frequent show as words; the others are nodes.",
 	"constellation-notice-links": "With this many links, the $1 strongest are drawn, plus those of the concept pointed at or chosen.",

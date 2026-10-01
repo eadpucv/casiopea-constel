@@ -56,7 +56,6 @@
 	"constellation-concepts": "Conceptos como",
 	"constellation-concepts-words": "Conceptos como palabras: cada concepto se dibuja con su palabra",
 	"constellation-concepts-nodes": "Conceptos como nodos: círculos del color de su tema y de área según su frecuencia; la palabra aparece al apuntarlos",
-	"constellation-lead": "Rotular los principales: con nodos, deja escrita la palabra de los conceptos más frecuentes",
 	"constellation-notice-nodes": "El mapa muestra los $1 conceptos más frecuentes de $2. Filtrar por lector o por página deja ver el resto.",
 	"constellation-notice-labels": "Con tantos conceptos, sólo los $1 más frecuentes se ven como palabra; los demás son nodos.",
 	"constellation-notice-links": "Con tantas aristas, se dibujan las $1 más fuertes y las del concepto apuntado o elegido.",

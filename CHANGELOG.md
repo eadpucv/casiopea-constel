@@ -2,6 +2,11 @@
 
 ## Sin publicar
 
+- **Se retira «Rotular los principales».** La casilla de la estrella resultaba
+  confusa: con nodos, el rótulo se lee al apuntar cada círculo. Se eliminan la
+  casilla, la preferencia `lead`, el ícono `star` y la opción
+  `$wgConstelMapMainLabels`.
+
 - **Niebla 3D más suave.** Lo más lejano baja a 35 % de opacidad (antes 8 %) y
   la curva es lineal (antes cuadrática), así los textos del fondo siguen
   legibles.

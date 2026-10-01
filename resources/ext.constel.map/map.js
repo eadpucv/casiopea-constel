@@ -178,11 +178,9 @@ function main( root ) {
 		autorotate: !!prefs().autorotate,
 		edges: true,
 		// Conceptos como 'words' (palabras, por omisión) o 'nodes' (círculos).
-		// Con nodos, `lead` (apagado por
-		// omisión: nodos son nodos) rotula los principales. Ambos se recuerdan
+		// Ambos se recuerdan
 		// por navegador.
 		concepts: [ 'words', 'nodes' ].includes( prefs().concepts ) ? prefs().concepts : null,
-		lead: prefs().lead === true,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
 		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
 		// Si quien mira ya fijó sus fuerzas, no se le cambian (autoForces).
@@ -375,11 +373,10 @@ function main( root ) {
 
 	// Conceptos como palabras o como nodos (círculos de área proporcional a su
 	// frecuencia y del color de su tema), con un interruptor que dice las dos
-	// cosas. Con nodos, «Rotular los principales» deja la palabra de los más
-	// frecuentes. Las aristas de un mapa de nodos se dibujan al apuntar uno.
+	// cosas. Las aristas de un mapa de nodos se dibujan al apuntar uno.
 	const effectiveConcepts = () => state.concepts || 'words';
-	// Lo que entiende graph.draw: todos los rótulos, sólo los principales o ninguno.
-	const conceptsMode = () => effectiveConcepts() === 'words' ? 'all' : ( state.lead ? 'main' : 'none' );
+	// Lo que entiende graph.draw: todos los rótulos o ninguno.
+	const conceptsMode = () => effectiveConcepts() === 'words' ? 'all' : 'none';
 	const conceptsGroup = el( 'div', 'constel-map__group' );
 	conceptsGroup.setAttribute( 'role', 'group' );
 	conceptsGroup.setAttribute( 'aria-label', mw.msg( 'constellation-concepts' ) );
@@ -389,11 +386,6 @@ function main( root ) {
 	conceptsSwitch.type = 'checkbox';
 	conceptsSwitch.setAttribute( 'role', 'switch' );
 	conceptsSwitch.setAttribute( 'aria-label', mw.msg( 'constellation-concepts-nodes' ) );
-	const lead = toggle( 'star', mw.msg( 'constellation-lead' ), state.lead, ( on ) => {
-		state.lead = on;
-		savePref( 'lead', on );
-		renderSoon();
-	}, false );
 	const syncConcepts = () => {
 		const nodes = effectiveConcepts() === 'nodes';
 		conceptsSwitch.checked = nodes;
@@ -401,7 +393,6 @@ function main( root ) {
 		nodesLabel.classList.toggle( 'constel-map__choice--on', nodes );
 		wordsLabel.setAttribute( 'aria-pressed', String( !nodes ) );
 		nodesLabel.setAttribute( 'aria-pressed', String( nodes ) );
-		lead.label.hidden = !nodes;
 	};
 	const chooseConcepts = ( value ) => {
 		state.concepts = value;
@@ -412,7 +403,7 @@ function main( root ) {
 	conceptsSwitch.addEventListener( 'change', () => chooseConcepts( conceptsSwitch.checked ? 'nodes' : 'words' ) );
 	wordsLabel.addEventListener( 'click', () => chooseConcepts( 'words' ) );
 	nodesLabel.addEventListener( 'click', () => chooseConcepts( 'nodes' ) );
-	conceptsGroup.append( wordsLabel, conceptsSwitch, nodesLabel, lead.label );
+	conceptsGroup.append( wordsLabel, conceptsSwitch, nodesLabel );
 	syncConcepts();
 
 	// Proximidad: cada grado con su fuerza (0 = ni arista ni atracción).
@@ -820,7 +811,6 @@ function main( root ) {
 				autorotate: state.autorotate,
 				edges: state.edges,
 				labels: conceptsMode(),
-				mainLabels: cfg.mainLabels,
 				maxLabels: cfg.maxLabels,
 				maxLinks: cfg.maxLinks,
 				forces: state.forces,
