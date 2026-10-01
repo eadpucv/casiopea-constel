@@ -555,6 +555,26 @@
 	vector-effect: non-scaling-stroke;
 }
 
+.constel-rings__legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-1 ) var( --constel-s-4 );
+	margin: 0;
+	padding: 0 var( --constel-s-3 ) var( --constel-s-1 );
+	list-style: none;
+	font-size: var( --constel-fs-xs );
+	color: var( --constel-ink-faint );
+	counter-reset: ring;
+}
+
+.constel-rings__legend li {
+	counter-increment: ring;
+}
+
+.constel-rings__legend li::before {
+	content: counter( ring ) '. ';
+}
+
 .constel-rings__node {
 	cursor: pointer;
 }

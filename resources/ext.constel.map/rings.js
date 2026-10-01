@@ -26,6 +26,12 @@ const RING_MESSAGES = [
 	'constellation-ring-overlap',
 	'constellation-ring-copage'
 ];
+/** Lo que dice la guía de un anillo sin vecinos ($1 es el nombre del anillo). */
+const RING_EMPTY_MESSAGES = [
+	'constellation-ring-empty',
+	'constellation-ring-empty-overlap',
+	'constellation-ring-empty'
+];
 /** Radios discretos de los anillos (unidades del lienzo) y su cupo. */
 const RING_RADII = [ 115, 215, 315 ];
 const RING_QUOTAS = [ 8, 16, 24 ];
@@ -205,10 +211,15 @@ function open( container, data, options ) {
 	} );
 	const guides = svg( 'g', { class: 'constel-rings__guides' } );
 	RING_RADII.forEach( ( r ) => guides.append( svg( 'circle', { class: 'constel-rings__guide', r } ) ) );
+	// Leyenda de los anillos, de adentro hacia afuera: cada uno con su nombre, y
+	// uno sin vecinos lo dice (así el traslape, que pide lectores distintos, no
+	// parece un fallo).
+	const legend = html( 'ol', 'constel-rings__legend' );
+	const legendItems = RING_RADII.map( () => legend.appendChild( html( 'li' ) ) );
 	const layer = svg( 'g' );
 	root.append( guides, layer );
 	const lists = html( 'div', 'constel-rings__lists' );
-	wrap.append( bar, root, lists );
+	wrap.append( bar, legend, root, lists );
 	container.append( wrap );
 
 	// id → {g, dot, text, x, y, fx, fy, tx, ty, opacity, target opacity}
@@ -317,6 +328,11 @@ function open( container, data, options ) {
 		const details = html( 'details', 'constel-rings__alt' );
 		details.append( html( 'summary', null, mw.msg( 'constellation-rings-as-list', node.label ) ) );
 		layout.all.forEach( ( ring, i ) => {
+			const name = mw.msg( RING_MESSAGES[ i ] );
+			legendItems[ i ].textContent = ring.length ?
+				name :
+				mw.msg( RING_EMPTY_MESSAGES[ i ], name );
+			legendItems[ i ].classList.toggle( 'constel-rings__legend-empty', !ring.length );
 			const section = html( 'section', 'constel-rings__ring-list' );
 			section.append( html( 'h5', null, mw.msg( RING_MESSAGES[ i ] ) ) );
 			if ( !ring.length ) {

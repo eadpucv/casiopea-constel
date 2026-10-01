@@ -1050,7 +1050,11 @@ surface ConceptMap {
         -- (sin animación con prefers-reduced-motion), y se vuelve al mapa con
         -- la misma selección. Los temas de la lente colorean como en el mapa.
         -- La alternativa textual es la lista de vecinos por anillo
-        -- (decisión 2026-09-29).
+        -- (decisión 2026-09-29). Una leyenda bajo la barra numera los anillos
+        -- de adentro hacia afuera con su nombre, y uno sin vecinos lo dice; el
+        -- de traslape aclara que pide lectores distintos, así que con un solo
+        -- lector queda vacío por definición y no por falla (decisión
+        -- 2026-09-30).
 
     @guarantee ReaderContributions
         -- Cuando el filtro de lectores tiene más de uno, cada concepto dice
@@ -1104,10 +1108,12 @@ surface ConceptMap {
 
     @guarantee DepthFogIn3D
         -- En la vista 3D los conceptos lejanos se atenúan con una niebla en
-        -- profundidad que apaga rápido lo del fondo, y la esfera del layout
-        -- crece con la cantidad de conceptos, para que un mapa grande se abra
-        -- y los rótulos del frente no compitan con los del fondo
-        -- (decisión 2026-09-29).
+        -- profundidad, suave y lineal (de 35 % de opacidad en lo más lejano
+        -- a 100 % en lo más cercano), y la esfera del layout crece con la
+        -- cantidad de conceptos, para que un mapa grande se abra y los
+        -- rótulos del frente no compitan con los del fondo (decisión
+        -- 2026-09-29; la niebla se suavizó el 2026-09-30, antes de 8 % y
+        -- cuadrática, por pedido del usuario: atenuaba demasiado).
 
     @guarantee ArrangeByHandIn2D
         -- En la vista 2D quien mira puede mover cada concepto (arrastrándolo,

@@ -74,6 +74,8 @@
 	"constellation-ring-coexcerpt": "Name of the first ring: concepts coded in the same section.",
 	"constellation-ring-overlap": "Name of the second ring: concepts of overlapping sections by different readers.",
 	"constellation-ring-copage": "Name of the third ring: concepts annotated on the same page.",
+	"constellation-ring-empty": "Label on the guide of a ring with no neighbours. $1 is the ring name (Same section, Overlap, Same text).",
+	"constellation-ring-empty-overlap": "Label on the guide of the overlap ring when it has no neighbours; explains that it needs different readers on the same text. $1 is the ring name.",
 	"constellation-proximity": "Accessible name of the group of sliders that set the strength (0–100 %) of each proximity degree in the concept map.",
 	"constellation-force-coexcerpt": "Label of the slider for the strength of links between concepts coded in the same section.",
 	"constellation-force-overlap": "Label of the slider for the strength of links between concepts of overlapping sections by different readers.",

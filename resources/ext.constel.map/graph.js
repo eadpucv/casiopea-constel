@@ -46,12 +46,12 @@ function sphereRadius( count ) {
 	return RADIUS * Math.min( 3, Math.max( 1, Math.sqrt( count / 60 ) ) );
 }
 /** Opacidad mínima de lo más lejano en 3D (niebla). */
-const DEPTH_FOG_MIN = 0.08;
+const DEPTH_FOG_MIN = 0.35;
 /**
  * Niebla en profundidad (3D): opacidad de un concepto según su lejanía, de
  * DEPTH_FOG_MIN en lo más lejano a 1 en lo más cercano, con una curva
- * cuadrática que apaga rápido lo del fondo: lo lejano hace de telón y no
- * compite con los rótulos de adelante.
+ * lineal y suave: lo lejano se aclara lo justo para quedar de telón sin
+ * volverse ilegible.
  *
  * @param {number} z profundidad (−radio, lejos, a +radio, cerca)
  * @param {number} radius
@@ -59,7 +59,7 @@ const DEPTH_FOG_MIN = 0.08;
  */
 function fog( z, radius ) {
 	const near = Math.min( 1, Math.max( 0, ( z + radius ) / ( 2 * radius ) ) );
-	return DEPTH_FOG_MIN + ( 1 - DEPTH_FOG_MIN ) * near * near;
+	return DEPTH_FOG_MIN + ( 1 - DEPTH_FOG_MIN ) * near;
 }
 /** Distancia de la cámara (perspectiva). */
 const CAMERA = 900;

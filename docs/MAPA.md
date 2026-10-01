@@ -328,9 +328,9 @@ crece, se redistribuye.
   entera en el lienzo, como en 2D.
 - **Perspectiva.** La cámara está a `CAMERA = 900`: cada punto se escala por
   `900 / (900 − z)` tras rotarlo (yaw y pitch). La letra sigue esa escala.
-- **Niebla.** Cada concepto tiene una opacidad de 0,08 (lo más lejano) a 1 (lo más
-  cercano), con curva cuadrática: lo del fondo se apaga rápido y hace de telón, y no
-  compite con los rótulos del frente. Los rótulos pueden cruzarse en 3D; la
+- **Niebla.** Cada concepto tiene una opacidad de 0,35 (lo más lejano) a 1 (lo más
+  cercano), con curva lineal: lo del fondo se aclara lo justo para hacer de telón sin
+  volverse ilegible. (Antes era de 0,08 y cuadrática, y atenuaba demasiado.) Los rótulos pueden cruzarse en 3D; la
   garantía de no traslape es sólo de 2D.
 - **Órbita.** Arrastrar el fondo orbita (con Mayús o el botón del medio, desplaza);
   el concepto elegido pasa a ser el centro de la rotación.
@@ -344,6 +344,12 @@ Con un concepto elegido, <img src="icons/disc-2.svg" width="14" alt=""> reemplaz
 son los tres grados de proximidad, del más fuerte al más débil: **misma sección**
 (radio 115), **traslape** (215) y **mismo texto** (315), con cupos de 8, 16 y 24
 vecinos (`RING_RADII`, `RING_QUOTAS`).
+
+- **Anillos vacíos.** Bajo la barra, una leyenda numera los anillos de adentro hacia
+  afuera con su nombre, y uno sin vecinos lo dice. El **traslape** lo forman
+  conceptos de lectores *distintos* sobre un mismo texto, así que con un solo lector
+  queda vacío por definición («2. Traslape: sin vecinos (pide lectores distintos)»);
+  con varios lectores, o sin filtro, se llena.
 
 - **Anillo de cada vecino.** El del grado más fuerte que lo une al concepto del
   centro; a igual grado, el de mayor peso.
@@ -523,7 +529,7 @@ páginas.
 | `DOT_MIN_PX`, `DOT_MAX_PX` | 2,4, 10 | radio de los nodos al encuadre |
 | `RADIUS` | 210 | 3D: radio base de la esfera (crece con `√(n/60)`, hasta 3×) |
 | `CAMERA` | 900 | 3D: distancia de la cámara |
-| `DEPTH_FOG_MIN` | 0,08 | 3D: opacidad de lo más lejano |
+| `DEPTH_FOG_MIN` | 0,35 | 3D: opacidad de lo más lejano |
 | `FORCES` | 1 / 0,6 / 0,35 | fuerza por omisión de cada grado |
 | `OPACITY` | 0,85 / 0,6 / 0,4 | opacidad base de cada grado |
 | `WARM_TEMPERATURE` | 0,2 | temperatura inicial del recálculo en vivo (× k) |

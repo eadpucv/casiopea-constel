@@ -425,6 +425,8 @@
 				"constellation-ring-coexcerpt",
 				"constellation-ring-overlap",
 				"constellation-ring-copage",
+				"constellation-ring-empty",
+				"constellation-ring-empty-overlap",
 				"constellation-proximity",
 				"constellation-force-coexcerpt",
 				"constellation-force-overlap",

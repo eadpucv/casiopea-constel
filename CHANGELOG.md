@@ -1,5 +1,15 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Niebla 3D más suave.** Lo más lejano baja a 35 % de opacidad (antes 8 %) y
+  la curva es lineal (antes cuadrática), así los textos del fondo siguen
+  legibles.
+- **Anillos con leyenda.** Bajo la barra, una leyenda numera los anillos de
+  adentro hacia afuera con su nombre, y uno sin vecinos lo dice («2. Traslape:
+  sin vecinos (pide lectores distintos)»), para que el traslape vacío con un
+  solo lector no parezca un fallo.
+
 ## 0.13.0 — 2026-09-30
 
 - **«Todos» como un lector más.** Se elimina el interruptor del filtro

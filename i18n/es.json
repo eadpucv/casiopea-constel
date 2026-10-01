@@ -74,6 +74,8 @@
 	"constellation-ring-coexcerpt": "Misma sección",
 	"constellation-ring-overlap": "Traslape",
 	"constellation-ring-copage": "Mismo texto",
+	"constellation-ring-empty": "$1: sin vecinos",
+	"constellation-ring-empty-overlap": "$1: sin vecinos (pide lectores distintos)",
 	"constellation-proximity": "Proximidad: fuerza de cada grado",
 	"constellation-force-coexcerpt": "Misma sección (§): cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista (0 a 100 %)",
 	"constellation-force-overlap": "Traslape: cuánto atrae a conceptos de secciones de lectores distintos que comparten texto y cuán visible es su arista (0 a 100 %)",

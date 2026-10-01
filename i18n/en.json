@@ -74,6 +74,8 @@
 	"constellation-ring-coexcerpt": "Same section",
 	"constellation-ring-overlap": "Overlap",
 	"constellation-ring-copage": "Same text",
+	"constellation-ring-empty": "$1: no neighbours",
+	"constellation-ring-empty-overlap": "$1: no neighbours (needs different readers)",
 	"constellation-proximity": "Proximity: strength of each degree",
 	"constellation-force-coexcerpt": "Same section (§)",
 	"constellation-force-overlap": "Overlap",
