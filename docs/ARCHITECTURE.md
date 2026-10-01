@@ -1031,6 +1031,7 @@ docs/ARCHITECTURE.md          este archivo
 | 0.11.0 | Mapa a escala | Grafo en caché, empaquetado y por grados; topes de carga; palabras o nodos; 2D ⇄ 3D como interruptores; letra coherente y zoom que la escala; 3D con niebla; vista de anillos; varios lectores con color por lector; íconos Lucide con tooltip; manual del mapa en `docs/MAPA.md` |
 | 0.12.0 | Color de los temas | Círculo de color antes del nombre de cada tema (mapa, anillos y panel); texto 3D atenuado frente a la perspectiva; SVG exportado con halo; desplegables por delante del botón de pantalla completa |
 | 0.13.0 | «Todos» y tipografía más chica | «Todos» como un lector más del filtro, con ícono de globo, sin interruptor; letra de 11 a 22 px (techo 24 con zoom) y círculos de 2,4 a 10 px de radio |
+| 0.14.0 | Anillos con leyenda | Leyenda de anillos que explica el traslape vacío; niebla 3D más suave; se retira «Rotular los principales»; ícono `section` para «misma sección» |
 
 ### Ideas para más adelante
 

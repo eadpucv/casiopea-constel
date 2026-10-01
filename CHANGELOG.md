@@ -1,15 +1,13 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.14.0 — 2026-09-30
 
 - **Ícono de «misma sección».** El primer deslizador de proximidad usa el ícono
   `section` (§) de Lucide, en lugar de `text-align-start`.
-
 - **Se retira «Rotular los principales».** La casilla de la estrella resultaba
   confusa: con nodos, el rótulo se lee al apuntar cada círculo. Se eliminan la
   casilla, la preferencia `lead`, el ícono `star` y la opción
   `$wgConstelMapMainLabels`.
-
 - **Niebla 3D más suave.** Lo más lejano baja a 35 % de opacidad (antes 8 %) y
   la curva es lineal (antes cuadrática), así los textos del fondo siguen
   legibles.
