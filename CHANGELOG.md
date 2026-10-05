@@ -2,6 +2,10 @@
 
 ## Sin publicar
 
+- **Un concepto soltado vuelve a la simulación.** Antes, al soltarlo en 2D
+  quedaba fijado (`node.pin`) y fuera de las fuerzas; ahora queda libre, con su
+  lugar de soltado como equilibrio.
+
 - **Cuarto deslizador: tema** (ícono `book-type`). Los conceptos del mismo tema
   (mismo color) se agrupan como conjunto, con fuerza propia de 0 a 100 % (50 %
   por omisión; antes era una atracción fija y muy débil al centro del tema).

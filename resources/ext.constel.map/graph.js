@@ -15,9 +15,8 @@
  * los cuatro lados, y las cajas que se tocan se separan (separate()).
  * Además, en 2D cada concepto se puede arrastrar (o mover con Alt+flechas)
  * con la simulación en vivo: sus aristas tiran de los vecinos y las cajas
- * chocan y se empujan mientras se mueve. Queda fijado donde se suelta
- * (node.pin) y el layout lo respeta al recalcularse, hasta volver al orden
- * automático.
+ * chocan y se empujan mientras se mueve. Al soltarlo vuelve a la
+ * simulación: no queda fijado, y su lugar de soltado es su nuevo equilibrio.
  *
  * Navegación y letra, homologadas con el mapa de vera: la letra se acota en
  * pantalla (FONT_MIN_PX–FONT_MAX_PX) y al acercar crece más lento que el
@@ -1247,8 +1246,8 @@ function draw( container, data, view ) {
 	// su grado, las cajas chocan y se empujan, y cada concepto tiende
 	// suavemente a su lugar de partida para que el mapa no se vaya entero
 	// detrás del puntero. El que se arrastra y los ya fijados no se mueven
-	// por la simulación. Al soltar, el arrastrado queda fijado (node.pin) y
-	// el resto se enfría donde quedó.
+	// por la simulación. Al soltar, el arrastrado vuelve a la simulación (queda
+	// libre, con su lugar de soltado como equilibrio) y todo se enfría donde quedó.
 	const sim = { alpha: 0, target: 0, held: null, last: null, springs: [] };
 	const DECAY = 0.03;
 	// Tendencia de cada concepto a su lugar de partida.
@@ -1347,10 +1346,15 @@ function draw( container, data, view ) {
 		sim.alpha = Math.max( sim.alpha, 0.3 );
 	}
 	function release( node ) {
-		node.pin = { x: node.x, y: node.y };
-		nodeEls.get( node.id ).classList.add( 'constel-graph__node--pinned' );
-		if ( dotEls.has( node.id ) ) {
-			dotEls.get( node.id ).classList.add( 'constel-graph__node--pinned' );
+		// Vuelve a la simulación: no se fija. Su lugar de soltado pasa a ser su
+		// lugar de partida y el largo de reposo de sus resortes, así los vecinos
+		// no lo devuelven de golpe adonde estaba.
+		node.hx = node.x;
+		node.hy = node.y;
+		for ( const sp of sim.springs ) {
+			if ( sp.a === node || sp.b === node ) {
+				sp.rest = Math.hypot( sp.b.x - sp.a.x, sp.b.y - sp.a.y );
+			}
 		}
 		sim.held = null;
 		sim.last = node;

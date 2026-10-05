@@ -763,11 +763,10 @@ barra libre de la esquina del isotipo. `ext.constel.map` dibuja encima:
   con Alt+flechas) con una simulación en vivo, al estilo de d3-force:
   resortes por arista con el largo que tenían y la fuerza de su grado,
   choques blandos entre cajas (`collide()`) y un ancla suave a su lugar de
-  partida. El que se suelta queda fijado (`node.pin`); al enfriarse,
-  `separate()` asegura que nada se traslape y `layout()` lo mantiene quieto
-  al recalcular; el botón
-  `rotate-ccw` de la barra (sólo en 2D y con fijados) vuelve al orden
-  automático.
+  partida. El que se suelta vuelve a la simulación (no se fija; su lugar
+  pasa a ser su ancla y el largo de reposo de sus resortes); al enfriarse,
+  `separate()` asegura que nada se traslape. El botón `rotate-ccw` y
+  `node.pin` quedan sin uso por ahora.
   Zoom con botones o Ctrl+rueda. Cada nodo es texto SVG enfocable (Enter lo
   abre).
 - `sidepanel.js`: el detalle de un concepto (título sin «§» —el § es de la

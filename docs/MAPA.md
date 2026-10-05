@@ -292,11 +292,12 @@ Después vienen dos pasos que sólo existen en 2D:
    letra quedaría bajo 11 px, su caja se reserva ya de ese tamaño antes de separar,
    así que a ese zoom o más nada se pisa.
 
-Los conceptos **fijados a mano** (arrastrados, o movidos con Alt y las flechas) no se
-mueven en el layout: el resto se acomoda a ellos, y la simulación en vivo reacciona
-mientras se arrastra (resortes con el largo que tenían, cajas que chocan, cada
-concepto con una tendencia suave a su lugar de partida). Se vuelve al orden
-automático con <img src="icons/rotate-ccw.svg" width="14" alt="">.
+Un concepto **arrastrado** (o movido con Alt y las flechas) sólo queda fuera de la
+simulación mientras se sostiene: el resto reacciona en vivo (resortes con el largo
+que tenían, cajas que chocan, cada concepto con una tendencia suave a su lugar de
+partida). Al soltarlo vuelve a la simulación: no queda fijado, y el lugar donde se
+soltó pasa a ser su nuevo equilibrio. Cambiar una fuerza rehace el layout desde las
+posiciones de ahora.
 
 ### 3D: esfera, perspectiva y niebla
 
