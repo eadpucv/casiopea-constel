@@ -532,6 +532,83 @@ function themeSwatch( theme, current, title, ctx ) {
 }
 
 /**
+ * Alto del cuadro del desarrollo: se recuerda por navegador (en las mismas
+ * preferencias del mapa) y vale para todos los temas, porque el panel se
+ * redibuja al cambiar y el tamaño elegido a mano se perdería.
+ *
+ * @param {HTMLTextAreaElement} area
+ */
+function rememberHeight( area ) {
+	const read = () => mw.storage.getObject( 'constel-map' ) || {};
+	const stored = Number( read().developmentHeight );
+	if ( stored > 0 ) {
+		area.style.height = stored + 'px';
+	}
+	// Estirar el cuadro termina con un pointerup sobre él.
+	area.addEventListener( 'pointerup', () => {
+		const height = area.offsetHeight;
+		if ( height > 0 && height !== Number( read().developmentHeight ) ) {
+			mw.storage.setObject( 'constel-map',
+				Object.assign( read(), { developmentHeight: height } ) );
+		}
+	} );
+}
+
+/**
+ * Guarda el desarrollo solo, sin botón: poco después de dejar de escribir y
+ * al salir del cuadro. Las escrituras van de a una (si se escribe mientras
+ * una viaja, se manda otra al terminar). No redibuja el panel —perdería el
+ * foco y el cursor—: sólo actualiza el tema en memoria.
+ *
+ * @param {HTMLTextAreaElement} area
+ * @param {Object} theme
+ * @param {HTMLElement} status línea que dice «Guardando…», «Guardado» o el fallo
+ * @param {HTMLElement} fb caja de errores del tema
+ * @param {Function} fail
+ */
+function autosaveDevelopment( area, theme, status, fb, fail ) {
+	const DELAY = 1200;
+	let timer = null;
+	let saving = false;
+	let saved = area.value;
+	let failed = false;
+	const flush = () => {
+		clearTimeout( timer );
+		timer = null;
+		if ( saving || area.value === saved ) {
+			return;
+		}
+		const text = area.value;
+		saving = true;
+		status.textContent = mw.msg( 'constellation-development-saving' );
+		api.write( { action: 'constel-themenote', theme: theme.id, text } ).then( () => {
+			saved = text;
+			failed = false;
+			theme.development = text;
+			fb.textContent = '';
+			status.textContent = mw.msg( 'constellation-development-saved' );
+		}, ( code, r ) => {
+			failed = true;
+			status.textContent = mw.msg( 'constellation-development-unsaved' );
+			fail( fb )( code, r );
+		} ).then( () => {
+			saving = false;
+			// Se escribió algo mientras viajaba (o falló): se reintenta con lo último.
+			if ( area.value !== saved && !failed ) {
+				flush();
+			}
+		} );
+	};
+	area.addEventListener( 'input', () => {
+		status.textContent = '';
+		clearTimeout( timer );
+		timer = setTimeout( flush, DELAY );
+	} );
+	// Al salir del cuadro, y también si se reintenta tras un fallo.
+	area.addEventListener( 'blur', flush );
+}
+
+/**
  * Temas de un lector, con sus conceptos y su desarrollo (uno por tema).
  *
  * @param {HTMLElement} box
@@ -607,11 +684,11 @@ function themesPanel( box, themes, ctx ) {
 			area.rows = 4;
 			area.placeholder = mw.msg( 'constellation-development-placeholder' );
 			area.setAttribute( 'aria-label', mw.msg( 'constellation-development-label', theme.label ) );
-			const save = button( mw.msg( 'constellation-development-save' ), 'constel-button--primary', () => api.write( { action: 'constel-themenote', theme: theme.id, text: area.value } )
-				.then( ctx.onChanged, fail( fb ) ) );
-			const saveRow = el( 'div', 'constel-actions' );
-			saveRow.append( save );
-			section.append( area, saveRow );
+			const status = el( 'div', 'constel-development__status' );
+			status.setAttribute( 'role', 'status' );
+			autosaveDevelopment( area, theme, status, fb, fail );
+			rememberHeight( area );
+			section.append( area, status );
 		}
 		section.append( fb );
 		box.append( section );

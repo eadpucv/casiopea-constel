@@ -2,6 +2,12 @@
 
 ## Sin publicar
 
+- **El desarrollo de un tema se guarda solo.** Se retira el botón «Guardar
+  desarrollo»: se guarda 1,2 s después de dejar de escribir y al salir del
+  cuadro, con una línea de estado («Guardando…», «Guardado»). No redibuja el
+  panel, así que no se pierde el foco. El alto del cuadro (que se estira desde
+  la esquina) se recuerda por navegador y vale para todos los temas.
+
 - **Un concepto soltado vuelve a la simulación.** Antes, al soltarlo en 2D
   quedaba fijado (`node.pin`) y fuera de las fuerzas; ahora queda libre, con su
   lugar de soltado como equilibrio.

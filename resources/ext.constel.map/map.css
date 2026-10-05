@@ -896,6 +896,12 @@
 	white-space: pre-wrap;
 }
 
+.constel-development__status {
+	min-height: 1.4em;
+	font-size: 0.85em;
+	opacity: 0.7;
+}
+
 .constel-theme textarea {
 	margin-top: var( --constel-s-2 );
 	resize: vertical;
