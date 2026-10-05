@@ -73,13 +73,14 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/section.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 100 % |
 | <img src="icons/layers.svg" width="18" alt=""> | **Proximidad: traslape** (deslizador) | Lo mismo para conceptos de secciones de lectores distintos que comparten texto | 60 % |
 | <img src="icons/file-text.svg" width="18" alt=""> | **Proximidad: mismo texto** (deslizador) | Lo mismo para conceptos anotados en una misma página | 35 % |
+| <img src="icons/book-type.svg" width="18" alt=""> | **Proximidad: tema** (deslizador) | Cuánto atrae a los conceptos de un mismo tema (mismo color) hacia el centro de su tema, como conjunto: los atrae entre sí, aleja a los de otros temas y debilita las aristas que cruzan temas. No dibuja aristas: sólo agrupa. Hacia 100 % los temas se separan en conjuntos de borde definido | 50 % |
 | <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | **Acercar y alejar** | Escalan el mapa por 1,25 (hasta 8 veces) y, con él, la letra, más lento (sección 3) | encuadre |
 | <img src="icons/crosshair.svg" width="18" alt=""> | **Encuadrar todo el mapa** | Vuelve al zoom y la posición de partida, centrado en todo el mapa | |
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | **Volver al orden automático** (sólo en 2D, y sólo si hay conceptos movidos a mano) | Suelta los conceptos que se arrastraron y rehace el layout | |
 | <img src="icons/download.svg" width="18" alt=""> | **Exportar el mapa como SVG** | Descarga el mapa tal como se ve (vista, filtros y zoom), con colores, tipografías y el halo de contraste de los textos ya resueltos | |
 | <img src="icons/maximize.svg" width="18" alt=""> / <img src="icons/minimize.svg" width="18" alt=""> | **Pantalla completa del mapa** (esquina del mapa) | Pone sólo el mapa a pantalla completa; Esc sale | |
 
-Las tres fuerzas de proximidad se explican en la sección 4; al moverlas el mapa
+Las tres fuerzas de proximidad (la cuarta, la de tema, no tiene aristas) se explican en la sección 4; al moverlas el mapa
 reacomoda en vivo (sección 9). En 0 %, el grado no dibuja arista ni atrae.
 
 ### Fila 2: qué se ve
@@ -580,6 +581,7 @@ los SVG en `docs/icons/` (con su `LICENSE`).
 | <img src="icons/layers.svg" width="18" alt=""> | `layers` | `layers` | proximidad: traslape |
 | <img src="icons/file-text.svg" width="18" alt=""> | `file-text` | `file-text` | proximidad: mismo texto |
 | <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | `zoom-in`, `zoom-out` | igual | acercar y alejar |
+| <img src="icons/book-type.svg" width="18" alt=""> | `book-type` | `book-type` | proximidad: tema |
 | <img src="icons/crosshair.svg" width="18" alt=""> | `crosshair` | `crosshair` | encuadrar |
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | `rotate-ccw` | `rotate-ccw` | volver al orden automático |
 | <img src="icons/download.svg" width="18" alt=""> | `download` | `download` | exportar SVG |

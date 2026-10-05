@@ -182,7 +182,8 @@ function main( root ) {
 		// por navegador.
 		concepts: [ 'words', 'nodes' ].includes( prefs().concepts ) ? prefs().concepts : null,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
-		forces: Object.assign( {}, graph.FORCES, prefs().forces || {} ),
+		forces: Object.assign( {}, graph.FORCES, { theme: graph.THEME_FORCE },
+			prefs().forces || {} ),
 		// Si quien mira ya fijó sus fuerzas, no se le cambian (autoForces).
 		forcesTouched: !!prefs().forces,
 		// Color elegido para cada lector (usuario → #rrggbb); el que no tiene
@@ -475,7 +476,9 @@ function main( root ) {
 	const forceInputs = {};
 	[ [ 'co_excerpt', 'constellation-force-coexcerpt', 'section' ],
 		[ 'overlap', 'constellation-force-overlap', 'layers' ],
-		[ 'co_page', 'constellation-force-copage', 'file-text' ]
+		[ 'co_page', 'constellation-force-copage', 'file-text' ],
+		// No es un grado de proximidad: atrae a los conceptos de un mismo tema.
+		[ 'theme', 'constellation-force-theme', 'book-type' ]
 	].forEach( ( [ kind, msg, iconName ] ) => {
 		const range = el( 'input' );
 		range.type = 'range';
@@ -519,8 +522,9 @@ function main( root ) {
 		if ( state.forcesTouched ) {
 			return;
 		}
-		// eslint-disable-next-line camelcase
-		Object.assign( state.forces, graph.FORCES, isMulti() ? { overlap: 1, co_page: 0 } : {} );
+		Object.assign( state.forces, graph.FORCES, { theme: graph.THEME_FORCE },
+			// eslint-disable-next-line camelcase
+			isMulti() ? { overlap: 1, co_page: 0 } : {} );
 		Object.keys( forceInputs ).forEach( ( kind ) => {
 			forceInputs[ kind ].range.value = String( Math.round( state.forces[ kind ] * 100 ) );
 			forceInputs[ kind ].show();

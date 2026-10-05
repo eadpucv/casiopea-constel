@@ -1,5 +1,15 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Cuarto deslizador: tema** (ícono `book-type`). Los conceptos del mismo tema
+  (mismo color) se agrupan como conjunto, con fuerza propia de 0 a 100 % (50 %
+  por omisión; antes era una atracción fija y muy débil al centro del tema).
+  Además de atraer al centro, repele más a los conceptos de otros temas y
+  debilita las aristas que cruzan temas, para que los conjuntos queden con
+  borde. No es un grado de proximidad: no dibuja aristas. Se recuerda por
+  navegador junto con las otras fuerzas.
+
 ## 0.14.0 — 2026-09-30
 
 - **Ícono de «misma sección».** El primer deslizador de proximidad usa el ícono

@@ -78,6 +78,7 @@
 	"constellation-proximity": "Accessible name of the group of sliders that set the strength (0–100 %) of each proximity degree in the concept map.",
 	"constellation-force-coexcerpt": "Label of the slider for the strength of links between concepts coded in the same section.",
 	"constellation-force-overlap": "Label of the slider for the strength of links between concepts of overlapping sections by different readers.",
+	"constellation-force-theme": "Label of the slider for how strongly concepts of the same theme (same color) are pulled toward their theme's center.",
 	"constellation-force-copage": "Label of the slider for the strength of links between concepts annotated on the same page (text).",
 	"constellation-lens": "Label of the field that chooses whose themes colour the map.",
 	"constellation-zoom-in": "Zoom button.",

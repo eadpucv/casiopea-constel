@@ -78,6 +78,7 @@
 	"constellation-proximity": "Proximidad: fuerza de cada grado",
 	"constellation-force-coexcerpt": "Misma sección (§): cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista (0 a 100 %)",
 	"constellation-force-overlap": "Traslape: cuánto atrae a conceptos de secciones de lectores distintos que comparten texto y cuán visible es su arista (0 a 100 %)",
+	"constellation-force-theme": "Tema: cuánto atrae a los conceptos de un mismo tema (mismo color) hacia su centro (0 a 100 %)",
 	"constellation-force-copage": "Mismo texto: cuánto atrae a conceptos anotados en una misma página y cuán visible es su arista (0 a 100 %)",
 	"constellation-lens": "Temas de",
 	"constellation-zoom-in": "Acercar el mapa (con el zoom, la letra también crece un poco)",

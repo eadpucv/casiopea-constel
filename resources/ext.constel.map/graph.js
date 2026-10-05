@@ -158,6 +158,23 @@ function scorer( nodes ) {
 	const maxPages = Math.max( 1, ...nodes.map( ( n ) => n.pages ) );
 	return ( n ) => 0.6 * n.excerpts / maxExc + 0.4 * n.pages / maxPages;
 }
+/**
+ * Fuerza por omisión de la atracción por tema (0–1). No es un grado de
+ * proximidad (no hay aristas): vive aparte de FORCES, pero se guarda con
+ * las demás en `forces.theme`. THEME_PULL es la atracción al centro del
+ * tema con la fuerza al 100 %; al 30 % queda la de siempre (0,15).
+ */
+const THEME_FORCE = 0.5;
+const THEME_PULL = 0.8;
+const THEME_SPLIT = 3;
+const THEME_CLING = 0.5;
+const THEME_CROSS = 0.85;
+
+function themeForce( forces ) {
+	const f = forces && forces.theme;
+	return typeof f === 'number' ? f : THEME_FORCE;
+}
+
 
 /**
  * Posiciones de equilibrio (mutan x, y, z de cada nodo).
@@ -210,6 +227,10 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 		}
 	} );
 	// En 2D, los fijados a mano no se mueven: el resto se acomoda a ellos.
+	// Atracción de cada concepto al centro de su tema (el cuarto deslizador).
+	const tf = themeForce( forces );
+	const pull = THEME_PULL * tf;
+	const split = themeOf.size > 0 && tf > 0;
 	const held = ( node ) => dims === 2 && !!node.pin;
 	let temperature = k * ( warm ? WARM_TEMPERATURE : 2 );
 	// El costo de cada iteración crece con n² (repulsión de todos contra todos):
@@ -233,7 +254,13 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 				const dx = a.x - b.x;
 				const dy = a.y - b.y;
 				const dz = a.z - b.z;
-				const force = k * k / Math.max( 0.01, dx * dx + dy * dy + dz * dz );
+				let force = k * k / Math.max( 0.01, dx * dx + dy * dy + dz * dz );
+				if ( split ) {
+					// Entre temas distintos se repelen más, y dentro de uno menos:
+					// así los conjuntos se separan y quedan con borde.
+					force *= themeOf.get( a.id ) === themeOf.get( b.id ) ?
+						1 - THEME_CLING * tf : 1 + THEME_SPLIT * tf;
+				}
 				a.dx += dx * force;
 				a.dy += dy * force;
 				a.dz += dz * force;
@@ -252,7 +279,12 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 			// Resorte de Fruchterman-Reingold (d²/k frente a la repulsión k²/d):
 			// cada grado de proximidad atrae con su propia fuerza (0–1), así
 			// que bajarla abre de verdad a sus conceptos.
-			const force = d * d * Math.log2( 1 + l.weight ) / k * forceOf( forces, l.kind );
+			let force = d * d * Math.log2( 1 + l.weight ) / k * forceOf( forces, l.kind );
+			if ( split ) {
+				// Con tema, las aristas que cruzan temas tiran menos y las internas más.
+				force *= themeOf.get( l.source ) === themeOf.get( l.target ) ?
+					1 + THEME_CLING * tf : 1 - THEME_CROSS * tf;
+			}
 			a.dx -= dx / d * force;
 			a.dy -= dy / d * force;
 			a.dz -= dz / d * force;
@@ -260,7 +292,7 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 			b.dy += dy / d * force;
 			b.dz += dz / d * force;
 		}
-		if ( themeOf.size ) {
+		if ( themeOf.size && pull > 0 ) {
 			const centroids = new Map();
 			for ( const node of nodes ) {
 				const t = themeOf.get( node.id );
@@ -276,9 +308,9 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 			for ( const node of nodes ) {
 				const c = centroids.get( themeOf.get( node.id ) );
 				if ( c ) {
-					node.dx += ( c.x / c.n - node.x ) * 0.15;
-					node.dy += ( c.y / c.n - node.y ) * 0.15;
-					node.dz += ( c.z / c.n - node.z ) * 0.15;
+					node.dx += ( c.x / c.n - node.x ) * pull;
+					node.dy += ( c.y / c.n - node.y ) * pull;
+					node.dz += ( c.z / c.n - node.z ) * pull;
 				}
 			}
 		}
@@ -512,7 +544,8 @@ function forceOf( forces, kind ) {
  * @param {HTMLElement} container
  * @param {Object} data {nodes, links}
  * @param {Object} view {mode: '3d'|'2d', edges, autorotate, fill,
- *  forces: {co_excerpt, overlap, co_page} (0–1; 0 = sin arista ni atracción),
+ *  forces: {co_excerpt, overlap, co_page, theme} (0–1; 0 = sin arista ni
+ *  atracción; theme: atracción de los conceptos de un mismo tema),
  *  themeOf: Map, onSelect}
  * @return {Object} controles: zoomIn, zoomOut, reset, select, setForces,
  *  addLinks, setAutorotate, destroy
@@ -1822,4 +1855,4 @@ function serialize( root, container, meta ) {
 	return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString( clone );
 }
 
-module.exports = { draw, CATEGORIES, FORCES, collide, separate, layout };
+module.exports = { draw, CATEGORIES, FORCES, THEME_FORCE, collide, separate, layout };
