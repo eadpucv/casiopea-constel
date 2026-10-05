@@ -157,6 +157,7 @@ function scorer( nodes ) {
 	const maxPages = Math.max( 1, ...nodes.map( ( n ) => n.pages ) );
 	return ( n ) => 0.6 * n.excerpts / maxExc + 0.4 * n.pages / maxPages;
 }
+
 /**
  * Fuerza por omisión de la atracción por tema (0–1). No es un grado de
  * proximidad (no hay aristas): vive aparte de FORCES, pero se guarda con
@@ -173,7 +174,6 @@ function themeForce( forces ) {
 	const f = forces && forces.theme;
 	return typeof f === 'number' ? f : THEME_FORCE;
 }
-
 
 /**
  * Posiciones de equilibrio (mutan x, y, z de cada nodo).
@@ -226,11 +226,11 @@ function layout( nodes, links, themeOf, dims, forces, unit, warm ) {
 		}
 	} );
 	// En 2D, los fijados a mano no se mueven: el resto se acomoda a ellos.
+	const held = ( node ) => dims === 2 && !!node.pin;
 	// Atracción de cada concepto al centro de su tema (el cuarto deslizador).
 	const tf = themeForce( forces );
 	const pull = THEME_PULL * tf;
 	const split = themeOf.size > 0 && tf > 0;
-	const held = ( node ) => dims === 2 && !!node.pin;
 	let temperature = k * ( warm ? WARM_TEMPERATURE : 2 );
 	// El costo de cada iteración crece con n² (repulsión de todos contra todos):
 	// con muchos conceptos hay menos iteraciones (LAYOUT_BUDGET pares en total,

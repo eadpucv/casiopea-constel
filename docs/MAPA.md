@@ -581,8 +581,8 @@ los SVG en `docs/icons/` (con su `LICENSE`).
 | <img src="icons/section.svg" width="18" alt=""> | `section` | `section` | proximidad: misma sección |
 | <img src="icons/layers.svg" width="18" alt=""> | `layers` | `layers` | proximidad: traslape |
 | <img src="icons/file-text.svg" width="18" alt=""> | `file-text` | `file-text` | proximidad: mismo texto |
-| <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | `zoom-in`, `zoom-out` | igual | acercar y alejar |
 | <img src="icons/book-type.svg" width="18" alt=""> | `book-type` | `book-type` | proximidad: tema |
+| <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | `zoom-in`, `zoom-out` | igual | acercar y alejar |
 | <img src="icons/crosshair.svg" width="18" alt=""> | `crosshair` | `crosshair` | encuadrar |
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | `rotate-ccw` | `rotate-ccw` | volver al orden automático |
 | <img src="icons/download.svg" width="18" alt=""> | `download` | `download` | exportar SVG |
