@@ -1,6 +1,6 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.15.0 — 2026-10-06
 
 - **Vista de partida del mapa, y se recuerda lo que el lector ajusta.** Quien
   aún no ha tocado nada ve 2D, aristas visibles, conceptos como palabras, los
