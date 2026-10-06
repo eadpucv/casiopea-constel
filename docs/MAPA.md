@@ -70,7 +70,7 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/square.svg" width="18" alt=""> ⇄ <img src="icons/box.svg" width="18" alt=""> | **Vista plana (2D) ⇄ vista en el espacio (3D)**, un interruptor con un ícono a cada lado | 2D dibuja el mapa en un plano, donde los rótulos nunca se pisan y cada concepto se arrastra. 3D lo dibuja en una esfera que se orbita arrastrando, con niebla en profundidad. Cambiar de vista rehace el layout desde cero, porque 2D y 3D no comparten posiciones | 2D (después, la última elegida) |
 | <img src="icons/rotate-3d.svg" width="18" alt=""> | **Girar solo** (casilla, sólo en 3D) | El mapa 3D gira por sí mismo y se detiene al apuntarlo. Nunca gira con `prefers-reduced-motion` | apagado |
 | <img src="icons/waypoints.svg" width="18" alt=""> | **Mostrar aristas** (interruptor) | Dibuja u oculta las relaciones entre conceptos. Ocultas, la atracción entre conceptos se mantiene | encendido |
-| <img src="icons/type.svg" width="18" alt=""> ⇄ <img src="icons/circle-dot.svg" width="18" alt=""> | **Conceptos como palabras ⇄ como nodos**, un interruptor con un ícono a cada lado | Palabras dibuja cada concepto con su texto. Nodos lo dibuja como un círculo del color de su tema y de área según su frecuencia, y la palabra aparece al apuntarlo (sección 3) | palabras |
+| <img src="icons/type.svg" width="18" alt=""> ⇄ <img src="icons/circle-dot.svg" width="18" alt=""> | **Conceptos como palabras ⇄ como nodos**, un interruptor con un ícono a cada lado | Palabras dibuja cada concepto con su texto, en el color del texto, y el color de su tema va de fondo, en una caja del tamaño exacto del rótulo con un desenfoque de `2.25ex` (sólo los conceptos con tema; en 2D y en 3D; `?wash=0` en la URL la apaga; el SVG exportado conserva el texto de color sin fondo). Nodos lo dibuja como un círculo del color de su tema y de área según su frecuencia, y la palabra aparece al apuntarlo (sección 3) | palabras |
 | <img src="icons/section.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 25 % |
 | <img src="icons/layers.svg" width="18" alt=""> | **Proximidad: traslape** (deslizador) | Lo mismo para conceptos de secciones de lectores distintos que comparten texto | 25 % |
 | <img src="icons/file-text.svg" width="18" alt=""> | **Proximidad: mismo texto** (deslizador) | Lo mismo para conceptos anotados en una misma página | 25 % |
@@ -342,9 +342,9 @@ vecinos (`RING_RADII`, `RING_QUOTAS`).
 
 - **Anillo de cada vecino.** El del grado más fuerte que lo une al concepto del
   centro; a igual grado, el de mayor peso.
-- **Cupo y «+N más».** Cada anillo muestra los vecinos de mayor peso hasta su
-  cupo; el resto va en la lista de abajo («Vecinos de «X» por anillo»), que un
-  «+N más» abre.
+- **Cupo.** Cada anillo muestra los vecinos de mayor peso hasta su cupo (8, 16 y
+  24); a los demás se llega eligiendo otro centro. (La lista «Vecinos de «X» por
+  anillo» con su «+N más» se retiró el 2026-10-06: el mapa no tiene scroll.)
 - **Orden angular.** Seriación voraz: se parte del vecino de mayor peso y se agrega,
   cada vez, el más próximo al último (suma de `log₂(1 + peso)` de todos los grados
   entre ambos), así los vecinos próximos entre sí quedan contiguos. Cada anillo
@@ -356,8 +356,6 @@ vecinos (`RING_RADII`, `RING_QUOTAS`).
   círculos (450 ms; sin animación con `prefers-reduced-motion`) y actualiza el
   panel. Los datos vienen de una lectura aparte con los tres grados (`cgkinds`),
   cacheada en el servidor, independiente de las fuerzas.
-- **Lista alternativa.** La misma información como lista por anillo, con el peso de
-  cada vecino.
 
 ## 7. Varios lectores
 
@@ -464,7 +462,7 @@ Accesibilidad:
 
 - **Alternativa textual** (`AccessibleAlternative`): bajo el panel, «Ver como lista»
   enumera los conceptos por frecuencia, con sus §§ y páginas, sus temas y sus aristas
-  (sólo de los grados con fuerza). La vista de anillos trae la suya por anillo.
+  (sólo de los grados con fuerza). La vista de anillos no tiene lista propia: la leyenda nombra los anillos y cada vecino es un botón con nombre accesible.
 - Cada concepto es un botón con nombre accesible («Concepto, N secciones, M páginas»)
   y foco visible. Los nodos llevan el mismo nombre.
 - Todo ícono tiene un tooltip que explica qué hace su control y el mismo texto como

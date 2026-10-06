@@ -359,6 +359,12 @@
 	stroke-width: 3px;
 }
 
+/* El halo claro del texto: fino y translúcido (los círculos conservan el suyo). */
+text.constel-graph__node {
+	stroke-width: 2px;
+	stroke-opacity: 0.5;
+}
+
 /* 2D: los conceptos se arrastran para arreglar el layout a mano. */
 /* :where() = misma especificidad que la regla base: gana por orden. */
 :where( .constel-graph:not( .constel-graph--3d ) ) .constel-graph__node {
@@ -373,6 +379,19 @@
 
 .constel-graph__node--mine {
 	fill: var( --constel-ink );
+}
+
+/* Prueba: con los conceptos como palabras (2D), todos los rótulos llevan el
+ * color del texto y el del tema va sólo en una caja desenfocada tras el rótulo
+ * (graph.js, view.wash). Con círculos no cambia nada. */
+.constel-graph--wash text.constel-graph__node {
+	fill: var( --constel-ink );
+}
+
+.constel-graph__wash {
+	filter: blur( 2.25ex );
+	opacity: 0.6;
+	pointer-events: none;
 }
 
 .constel-graph__node--cat-0 {
@@ -590,15 +609,6 @@
 
 .constel-rings__node--center {
 	font-weight: 600;
-}
-
-.constel-rings__lists {
-	padding: var( --constel-space-2, 0.5rem );
-}
-
-.constel-rings__ring-list ul {
-	margin: 0;
-	padding-left: 1.25em;
 }
 
 /* ── Panel lateral ────────────────────────────────────────────────────── */

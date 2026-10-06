@@ -9,12 +9,10 @@
  *
  * Dentro de cada anillo el orden angular agrupa a los vecinos que también son
  * próximos entre sí (seriación voraz por proximidad mutua), y cada anillo
- * tiene un cupo (RING_QUOTAS) de los de mayor peso; el resto queda en una
- * lista («+N más»). Los radios son discretos. Todos los rótulos se muestran.
+ * tiene un cupo (RING_QUOTAS) de los de mayor peso; el resto no se dibuja (se
+ * llega a ellos eligiendo otro centro). Los radios son discretos. Todos los rótulos se muestran.
  * Al elegir un vecino pasa al centro deslizándose (salvo con
  * prefers-reduced-motion). Los temas de la lente colorean igual que en el mapa.
- *
- * La misma información va como lista por anillo (AccessibleAlternative).
  */
 const { icons } = require( 'ext.constel.ui' );
 const SVG = 'http://www.w3.org/2000/svg';
@@ -218,8 +216,7 @@ function open( container, data, options ) {
 	const legendItems = RING_RADII.map( () => legend.appendChild( html( 'li' ) ) );
 	const layer = svg( 'g' );
 	root.append( guides, layer );
-	const lists = html( 'div', 'constel-rings__lists' );
-	wrap.append( bar, legend, root, lists );
+	wrap.append( bar, legend, root );
 	container.append( wrap );
 
 	// id → {g, dot, text, x, y, fx, fy, tx, ty, opacity, target opacity}
@@ -323,54 +320,19 @@ function open( container, data, options ) {
 		}
 	}
 
-	function listsFor( layout, node ) {
-		lists.textContent = '';
-		const details = html( 'details', 'constel-rings__alt' );
-		details.append( html( 'summary', null, mw.msg( 'constellation-rings-as-list', node.label ) ) );
+	/**
+	 * La leyenda: cada anillo con su nombre, y uno sin vecinos lo dice.
+	 *
+	 * @param {Object} layout lo que devuelve arrange
+	 */
+	function legendFor( layout ) {
 		layout.all.forEach( ( ring, i ) => {
 			const name = mw.msg( RING_MESSAGES[ i ] );
 			legendItems[ i ].textContent = ring.length ?
 				name :
 				mw.msg( RING_EMPTY_MESSAGES[ i ], name );
 			legendItems[ i ].classList.toggle( 'constel-rings__legend-empty', !ring.length );
-			const section = html( 'section', 'constel-rings__ring-list' );
-			section.append( html( 'h5', null, mw.msg( RING_MESSAGES[ i ] ) ) );
-			if ( !ring.length ) {
-				section.append( html( 'p', 'constel-side__meta', mw.msg( 'constellation-rings-none' ) ) );
-			} else {
-				const ul = html( 'ul' );
-				const more = layout.more[ i ].length;
-				ring.forEach( ( item, j ) => {
-					const li = html( 'li' );
-					const b = html( 'button', 'constel-link', item.node.label );
-					b.type = 'button';
-					b.addEventListener( 'click', () => choose( item.node ) );
-					li.append( b, ' ', html( 'span', 'constel-map__count', String( item.weight ) ) );
-					// Más allá del cupo del anillo, sólo están en la lista y
-					// se abren con «+N más».
-					li.hidden = j >= RING_QUOTAS[ i ];
-					li.dataset.extra = j >= RING_QUOTAS[ i ] ? '1' : '';
-					ul.append( li );
-				} );
-				section.append( ul );
-				if ( more ) {
-					const toggle = html( 'button', 'constel-link constel-rings__more',
-						mw.msg( 'constellation-rings-more', more ) );
-					toggle.type = 'button';
-					toggle.setAttribute( 'aria-expanded', 'false' );
-					toggle.addEventListener( 'click', () => {
-						const expand = toggle.getAttribute( 'aria-expanded' ) !== 'true';
-						toggle.setAttribute( 'aria-expanded', String( expand ) );
-						Array.from( ul.querySelectorAll( '[data-extra="1"]' ) ).forEach( ( li ) => {
-							li.hidden = !expand;
-						} );
-					} );
-					section.append( toggle );
-				}
-			}
-			details.append( section );
 		} );
-		lists.append( details );
 	}
 
 	function layoutFor( id ) {
@@ -378,7 +340,7 @@ function open( container, data, options ) {
 		const layout = arrange( id, data.links, byId );
 		title.textContent = mw.msg( 'constellation-rings-title', node.label );
 		root.setAttribute( 'aria-label', mw.msg( 'constellation-rings-title', node.label ) );
-		listsFor( layout, node );
+		legendFor( layout );
 		return layout;
 	}
 

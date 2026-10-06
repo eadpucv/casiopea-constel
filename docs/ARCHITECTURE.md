@@ -1032,6 +1032,7 @@ docs/ARCHITECTURE.md          este archivo
 | 0.13.0 | «Todos» y tipografía más chica | «Todos» como un lector más del filtro, con ícono de globo, sin interruptor; letra de 11 a 22 px (techo 24 con zoom) y círculos de 2,4 a 10 px de radio |
 | 0.14.0 | Anillos con leyenda | Leyenda de anillos que explica el traslape vacío; niebla 3D más suave; se retira «Rotular los principales»; ícono `section` para «misma sección» |
 | 0.15.0 | Mis anotaciones y vista de partida | Mis anotaciones: sin columna Estado, exportación CSV, filtro de concepto tolerante, casillas y acciones por lote con modal, paginación y columnas rehechas; enlaces al § mismo (`Página#constel-N`); mapa que parte en 2D con deslizadores al 25 % y recuerda los ajustes del lector |
+| 0.16.0 | El tema de fondo | Con palabras, el color del tema va en una caja desenfocada tras el rótulo (2D y 3D; el SVG exportado conserva el texto de color); halo del texto más fino y translúcido; se retira la lista de vecinos de la vista de anillos |
 
 ### Ideas para más adelante
 

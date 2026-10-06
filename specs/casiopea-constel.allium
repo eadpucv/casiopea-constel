@@ -298,7 +298,7 @@ entity ReadingExport {
 ------------------------------------------------------------
 
 config {
-    extension_version: String = "0.15.0"          -- debe coincidir con extension.json
+    extension_version: String = "0.16.0"          -- debe coincidir con extension.json
     concept_max_length: Integer = 80             -- caracteres
     theme_label_max_length: Integer = 80
     note_max_length: Integer = 20000             -- desarrollo de un tema
@@ -1042,13 +1042,13 @@ surface ConceptMap {
         -- mismo texto en el tercero. Un vecino con varios grados va al anillo
         -- del más fuerte. Dentro de cada anillo el orden angular junta a los
         -- vecinos que también son próximos entre sí, y cada anillo muestra
-        -- sólo sus vecinos de mayor peso (8, 16 y 24), con un «+N más» que
-        -- abre el resto como lista. Los radios son discretos y todos los
+        -- sólo sus vecinos de mayor peso (8, 16 y 24); a los demás se llega
+        -- eligiendo otro centro. Los radios son discretos y todos los
         -- rótulos se muestran. Elegir un vecino lo pasa al centro deslizándolo
         -- (sin animación con prefers-reduced-motion), y se vuelve al mapa con
         -- la misma selección. Los temas de la lente colorean como en el mapa.
-        -- La alternativa textual es la lista de vecinos por anillo
-        -- (decisión 2026-09-29). Una leyenda bajo la barra numera los anillos
+        -- La lista de vecinos por anillo se retiró (decisión 2026-10-06: el
+        -- mapa no tiene scroll y no se podía ver). Una leyenda bajo la barra numera los anillos
         -- de adentro hacia afuera con su nombre, y uno sin vecinos lo dice; el
         -- de traslape aclara que pide lectores distintos, así que con un solo
         -- lector queda vacío por definición y no por falla (decisión
@@ -1200,6 +1200,11 @@ surface ConceptMap {
         -- lectores (la lente). Por defecto, los del viewer; puede sumar
         -- otros lectores y quitarlos, pero para una cuenta registrada la
         -- lente nunca queda vacía. Sólo los temas propios son editables.
+        -- Con los conceptos como palabras (2D y 3D) el color del tema va como
+        -- fondo de una caja desenfocada del tamaño exacto del rótulo, que
+        -- lleva el color del texto; sólo los conceptos con tema la tienen.
+        -- Con círculos, el círculo lleva el color. El SVG exportado conserva
+        -- el esquema anterior: texto de color, sin fondo (decisión 2026-10-06).
 
     @guarantee GraphIsCached
         -- El grafo se calcula una vez por conjunto de lectores, de páginas y

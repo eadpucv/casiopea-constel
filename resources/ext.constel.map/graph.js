@@ -632,6 +632,7 @@ function draw( container, data, view ) {
 		.reduce( ( sum, l ) => sum + ( forceOf( forces, l.kind ) > 0 ? 1 : 0 ), 0 );
 	const root = svg( 'svg', {
 		class: 'constel-graph' + ( is3d ? ' constel-graph--3d' : '' ) +
+			( view.wash && mode !== 'none' ? ' constel-graph--wash' : '' ) +
 			( view.fill ? ' constel-graph--fill' : '' ),
 		viewBox: viewBox(),
 		role: 'group',
@@ -755,6 +756,12 @@ function draw( container, data, view ) {
 	const nodeEls = new Map();
 	const dotEls = new Map();
 	const dotLayer = svg( 'g', { class: 'constel-graph__dots' } );
+	// Prueba de concepto gráfico (view.wash, con rótulos, en 2D y en 3D): el tema no
+	// tiñe el texto sino el fondo de una caja del tamaño exacto de la tinta,
+	// muy desenfocada (blur(3ex) en el CSS), detrás del rótulo. Sólo los
+	// conceptos con tema la llevan.
+	const washLayer = svg( 'g', { class: 'constel-graph__washes', 'aria-hidden': 'true' } );
+	const washEls = new Map();
 	// Concepto bajo el cursor o con el foco; en táctil, el del primer toque.
 	let hoverNode = null;
 	let lastPointer = 'mouse';
@@ -816,6 +823,16 @@ function draw( container, data, view ) {
 			'aria-label': mw.msg( 'constellation-node-label', node.label, node.excerpts, node.pages )
 		} );
 		text.textContent = node.label;
+		if ( view.wash && theme !== undefined && labelled( node ) ) {
+			const wash = svg( 'rect', { class: 'constel-graph__wash' } );
+			wash.style.fill = ( view.conceptColors && view.conceptColors.get( node.id ) ) ||
+				`var(--constel-cat-${ theme % CATEGORIES })`;
+			washLayer.appendChild( wash );
+			washEls.set( node.id, wash );
+			// El SVG exportado no lleva las cajas (el filtro CSS no viaja): el
+			// texto vuelve a llevar el color de su tema (serialize).
+			text.constelWash = wash;
+		}
 		let dot = null;
 		if ( !labelled( node ) ) {
 			// Sin rótulo: el círculo es el concepto (lleva el nombre accesible y
@@ -946,7 +963,7 @@ function draw( container, data, view ) {
 	// de sus conceptos; el aporte de los lectores, si lo hay, va por encima.
 	if ( view.conceptColors ) {
 		view.conceptColors.forEach( ( color, id ) => {
-			if ( nodeEls.has( id ) ) {
+			if ( nodeEls.has( id ) && !washEls.has( id ) ) {
 				nodeEls.get( id ).style.fill = color;
 			}
 			if ( dotEls.has( id ) ) {
@@ -997,6 +1014,7 @@ function draw( container, data, view ) {
 			}
 		} );
 	}
+	stage.appendChild( washLayer );
 	stage.appendChild( nodeLayer );
 	container.appendChild( root );
 	const measurePpu = () => {
@@ -1006,6 +1024,8 @@ function draw( container, data, view ) {
 		}
 	};
 	measurePpu();
+	// 3D: las cajas de fondo se miden a una letra de 100 px y se escalan.
+	const washBoxes3d = is3d && washEls.size ? inkBoxes( nodes, nodeEls, () => 100, null ) : null;
 
 	// 2D: el layout se hace a la escala de los rótulos (ya medibles en la
 	// página): una arista ideal mide EDGE_IN_LABELS anchos medios de rótulo.
@@ -1164,6 +1184,24 @@ function draw( container, data, view ) {
 			el.setAttribute( 'x', ( node.px + ( box ? box.ox * ink : 0 ) ).toFixed( 1 ) );
 			el.setAttribute( 'y', ( node.py + ( box ? box.oy * ink : 0 ) ).toFixed( 1 ) );
 			el.setAttribute( 'font-size', font.toFixed( 2 ) );
+			const washBox = box || ( washBoxes3d && washBoxes3d.get( node.id ) );
+			const wash = washBox && washEls.get( node.id );
+			if ( wash ) {
+				// La caja es la tinta (sin el PAD de los choques); su font-size
+				// da la medida del `ex` con que el CSS calcula el desenfoque.
+				const k = font / washBox.s;
+				const w = 2 * ( washBox.w - PAD ) * k;
+				const h = 2 * ( washBox.h - PAD ) * k;
+				wash.setAttribute( 'x', ( node.px - w / 2 ).toFixed( 1 ) );
+				wash.setAttribute( 'y', ( node.py - h / 2 ).toFixed( 1 ) );
+				wash.setAttribute( 'width', w.toFixed( 1 ) );
+				wash.setAttribute( 'height', h.toFixed( 1 ) );
+				wash.setAttribute( 'font-size', font.toFixed( 2 ) );
+				if ( is3d ) {
+					// La caja se aleja y se atenúa con su rótulo (0,6 es la opacidad base).
+					wash.style.opacity = ( 0.6 * fog( z2, sphere3d ) ).toFixed( 2 );
+				}
+			}
 			if ( is3d ) {
 				// Lo lejano se atenúa: da profundidad sin perder legibilidad.
 				el.style.opacity = fog( z2, sphere3d ).toFixed( 2 );
@@ -1180,7 +1218,12 @@ function draw( container, data, view ) {
 		if ( is3d && now - lastSort > 120 ) {
 			lastSort = now;
 			nodes.slice().sort( ( a, b ) => a.depth - b.depth )
-				.forEach( ( node ) => nodeLayer.appendChild( nodeEls.get( node.id ) ) );
+				.forEach( ( node ) => {
+					nodeLayer.appendChild( nodeEls.get( node.id ) );
+					if ( washEls.has( node.id ) ) {
+						washLayer.appendChild( washEls.get( node.id ) );
+					}
+				} );
 		}
 	}
 
@@ -1804,6 +1847,8 @@ function serialize( root, container, meta ) {
 	clone.setAttribute( 'width', String( Math.round( box.width ) ) );
 	clone.setAttribute( 'height', String( Math.round( box.height ) ) );
 
+	// Las cajas desenfocadas no se exportan: el texto lleva el color de su tema.
+	Array.from( clone.querySelectorAll( '.constel-graph__washes' ) ).forEach( ( layer ) => layer.remove() );
 	const originals = root.querySelectorAll( 'text, line, circle' );
 	Array.from( clone.querySelectorAll( 'text, line, circle' ) ).forEach( ( node, i ) => {
 		const cs = getComputedStyle( originals[ i ] );
@@ -1817,7 +1862,8 @@ function serialize( root, container, meta ) {
 			if ( cs.display === 'none' ) {
 				node.setAttribute( 'display', 'none' );
 			}
-			node.setAttribute( 'fill', paint( cs.fill ) );
+			node.setAttribute( 'fill', paint( originals[ i ].constelWash ?
+				getComputedStyle( originals[ i ].constelWash ).fill : cs.fill ) );
 			node.setAttribute( 'font-family', cs.fontFamily );
 			node.setAttribute( 'font-weight', cs.fontWeight );
 			// El halo de contraste del mapa viaja con el texto: el trazo va
@@ -1825,6 +1871,7 @@ function serialize( root, container, meta ) {
 			if ( cs.stroke !== 'none' && parseFloat( cs.strokeWidth ) > 0 ) {
 				node.setAttribute( 'stroke', toRgb( cs.stroke ) );
 				node.setAttribute( 'stroke-width', cs.strokeWidth );
+				node.setAttribute( 'stroke-opacity', cs.strokeOpacity );
 				node.setAttribute( 'stroke-linejoin', 'round' );
 				node.setAttribute( 'paint-order', 'stroke' );
 			}

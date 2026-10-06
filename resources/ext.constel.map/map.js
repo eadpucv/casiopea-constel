@@ -833,6 +833,8 @@ function main( root ) {
 				fill: full,
 				themeOf: themeIndex(),
 				conceptColors: conceptColors(),
+				// Prueba: el tema como fondo desenfocado del rótulo; ?wash=0 la apaga.
+				wash: mw.util.getParamValue( 'wash' ) !== '0',
 				onSelect: select,
 				onArrange: syncUnpin
 			} );

@@ -1,5 +1,24 @@
 # Changelog — Casiopea-Con§tel
 
+## 0.16.0 — 2026-10-06
+
+- **El tema, de fondo del rótulo.** Con los conceptos como palabras (2D y 3D),
+  todos los rótulos llevan el color del texto y el color del tema va en una
+  caja del tamaño exacto de la tinta, muy desenfocada (`blur(2.25ex)`, que
+  escala con la letra), detrás de cada concepto que pertenece a un tema (en
+  3D se aleja y atenúa con la niebla). Con círculos, nada cambia: el círculo
+  lleva el color. `?wash=0` en la URL vuelve al esquema anterior. El SVG
+  exportado conserva el esquema anterior (texto de color del tema, sin
+  fondo), porque el filtro CSS no viaja dentro de un SVG suelto.
+- **Halo del texto más fino y translúcido.** El contorno claro de los
+  rótulos pasa de 3 px opaco a 2 px al 50 % (también en el SVG exportado, que
+  ahora copia la opacidad del trazo). Los círculos conservan el suyo.
+- **Vista de anillos sin la lista «Vecinos de X por anillo».** Colgaba bajo el
+  mapa, que no tiene scroll, así que no se podía ver ni usar. Se van con ella
+  el «+N más» y sus mensajes; la leyenda de anillos se queda. Los vecinos
+  fuera del cupo de cada anillo (8, 16 y 24) se alcanzan eligiendo otro
+  centro. Se actualizan la spec (`RingsView`) y `docs/MAPA.md`.
+
 ## 0.15.0 — 2026-10-06
 
 - **Vista de partida del mapa, y se recuerda lo que el lector ajusta.** Quien
