@@ -704,8 +704,12 @@
 }
 
 .constel-side__excerpt--lost .constel-quote {
-	border-left-style: dashed;
 	opacity: 0.75;
+}
+
+.constel-side__source,
+.constel-mine .TablePager_col_ce_page a {
+	font-weight: 600;
 }
 
 .constel-side__by {
@@ -1006,25 +1010,154 @@
 	list-style: none;
 }
 
+/* Conceptos de la tabla: un concepto largo se parte en líneas. La píldora se
+ * ajusta al ancho real de su texto (mine.js lo mide; sin JS ocupa la celda) y
+ * la esquina es proporcional al cuerpo del texto, no «pill», que con varias
+ * líneas se redondea sin medida. */
+.constel-mine .constel-chip {
+	box-sizing: content-box;
+	max-width: 100%;
+	padding-block: 0.1em;
+	border-radius: 0.9em;
+	line-height: 1.35;
+	text-wrap: balance;
+}
+
 .constel-map .constel-quote,
 .constel-mine .constel-quote {
 	font-size: var( --constel-fs-sm );
 	line-height: 1.45;
 }
 
+/* Las secciones, en el mapa y en Mis anotaciones, van sin filete de color ni
+ * sangría: el pasaje al ras y, si hay, su glosa debajo, también al ras. El
+ * estado (perdida, congelada) lo dicen sus avisos, no el borde. */
+.constel-mine .constel-quote,
+.constel-side__excerpt .constel-quote {
+	padding: 0;
+	border-left: 0;
+}
+
+/* La nota, bajo el pasaje: separada de él, un poco mayor que la nota
+ * común (entre xs y sm) y sangrada a la izquierda. */
+.constel-mine .constel-gloss-text,
+.constel-side__excerpt .constel-gloss-text {
+	margin: var( --constel-s-3 ) 0 var( --constel-s-3 ) var( --constel-s-4 );
+	padding-left: 0;
+	border-left: 0;
+	font-size: calc( ( var( --constel-fs-xs ) + var( --constel-fs-sm ) ) / 2 );
+}
+
 /* ── Especial:MiConstel ───────────────────────────────────────────────── */
 
 .constel-mine__actions {
 	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
 	gap: var( --constel-s-2 );
+	margin: var( --constel-s-3 ) 0;
+}
+
+/* Cantidad por página: primera de la fila, rótulo y selector en línea. */
+.constel-mine__limit {
+	display: flex;
+	align-items: center;
+	gap: var( --constel-s-2 );
+	margin-right: var( --constel-s-2 );
+}
+
+.constel-mine__limit .constel-label {
+	margin: 0;
+	font-size: var( --constel-fs-xs );
+}
+
+/* Selección y acciones por lote: en la fila de acciones, tras «Resultados». */
+.constel-mine__bulk {
+	width: auto;
+}
+
+.constel-mine__bulk[ hidden ],
+.constel-mine__count[ hidden ] {
+	display: none;
+}
+
+.constel-mine__count {
+	color: var( --constel-ink-soft );
+	font-size: var( --constel-fs-xs );
+}
+
+/* Columna de casillas, lo más angosta posible. Los skins ponen un mínimo a
+ * todas las celdas de las tablas wiki (Stella Nova: 7em), de ahí la
+ * especificidad doble. Lo que la casilla libera lo toma Conceptos, que tiene
+ * un mínimo propio, y la sección se lleva el resto. */
+table.constel-mine.constel-mine :is( th, td ):first-child {
+	width: 1%;
+	min-width: 0;
+	padding-inline: var( --constel-s-2 );
+	text-align: center;
+}
+
+table.constel-mine.constel-mine td.TablePager_col_concepts {
+	min-width: 11rem;
+}
+
+/* Creación: la fecha (lo que ordena la tabla) en cursiva y, tras ella, los
+ * íconos de acción. */
+.constel-mine__date {
+	font-style: italic;
+}
+
+.constel-mine__tools {
+	display: inline-flex;
+	margin-left: var( --constel-s-2 );
+	vertical-align: middle;
+}
+
+/* Eliminar: el ícono se pone del color de peligro al apuntarlo. */
+.constel-button--danger-icon:hover {
+	color: var( --constel-danger );
+}
+
+/* Paginación, al final de la tabla: texto xs, sin negritas, flechas al tamaño
+ * del texto y enlaces activos del color de enlace (no el azul de OOUI). */
+.constel-mine__pager {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var( --constel-s-3 );
+	margin: var( --constel-s-3 ) 0;
+	font-size: var( --constel-fs-xs );
+	font-weight: normal;
+}
+
+.constel-mine__page {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+	font-weight: normal;
+}
+
+a.constel-mine__page {
+	color: var( --constel-link );
+}
+
+span.constel-mine__page {
+	color: var( --constel-ink-soft );
+	opacity: 0.6;
+}
+
+.constel-mine__pager .constel-mine__page .constel-i {
+	width: 1.25em;
+	height: 1.25em;
+	fill: none;
+	stroke: currentcolor;
+	stroke-width: 1.75;
+	stroke-linecap: round;
+	stroke-linejoin: round;
 }
 
 .constel-mine .constel-quote {
 	margin: 0;
-}
-
-.constel-mine__row--lost .constel-quote {
-	border-left-style: dashed;
 }
 
 /* Congelada: su página se borró. Aviso de alarma; sólo se puede borrar. */
@@ -1043,7 +1176,6 @@
 
 .constel-mine__row--frozen .constel-quote,
 .constel-side__excerpt--frozen .constel-quote {
-	border-left-style: dotted;
 	opacity: 0.7;
 }
 

@@ -13,6 +13,7 @@ use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Page\PageStore;
 use MediaWiki\Pager\IndexPager;
 use MediaWiki\Pager\TablePager;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -23,7 +24,18 @@ use Wikimedia\Rdbms\IConnectionProvider;
  */
 class MyConstelPager extends TablePager {
 
-	private const SORTABLE = [ 'ce_created', 'ce_status' ];
+	private const SORTABLE = [ 'ce_created' ];
+
+	/** Cantidades por página que ofrece el selector; la primera es la de por omisión. */
+	public const LIMITS = [ 20, 50, 100 ];
+
+	/** Geometría Lucide (24×24) de las flechas de la paginación. */
+	private const ARROWS = [
+		'first' => '<path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/>',
+		'prev' => '<path d="m15 18-6-6 6-6"/>',
+		'next' => '<path d="m9 18 6-6-6-6"/>',
+		'last' => '<path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/>',
+	];
 
 	/** @var array<int,ExcerptRecord> los §§ de la página visible, por id */
 	private array $records = [];
@@ -45,8 +57,8 @@ class MyConstelPager extends TablePager {
 	 * @param IConnectionProvider $dbProvider
 	 * @param CommentStore $commentStore
 	 * @param int $actorId el lector
-	 * @param array{page:?int,concept:?int,status:?int} $filters null = sin filtro;
-	 *  0 en page/concept = un valor que no existe (la tabla sale vacía)
+	 * @param array{page:?int,concept:?int[],status:?int} $filters null = sin filtro;
+	 *  0 en page o [] en concept = un valor que no existe (la tabla sale vacía)
 	 */
 	public function __construct(
 		IContextSource $context,
@@ -62,6 +74,59 @@ class MyConstelPager extends TablePager {
 		// Las tablas de con§tel viven en su dominio virtual.
 		$this->mDb = $dbProvider->getReplicaDatabase( ConceptStore::DOMAIN );
 		parent::__construct( $context, $linkRenderer );
+		$this->mLimitsShown = self::LIMITS;
+		$this->mDefaultLimit = self::LIMITS[0];
+		$this->mLimit = self::limitFrom( $context->getRequest()->getInt( 'limit' ) );
+	}
+
+	/** Un límite pedido por URL, llevado a uno de los que ofrece el selector. */
+	public static function limitFrom( int $requested ): int {
+		return in_array( $requested, self::LIMITS, true ) ? $requested : self::LIMITS[0];
+	}
+
+	/**
+	 * Sin paginación arriba: la tabla y, al final, la barra. Las flechas son
+	 * Lucide del tamaño del texto y los enlaces activos llevan el color de
+	 * enlace (la barra del núcleo trae botones OOUI azules).
+	 *
+	 * @inheritDoc
+	 */
+	public function getFullOutput() {
+		$body = $this->getBody();
+		$pout = new ParserOutput();
+		$pout->setRawText( $body . $this->getNavigationBar() );
+		$pout->addModuleStyles( $this->getModuleStyles() );
+		return $pout;
+	}
+
+	/** @inheritDoc */
+	public function getNavigationBar() {
+		if ( !$this->isNavigationBarShown() ) {
+			return '';
+		}
+		$queries = $this->getPagingQueries();
+		$title = $this->getTitle();
+		$items = '';
+		foreach ( self::ARROWS as $type => $paths ) {
+			// Mensajes: table_pager_first, table_pager_prev, table_pager_next, table_pager_last
+			$label = $this->msg( "table_pager_$type" )->text();
+			$icon = '<svg class="constel-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' . $paths . '</svg>';
+			$inner = $type === 'first' || $type === 'prev'
+				? $icon . htmlspecialchars( $label ) : htmlspecialchars( $label ) . $icon;
+			$items .= $queries[$type]
+				? Html::rawElement( 'a', [
+					'class' => "constel-mine__page constel-mine__page--$type",
+					'href' => $title->getLocalURL( $queries[$type] + $this->getDefaultQuery() ),
+				], $inner )
+				: Html::rawElement( 'span', [
+					'class' => "constel-mine__page constel-mine__page--$type",
+					'aria-disabled' => 'true',
+				], $inner );
+		}
+		return Html::rawElement( 'nav', [
+			'class' => 'constel-mine__pager',
+			'aria-label' => $this->msg( 'myconstel-pager' )->text(),
+		], $items );
 	}
 
 	/** @inheritDoc */
@@ -81,7 +146,8 @@ class MyConstelPager extends TablePager {
 		}
 		if ( $this->filters['concept'] !== null ) {
 			$info['tables'][] = 'constel_coding';
-			$info['conds']['ccd_concept'] = $this->filters['concept'];
+			// [] = ningún concepto coincide: id 0 no existe, la tabla sale vacía.
+			$info['conds']['ccd_concept'] = $this->filters['concept'] ?: 0;
 			$info['join_conds']['constel_coding'] = [ 'JOIN', 'ccd_excerpt = ce_id' ];
 		}
 		return $info;
@@ -90,14 +156,15 @@ class MyConstelPager extends TablePager {
 	/** @inheritDoc */
 	protected function getFieldNames() {
 		$names = [];
+		// Columna de casillas: sin título (mine.js pone ahí «seleccionar todas»).
+		$names['select'] = '';
 		foreach ( [
-			'ce_exact' => 'passage',
 			'ce_page' => 'page',
+			'ce_exact' => 'passage',
 			'concepts' => 'concepts',
-			'ce_status' => 'status',
 			'ce_created' => 'created',
 		] as $field => $col ) {
-			// Mensajes: myconstel-col-passage, -page, -concepts, -status, -created
+			// Mensajes: myconstel-col-page, -passage, -concepts, -created
 			$names[$field] = $this->msg( "myconstel-col-$col" )->text();
 		}
 		return $names;
@@ -158,8 +225,15 @@ class MyConstelPager extends TablePager {
 	public function formatValue( $name, $value ) {
 		$e = $this->current();
 		switch ( $name ) {
+			case 'select':
+				return Html::element( 'input', [
+					'type' => 'checkbox',
+					'class' => 'constel-mine__select',
+					'value' => $e->id,
+					'aria-label' => $this->msg( 'myconstel-select-row' )->text(),
+				] );
 			case 'ce_exact':
-				return $this->frozenNotice( $e ) .
+				return $this->frozenNotice( $e ) . $this->lostNotice( $e ) .
 					Html::element( 'blockquote', [ 'class' => 'constel-quote' ], $e->anchor->exact ) .
 					( $e->gloss === null ? '' :
 						Html::element( 'div', [ 'class' => 'constel-gloss-text' ], $e->gloss ) );
@@ -174,11 +248,9 @@ class MyConstelPager extends TablePager {
 					}
 				}
 				return Html::rawElement( 'ul', [ 'class' => 'constel-chips' ], $chips );
-			case 'ce_status':
-				// Mensajes: myconstel-status-anchored, -lost, -frozen
-				return $this->msg( 'myconstel-status-' . $e->statusName() )->escaped();
 			case 'ce_created':
-				return htmlspecialchars( $this->getLanguage()->userDate( $e->created, $this->getUser() ) );
+				return Html::element( 'span', [ 'class' => 'constel-mine__date' ],
+					$this->getLanguage()->userDate( $e->created, $this->getUser() ) );
 		}
 		return '';
 	}
@@ -201,6 +273,13 @@ class MyConstelPager extends TablePager {
 		);
 	}
 
+	/** Perdida: el texto cambió y ya no se ubica. Antes lo decía la columna «Estado». */
+	private function lostNotice( ExcerptRecord $e ): string {
+		return $e->status === ExcerptRecord::STATUS_LOST
+			? Html::element( 'div', [ 'class' => 'constel-status--lost' ], $this->msg( 'myconstel-lost-notice' )->text() )
+			: '';
+	}
+
 	private function pageCell( ExcerptRecord $e ): string {
 		$linkRenderer = $this->getLinkRenderer();
 		if ( $e->isFrozen() ) {
@@ -214,7 +293,8 @@ class MyConstelPager extends TablePager {
 			return $this->msg( 'myconstel-page-gone' )->escaped();
 		}
 		if ( $e->isAnchored() ) {
-			return $linkRenderer->makeKnownLink( $title );
+			// Al § mismo: la página, con el ancla que reader/init.js sabe resolver.
+			return $linkRenderer->makeKnownLink( $title->createFragmentTarget( "constel-{$e->id}" ) );
 		}
 		// Perdido: la página y la revisión donde el § era válido.
 		return $linkRenderer->makeKnownLink( $title ) . ' · ' .
@@ -231,16 +311,6 @@ class MyConstelPager extends TablePager {
 			'data-constel-excerpt' => (int)$row->ce_id,
 			'data-constel-status' => $status,
 		];
-	}
-
-	/** @inheritDoc */
-	protected function getCellAttrs( $field, $value ) {
-		$attrs = parent::getCellAttrs( $field, $value );
-		if ( $field === 'ce_status' ) {
-			// Clases: constel-status--anchored, constel-status--lost, constel-status--frozen
-			$attrs['class'] .= ' constel-status constel-status--' . $this->current()->statusName();
-		}
-		return $attrs;
 	}
 
 	/** @inheritDoc */

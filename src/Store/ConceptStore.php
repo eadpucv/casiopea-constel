@@ -62,6 +62,28 @@ class ConceptStore {
 	}
 
 	/**
+	 * Los conceptos que un filtro escrito a mano nombra: el de clave tolerante
+	 * igual a lo escrito (sin distinguir mayúsculas ni tildes) y, si no hay
+	 * ninguno, los que empiezan así.
+	 *
+	 * @return int[] vacío si nada coincide
+	 */
+	public function idsMatching( string $typed, int $limit = 200 ): array {
+		$db = $this->replica();
+		$fold = $this->normalizer->fold( $typed );
+		$ids = $db->newSelectQueryBuilder()->select( 'cc_id' )->from( 'constel_concept' )
+			->where( [ 'cc_fold' => $fold ] )
+			->caller( __METHOD__ )->fetchFieldValues();
+		if ( !$ids ) {
+			$ids = $db->newSelectQueryBuilder()->select( 'cc_id' )->from( 'constel_concept' )
+				->where( $db->expr( 'cc_fold', IExpression::LIKE, new LikeValue( $fold, $db->anyString() ) ) )
+				->limit( $limit )
+				->caller( __METHOD__ )->fetchFieldValues();
+		}
+		return array_map( 'intval', $ids );
+	}
+
+	/**
 	 * Búsqueda para el autocompletado: conceptos cuya clave tolerante empieza
 	 * como la del texto escrito, los más usados primero.
 	 *

@@ -20,6 +20,34 @@ class ExcerptStoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertTrue( $e->isAnchored() );
 	}
 
+	/** El panel del mapa lista los §§ de un concepto con esta consulta. */
+	public function testListsTheExcerptsOfAConceptOfAnyReader(): void {
+		$constel = $this->constel();
+		$store = $constel->getExcerptStore();
+		$a = $store->create( 1, 10, 100, $this->anchor( 'travesía' ), 'Travesía' );
+		$b = $store->create( 2, 11, 101, $this->anchor( 'travesía', 1 ), 'Travesía' );
+		$store->create( 2, 11, 101, $this->anchor( 'travesía', 2 ), 'Acto' );
+		$conceptId = $store->conceptIds( $a->id )[0];
+
+		$ids = array_map( static fn ( $e ) => $e->id, $store->listForConcept( $conceptId ) );
+		$this->assertEqualsCanonicalizing( [ $a->id, $b->id ], $ids );
+	}
+
+	public function testListsAReadersExcerptsFilteredByConcepts(): void {
+		$constel = $this->constel();
+		$store = $constel->getExcerptStore();
+		$a = $store->create( 1, 10, 100, $this->anchor( 'travesía' ), 'Travesía' );
+		$store->create( 1, 10, 100, $this->anchor( 'travesía', 1 ), 'Acto' );
+		$store->create( 2, 11, 101, $this->anchor( 'travesía', 2 ), 'Travesía' );
+		$conceptId = $store->conceptIds( $a->id )[0];
+
+		$mine = $store->listForActorFiltered( 1, null, [ $conceptId ], null );
+		$this->assertSame( [ $a->id ], array_map( static fn ( $e ) => $e->id, $mine ) );
+		$this->assertSame( [], $store->listForActorFiltered( 1, null, [], null ), 'sin conceptos: nada' );
+		$this->assertSame( [], $store->listForActorFiltered( 1, null, [ 99999 ], null ), 'concepto sin §§: nada' );
+		$this->assertCount( 2, $store->listForActorFiltered( 1, null, null, null ), 'sin filtro: todos' );
+	}
+
 	public function testCodeRejectsDuplicates(): void {
 		$store = $this->constel()->getExcerptStore();
 		$e = $store->create( 1, 10, 100, $this->anchor( 'travesía' ), 'Travesía' );

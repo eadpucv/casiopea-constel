@@ -33,6 +33,16 @@ const full = !!cfg.full;
 const ANTE_MIN = 20;
 const ANTE_MAX = 80;
 const ANTE_DEFAULT = 50;
+/**
+ * Vista de partida de quien aún no ha ajustado nada: 2D, aristas, conceptos
+ * como palabras, los cuatro deslizadores al 25 % y todo encuadrado. Lo que
+ * ajuste después se recuerda por navegador (prefs).
+ */
+const DEFAULT_FORCE = 0.25;
+const DEFAULT_FORCES = {
+	// eslint-disable-next-line camelcase
+	co_excerpt: DEFAULT_FORCE, overlap: DEFAULT_FORCE, co_page: DEFAULT_FORCE, theme: DEFAULT_FORCE
+};
 /** Cuánto dura un aviso sobre el mapa antes de apagarse solo (ms). */
 const NOTICE_MS = 12000;
 /** Máximo de lectores en el filtro «Secciones de» (uno por color de categoría). */
@@ -48,7 +58,7 @@ const ALL_ICON = 'globe';
 /**
  * Preferencias del mapa por navegador: se fusionan, no se pisan.
  *
- * @return {Object} {autorotate, ante}
+ * @return {Object} {mode, autorotate, edges, concepts, forces, ante, …}
  */
 function prefs() {
 	return mw.storage.getObject( 'constel-map' ) || {};
@@ -173,17 +183,17 @@ function divider( layout ) {
 function main( root ) {
 	const pageParam = mw.util.getParamValue( 'page' );
 	const state = {
-		// 2D por defecto: se lee de un vistazo y se arregla a mano.
-		mode: '2d',
+		// 2D por defecto: se lee de un vistazo y se arregla a mano; la última
+		// vista elegida se recuerda.
+		mode: prefs().mode === '3d' ? '3d' : '2d',
 		autorotate: !!prefs().autorotate,
-		edges: true,
+		edges: prefs().edges !== false,
 		// Conceptos como 'words' (palabras, por omisión) o 'nodes' (círculos).
 		// Ambos se recuerdan
 		// por navegador.
 		concepts: [ 'words', 'nodes' ].includes( prefs().concepts ) ? prefs().concepts : null,
 		// Fuerza de cada grado de proximidad (0–1); se recuerda por navegador.
-		forces: Object.assign( {}, graph.FORCES, { theme: graph.THEME_FORCE },
-			prefs().forces || {} ),
+		forces: Object.assign( {}, DEFAULT_FORCES, prefs().forces || {} ),
 		// Si quien mira ya fijó sus fuerzas, no se le cambian (autoForces).
 		forcesTouched: !!prefs().forces,
 		// Color elegido para cada lector (usuario → #rrggbb); el que no tiene
@@ -348,6 +358,7 @@ function main( root ) {
 			return;
 		}
 		state.mode = value;
+		savePref( 'mode', value );
 		syncMode();
 		// Nuevo layout desde cero: 2D y 3D no comparten posiciones.
 		state.data.nodes.forEach( ( n ) => {
@@ -367,6 +378,7 @@ function main( root ) {
 
 	const edges = toggle( 'waypoints', mw.msg( 'constellation-edges' ), state.edges, ( on ) => {
 		state.edges = on;
+		savePref( 'edges', on );
 		renderSoon();
 	}, true );
 	const edgesGroup = el( 'div', 'constel-map__group' );
@@ -522,7 +534,7 @@ function main( root ) {
 		if ( state.forcesTouched ) {
 			return;
 		}
-		Object.assign( state.forces, graph.FORCES, { theme: graph.THEME_FORCE },
+		Object.assign( state.forces, DEFAULT_FORCES,
 			// eslint-disable-next-line camelcase
 			isMulti() ? { overlap: 1, co_page: 0 } : {} );
 		Object.keys( forceInputs ).forEach( ( kind ) => {

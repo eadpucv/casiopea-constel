@@ -321,6 +321,35 @@ class ExcerptStore {
 	}
 
 	/**
+	 * Los §§ de un lector que cumplen los filtros de Especial:MiConstel, sin
+	 * paginar (para exportarlos). null = sin ese filtro; conceptIds es int[].
+	 *
+	 * @return ExcerptRecord[] del más nuevo al más viejo
+	 */
+	public function listForActorFiltered( int $actorId, ?int $pageId, ?array $conceptIds, ?int $status ): array {
+		$conds = [ 'ce_actor' => $actorId ];
+		if ( $pageId !== null ) {
+			$conds['ce_page'] = $pageId;
+		}
+		if ( $status !== null ) {
+			$conds['ce_status'] = $status;
+		}
+		$db = $this->replica();
+		if ( $conceptIds !== null ) {
+			$coded = $db->newSelectQueryBuilder()
+				->select( 'ccd_excerpt' )->from( 'constel_coding' )
+				->where( [ 'ccd_concept' => $conceptIds ?: 0 ] )
+				->caller( __METHOD__ )->fetchFieldValues();
+			// Una lista vacía no cabe en una condición: 0 no es id de ningún §.
+			$conds['ce_id'] = $coded ?: 0;
+		}
+		$res = $this->select( $db )->where( $conds )
+			->orderBy( [ 'ce_created', 'ce_id' ], 'DESC' )
+			->caller( __METHOD__ )->fetchResultSet();
+		return array_map( [ $this, 'newRecord' ], iterator_to_array( $res ) );
+	}
+
+	/**
 	 * @return int[]
 	 */
 	public function conceptIds( int $excerptId, ?IReadableDatabase $db = null ): array {

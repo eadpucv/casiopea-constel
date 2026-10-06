@@ -91,7 +91,9 @@ function conceptDetail( box, node, ctx ) {
 					mw.msg( 'constel-detail-by', e.author );
 			if ( e.title ) {
 				const link = el( 'a', 'constel-side__source', e.title );
-				link.href = mw.util.getUrl( e.title );
+				// Al § mismo, no a la página en general (reader/init.js resuelve el ancla);
+				// un § perdido ya no tiene dónde.
+				link.href = mw.util.getUrl( e.title ) + ( e.status === 'anchored' ? '#constel-' + e.id : '' );
 				cap.append( ' · ', link );
 			}
 			if ( e.status !== 'anchored' ) {

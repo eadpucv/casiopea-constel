@@ -232,7 +232,6 @@
 				"CasiopeaConstel.ExcerptStore",
 				"CasiopeaConstel.ConceptStore",
 				"PageStore",
-				"CasiopeaConstel.ExportBuilder",
 				"ActorNormalization",
 				"ConnectionProvider",
 				"CommentStore"
@@ -513,7 +512,12 @@
 			],
 			"messages": [
 				"myconstel-edit",
-				"constel-detail-delete",
+				"myconstel-delete",
+				"myconstel-select-all",
+				"myconstel-bulk",
+				"myconstel-bulk-delete",
+				"myconstel-bulk-selected",
+				"myconstel-bulk-confirm",
 				"constel-detail-delete-confirm",
 				"constel-detail-delete-yes",
 				"constel-detail-delete-no"

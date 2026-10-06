@@ -2,6 +2,83 @@
 
 ## Sin publicar
 
+- **Vista de partida del mapa, y se recuerda lo que el lector ajusta.** Quien
+  aún no ha tocado nada ve 2D, aristas visibles, conceptos como palabras, los
+  cuatro deslizadores al 25 % (antes 100/60/35/50) y todo encuadrado. Desde
+  que ajusta, el mapa recuerda por navegador sus últimos ajustes: la vista
+  2D/3D y las aristas (nuevos), además de palabras/nodos, fuerzas y «girar
+  solo» (que ya se recordaban). Con varios lectores filtrados se mantiene la
+  regla de partir con el traslape al 100 % y el mismo texto en 0 %
+  (`OverlapFirstForSeveralReaders`), salvo que ya haya fuerzas guardadas.
+
+- **Enlace a la sección, en negrita; y la nota, más legible.** En el panel del
+  mapa y en Mis anotaciones, el enlace a la página de cada sección va al § mismo
+  (`Página#constel-N`) y no a la página en general: la lectura sobre la página
+  (`reader/init.js`) se desplaza a su marca, la resalta un momento y, si la
+  lectura no la dibujaba (marcas ocultas, o es de otro lector y se ven sólo las
+  propias), la muestra. El enlace sale en negrita (600). Las secciones perdidas
+  conservan el enlace a la versión donde eran válidas. La nota bajo el pasaje
+  tiene más margen superior (12 px), un cuerpo algo mayor (entre xs y sm) y
+  sangría a la izquierda (16 px).
+
+- **Secciones sin filete ni sangría** en el panel del mapa y en Mis
+  anotaciones: el pasaje y su glosa van al ras, sin el borde de color a la
+  izquierda ni su padding. Las perdidas y congeladas ya no se distinguen por el
+  estilo del borde (punteado), sino por su aviso. La lectura sobre la página
+  no cambia.
+
+- **Mis anotaciones: orden de columnas.** Selección, página, sección (con su
+  glosa), conceptos y creación.
+
+- **Mis anotaciones: columnas.** La de casillas pasa de ~99 a ~29 px (el skin
+  impone `min-width: 7em` a las celdas de tablas wiki; se anula con mayor
+  especificidad) y «Conceptos» tiene un mínimo de `11rem`, así que toma lo que
+  la primera libera y la mayoría de los conceptos de dos palabras caben en una
+  línea.
+
+- **Mis anotaciones: píldoras de concepto ajustadas.** Un concepto de varias
+  palabras que se parte en líneas ocupaba todo el ancho de la celda aunque el
+  texto no lo llenara. Ahora la píldora mide lo que su línea más larga
+  (`fitChips` en `mine.js`, que se recalcula al redimensionar; sin JS vuelve al
+  ancho de la celda) y la esquina es proporcional al texto (`0.9em`, antes
+  `pill` = 999px, que redondeaba sin medida cuando había varias líneas).
+
+- **Mis anotaciones: selección y acciones por lote.** Casilla por fila y una
+  en la cabecera para toda la página (con estado intermedio). Con filas
+  marcadas aparece, a continuación de «Resultados», el selector «Acciones por
+  lote» (sin rótulo aparte: su primera opción lo nombra) con una sola acción,
+  Eliminar, y el conteo de seleccionadas. Eliminar, en lote o por fila, pide
+  confirmación en un modal centrado (`<dialog>`, el mismo estilo del de
+  fusionar conceptos); el lote borra de a una (la API borra un § por llamada)
+  y se detiene en el primer error.
+
+- **Mis anotaciones: orden, paginación y acciones por fila.** El orden es
+  filtros → fila de acciones (selector «Resultados» 20/50/100, con 20 por
+  omisión, luego exportación y «Ver la constelación») → tabla → paginación,
+  que ya no se repite arriba. La paginación es propia (antes los botones OOUI
+  azules del núcleo): texto xs sin negritas, flechas Lucide del tamaño del
+  texto y enlaces activos con el color de enlace. En la columna «Creado» van
+  «Editar» (`square-pen`) y «Eliminar» (`trash`) como íconos con tooltip;
+  Eliminar ahora está en todas las filas (antes sólo en las congeladas). El
+  selector se llama «Resultados»; la columna, «Creación», con la fecha en
+  cursiva y los íconos a continuación.
+
+- **Mis anotaciones: el filtro por concepto es tolerante.** Exigía el nombre
+  exacto (salvo la primera mayúscula): «travesia» o «oficio» daban una tabla
+  vacía. Ahora ignora mayúsculas y tildes y, si no hay un concepto con ese
+  nombre, acepta el comienzo («Trav» → todos los que empiezan así). También
+  vale para la exportación CSV.
+
+- **Mis anotaciones: se retira la columna «Estado» y el ZIP se vuelve CSV.**
+  «Estado» casi siempre decía «Anclada»; lo que importa (perdida, congelada) ya
+  tenía señal propia en la fila, y ahora «perdida» también la tiene dentro de la
+  celda de la sección. El filtro por estado se conserva. El botón «Exportar
+  (ZIP para con§tel)» no tenía a dónde importarse: ahora es «Exportar CSV» (con
+  filtros activos: «Exportar esta tabla» y «Exportar todo»). Columnas: sección,
+  glosa, página, conceptos, estado, creado; UTF-8 con BOM, y las celdas que
+  parecen fórmula se neutralizan. `ExportBuilder` (ZIP) queda sin uso desde la
+  interfaz.
+
 - **El desarrollo de un tema se guarda solo.** Se retira el botón «Guardar
   desarrollo»: se guarda 1,2 s después de dejar de escribir y al salir del
   cuadro, con una línea de estado («Guardando…», «Guardado»). No redibuja el

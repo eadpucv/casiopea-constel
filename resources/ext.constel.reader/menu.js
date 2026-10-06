@@ -28,11 +28,19 @@ function load() {
 /**
  * @param {Object} state {scope, marks}
  * @param {Function} onChange (state) => void
+ * @return {Function} choose( value ) para elegir desde fuera ('none'|'mine'|'everyone');
+ *  sin el ítem del menú, sólo cambia el estado y avisa
  */
 function bind( state, onChange ) {
 	const item = document.getElementById( 'pt-constel-reading' );
 	if ( !item ) {
-		return;
+		return ( value ) => {
+			state.marks = value !== 'none';
+			if ( state.marks ) {
+				state.scope = value;
+			}
+			onChange( state );
+		};
 	}
 	const group = document.createElement( 'div' );
 	group.className = 'constel-ui constel-seg';
@@ -90,6 +98,7 @@ function bind( state, onChange ) {
 		} );
 	} );
 	sync();
+	return choose;
 }
 
 module.exports = { load, bind };

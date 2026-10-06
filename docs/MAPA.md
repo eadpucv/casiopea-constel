@@ -45,7 +45,8 @@ La pantalla tiene tres zonas:
   ve** (de qué lectores, de qué páginas, con qué lente de temas y, con varios
   lectores, qué conceptos).
 - **El mapa** (a la izquierda) dibuja los conceptos. La vista por omisión es 2D
-  con palabras. El tamaño de cada palabra sigue la frecuencia del concepto, y su
+  con palabras, aristas visibles y todo encuadrado; lo que cada lector cambia
+  (2D/3D, aristas, palabras o nodos, fuerzas) se recuerda por navegador. El tamaño de cada palabra sigue la frecuencia del concepto, y su
   color, el tema que lo agrupa.
 - **El panel** (a la derecha) muestra los temas de la lente y, al elegir un
   concepto, todas sus secciones (§§), con su procedencia, sus temas y las
@@ -66,14 +67,14 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 
 | Ícono | Control | Qué hace | Por omisión |
 |---|---|---|---|
-| <img src="icons/square.svg" width="18" alt=""> ⇄ <img src="icons/box.svg" width="18" alt=""> | **Vista plana (2D) ⇄ vista en el espacio (3D)**, un interruptor con un ícono a cada lado | 2D dibuja el mapa en un plano, donde los rótulos nunca se pisan y cada concepto se arrastra. 3D lo dibuja en una esfera que se orbita arrastrando, con niebla en profundidad. Cambiar de vista rehace el layout desde cero, porque 2D y 3D no comparten posiciones | 2D |
+| <img src="icons/square.svg" width="18" alt=""> ⇄ <img src="icons/box.svg" width="18" alt=""> | **Vista plana (2D) ⇄ vista en el espacio (3D)**, un interruptor con un ícono a cada lado | 2D dibuja el mapa en un plano, donde los rótulos nunca se pisan y cada concepto se arrastra. 3D lo dibuja en una esfera que se orbita arrastrando, con niebla en profundidad. Cambiar de vista rehace el layout desde cero, porque 2D y 3D no comparten posiciones | 2D (después, la última elegida) |
 | <img src="icons/rotate-3d.svg" width="18" alt=""> | **Girar solo** (casilla, sólo en 3D) | El mapa 3D gira por sí mismo y se detiene al apuntarlo. Nunca gira con `prefers-reduced-motion` | apagado |
 | <img src="icons/waypoints.svg" width="18" alt=""> | **Mostrar aristas** (interruptor) | Dibuja u oculta las relaciones entre conceptos. Ocultas, la atracción entre conceptos se mantiene | encendido |
 | <img src="icons/type.svg" width="18" alt=""> ⇄ <img src="icons/circle-dot.svg" width="18" alt=""> | **Conceptos como palabras ⇄ como nodos**, un interruptor con un ícono a cada lado | Palabras dibuja cada concepto con su texto. Nodos lo dibuja como un círculo del color de su tema y de área según su frecuencia, y la palabra aparece al apuntarlo (sección 3) | palabras |
-| <img src="icons/section.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 100 % |
-| <img src="icons/layers.svg" width="18" alt=""> | **Proximidad: traslape** (deslizador) | Lo mismo para conceptos de secciones de lectores distintos que comparten texto | 60 % |
-| <img src="icons/file-text.svg" width="18" alt=""> | **Proximidad: mismo texto** (deslizador) | Lo mismo para conceptos anotados en una misma página | 35 % |
-| <img src="icons/book-type.svg" width="18" alt=""> | **Proximidad: tema** (deslizador) | Cuánto atrae a los conceptos de un mismo tema (mismo color) hacia el centro de su tema, como conjunto: los atrae entre sí, aleja a los de otros temas y debilita las aristas que cruzan temas. No dibuja aristas: sólo agrupa. Hacia 100 % los temas se separan en conjuntos de borde definido | 50 % |
+| <img src="icons/section.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 25 % |
+| <img src="icons/layers.svg" width="18" alt=""> | **Proximidad: traslape** (deslizador) | Lo mismo para conceptos de secciones de lectores distintos que comparten texto | 25 % |
+| <img src="icons/file-text.svg" width="18" alt=""> | **Proximidad: mismo texto** (deslizador) | Lo mismo para conceptos anotados en una misma página | 25 % |
+| <img src="icons/book-type.svg" width="18" alt=""> | **Proximidad: tema** (deslizador) | Cuánto atrae a los conceptos de un mismo tema (mismo color) hacia el centro de su tema, como conjunto: los atrae entre sí, aleja a los de otros temas y debilita las aristas que cruzan temas. No dibuja aristas: sólo agrupa. Hacia 100 % los temas se separan en conjuntos de borde definido | 25 % |
 | <img src="icons/zoom-in.svg" width="18" alt=""> <img src="icons/zoom-out.svg" width="18" alt=""> | **Acercar y alejar** | Escalan el mapa por 1,25 (hasta 8 veces) y, con él, la letra, más lento (sección 3) | encuadre |
 | <img src="icons/crosshair.svg" width="18" alt=""> | **Encuadrar todo el mapa** | Vuelve al zoom y la posición de partida, centrado en todo el mapa | |
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | **Volver al orden automático** (sólo en 2D, y sólo si hay conceptos movidos a mano) | Suelta los conceptos que se arrastraron y rehace el layout | |
@@ -202,12 +203,13 @@ palabras (capas: aristas, círculos, textos), de modo que no tapan nada.
 ### Los controles de fuerza
 
 Hay uno por grado, de **0 a 100 %, en pasos de 5 %** (internamente `valor / 100`).
+Todos parten al 25 % (el de tema también); lo que cada lector ajusta se recuerda.
 
 | Control | Grado | Por omisión | Opacidad base de su arista |
 |---|---|---|---|
-| <img src="icons/section.svg" width="14" alt=""> misma sección | `co_excerpt` | 100 % | 0,85 |
-| <img src="icons/layers.svg" width="14" alt=""> traslape | `overlap` | 60 % | 0,60 |
-| <img src="icons/file-text.svg" width="14" alt=""> mismo texto | `co_page` | 35 % | 0,40 |
+| <img src="icons/section.svg" width="14" alt=""> misma sección | `co_excerpt` | 25 % | 0,85 |
+| <img src="icons/layers.svg" width="14" alt=""> traslape | `overlap` | 25 % | 0,60 |
+| <img src="icons/file-text.svg" width="14" alt=""> mismo texto | `co_page` | 25 % | 0,40 |
 
 Los valores expresan una jerarquía: la misma sección es una decisión explícita de
 un lector; el traslape, un cruce entre lectores; el mismo texto, la relación más

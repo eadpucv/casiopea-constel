@@ -28,12 +28,49 @@ function main( root ) {
 		marks.draw( root, visible, isMine );
 		minimap.update( root, state.marks ? visible : [], isMine );
 	};
+	// Elige el alcance de la lectura desde fuera del menú (lo asigna menu.bind).
+	let choose = null;
+
+	/**
+	 * Un enlace «Página#constel-N» (desde el mapa o Mis anotaciones) lleva al §
+	 * N: se desplaza hasta su marca y la resalta un momento. Si la lectura no lo
+	 * dibuja (marcas ocultas, o es de otro y se ven sólo las mías), se muestra.
+	 */
+	const goToHash = () => {
+		const found = /^#constel-(\d+)$/.exec( window.location.hash );
+		const target = found && excerpts.find( ( e ) => e.id === Number( found[ 1 ] ) );
+		if ( !target ) {
+			return;
+		}
+		if ( !state.marks ) {
+			choose( state.scope );
+		} else if ( state.scope === 'mine' && !isMine( target ) ) {
+			choose( 'everyone' );
+		}
+		const mark = root.querySelector( '.' + marks.MARK_CLASS + '[data-constel-excerpt="' + target.id + '"]' );
+		if ( !mark ) {
+			return;
+		}
+		// Llegar por un enlace es un salto, no un paseo (y no lo interrumpe el
+		// reflujo de las imágenes que cargan después).
+		mark.scrollIntoView( { block: 'center', behavior: 'auto' } );
+		mark.focus( { preventScroll: true } );
+		mark.classList.add( 'constel-mark--target' );
+		setTimeout( () => mark.classList.remove( 'constel-mark--target' ), 2400 );
+	};
+	let arrived = false;
 	const reload = () => api.listExcerpts( cfg.pageId ).then( ( list ) => {
 		excerpts = list;
 		render();
+		// Sólo en la primera carga: los recargos (tras crear o borrar) no vuelven a saltar.
+		if ( !arrived ) {
+			arrived = true;
+			goToHash();
+		}
 	} );
+	window.addEventListener( 'hashchange', goToHash );
 
-	menu.bind( state, render );
+	choose = menu.bind( state, render );
 
 	const openDetail = ( target ) => {
 		const ids = marks.excerptIdsAt( target, root );
