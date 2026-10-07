@@ -381,10 +381,11 @@ text.constel-graph__node {
 	fill: var( --constel-ink );
 }
 
-/* Prueba: con los conceptos como palabras (2D), todos los rótulos llevan el
- * color del texto y el del tema va sólo en una caja desenfocada tras el rótulo
- * (graph.js, view.wash). Con círculos no cambia nada. */
-.constel-graph--wash text.constel-graph__node {
+/* El texto de un concepto va siempre en el color del texto: el tema lo lleva
+ * el círculo (modo nodos) o la caja desenfocada tras el rótulo (modo palabras,
+ * graph.js, view.wash). Las clases --cat-N las comparten texto y círculo, así
+ * que el texto las anula aquí. */
+text.constel-graph__node {
 	fill: var( --constel-ink );
 }
 

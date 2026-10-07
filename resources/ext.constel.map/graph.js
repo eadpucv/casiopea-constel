@@ -963,7 +963,8 @@ function draw( container, data, view ) {
 	// de sus conceptos; el aporte de los lectores, si lo hay, va por encima.
 	if ( view.conceptColors ) {
 		view.conceptColors.forEach( ( color, id ) => {
-			if ( nodeEls.has( id ) && !washEls.has( id ) ) {
+			// El texto de un concepto con círculo (modo nodos) va siempre en el color del texto.
+			if ( nodeEls.has( id ) && !washEls.has( id ) && !dotEls.has( id ) ) {
 				nodeEls.get( id ).style.fill = color;
 			}
 			if ( dotEls.has( id ) ) {
@@ -1008,7 +1009,9 @@ function draw( container, data, view ) {
 				}
 				fill = gradients.get( key );
 			}
-			nodeEls.get( node.id ).style.fill = fill;
+			if ( !dotEls.has( node.id ) ) {
+				nodeEls.get( node.id ).style.fill = fill;
+			}
 			if ( dotEls.has( node.id ) ) {
 				dotEls.get( node.id ).style.fill = fill;
 			}
