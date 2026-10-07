@@ -220,8 +220,8 @@ en cuatro cosas:
 2. **Visibilidad de la arista**: opacidad = `base · (0,4 + 0,6 · fuerza)`. A 100 %
    tiene su opacidad base y a 5 %, el 43 % de ella. El grosor depende del peso,
    no de la fuerza: `min(5, 1 + log₂(1 + peso))` px (las de `co_page`, 1 px).
-3. **En 0 el grado desaparece**: sus aristas no se dibujan, no atraen y no figuran
-   en la lista accesible («Ver como lista»). El cliente ni siquiera las pide al
+3. **En 0 el grado desaparece**: sus aristas no se dibujan, no atraen y no se
+   cargan. El cliente ni siquiera las pide al
    servidor hasta que la fuerza sube.
 4. **Al arrastrar un concepto (2D)**: la simulación en vivo usa la misma fuerza
    para la rigidez de cada resorte.
@@ -460,9 +460,9 @@ página y sólo Ctrl + rueda acerca. Arrastrar nunca selecciona los rótulos com
 
 Accesibilidad:
 
-- **Alternativa textual** (`AccessibleAlternative`): bajo el panel, «Ver como lista»
-  enumera los conceptos por frecuencia, con sus §§ y páginas, sus temas y sus aristas
-  (sólo de los grados con fuerza). La vista de anillos no tiene lista propia: la leyenda nombra los anillos y cada vecino es un botón con nombre accesible.
+- **Alternativa textual** (`AccessibleAlternative`): retirada el 2026-10-07 por decisión
+  del usuario; «Ver como lista» ya no existe en ninguna vista. La vista de anillos nombra
+  los anillos en su leyenda y cada vecino es un botón con nombre accesible.
 - Cada concepto es un botón con nombre accesible («Concepto, N secciones, M páginas»)
   y foco visible. Los nodos llevan el mismo nombre.
 - Todo ícono tiene un tooltip que explica qué hace su control y el mismo texto como

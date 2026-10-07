@@ -1067,7 +1067,10 @@ function draw( container, data, view ) {
 				node.pin = { x: node.x, y: node.y };
 			}
 		}
-		return Math.min( 1, 0.96 * W / Math.max( 1, maxX - minX ),
+		// Con rótulos, el encuadre no pasa de 1 (la letra natural). Sin ellos
+		// (sólo círculos) no hay letra que respetar: se amplía hasta llenar el lienzo.
+		const cap = nodes.some( labelled ) ? 1 : ZOOM_MAX;
+		return Math.min( cap, 0.96 * W / Math.max( 1, maxX - minX ),
 			0.96 * H / Math.max( 1, maxY - minY ) );
 	};
 	// Las cajas se separan al tamaño con que se dibujarán en el encuadre: si

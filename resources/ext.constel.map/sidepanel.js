@@ -43,7 +43,7 @@ function feedbackBox() {
  *
  * @param {HTMLElement} box
  * @param {Object} node del grafo
- * @param {Object} ctx {me, canAnnotate, canModerate, myThemes: Array, onChanged,
+ * @param {Object} ctx {me, canAnnotate, canModerate, myThemes: Array, ringsButton, onChanged,
  *  onModerated: (keepId) => void}
  */
 function conceptDetail( box, node, ctx ) {
@@ -64,16 +64,19 @@ function conceptDetail( box, node, ctx ) {
 					return $.Deferred().reject();
 				} ) ) :
 		node.label );
-	box.append(
-		title,
-		renameFb,
-		el( 'p', 'constel-side__meta',
-			mw.msg( 'constellation-counts', mw.language.convertNumber( node.excerpts ),
-				mw.language.convertNumber( node.pages ) ) )
-	);
+	// Los anillos van en la misma línea, al tamaño del texto.
+	if ( ctx.ringsButton ) {
+		title.append( ctx.ringsButton );
+	}
+	// «n secciones · n páginas · [tema ×] [asociar]»: los temas llegan después
+	// (conceptThemes) y completan la fila.
+	const meta = el( 'div', 'constel-side__meta constel-side__meta--row' );
+	meta.append( el( 'span', null,
+		mw.msg( 'constellation-counts', mw.language.convertNumber( node.excerpts ),
+			mw.language.convertNumber( node.pages ) ) ) );
+	box.append( title, renameFb, meta );
 	const list = el( 'div', 'constel-side__excerpts', mw.msg( 'constellation-loading' ) );
-	const themesBox = el( 'div', 'constel-side__themes' );
-	box.append( list, themesBox );
+	box.append( list );
 
 	api.excerptsOfConcept( node.id ).then( ( excerpts ) => {
 		list.textContent = '';
@@ -111,52 +114,114 @@ function conceptDetail( box, node, ctx ) {
 	} );
 
 	api.conceptThemes( node.id ).then( ( themes ) => {
-		themesBox.textContent = '';
-		themesBox.append( el( 'h5', null, mw.msg( 'constellation-in-themes' ) ) );
-		if ( !themes.length ) {
-			themesBox.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-in-no-theme' ) ) );
-		} else {
-			const ul = el( 'ul', 'constel-chips' );
-			themes.forEach( ( t ) => ul.append( el( 'li', 'constel-chip',
-				t.author ? mw.msg( 'constellation-theme-of', t.label, t.author ) : t.label ) ) );
-			themesBox.append( ul );
-		}
-		if ( ctx.canAnnotate && ctx.myThemes.length ) {
-			const form = el( 'form', 'constel-add' );
-			const select = el( 'select', 'constel-input' );
-			select.setAttribute( 'aria-label', mw.msg( 'constellation-group-into' ) );
-			// Ningún tema viene elegido: se elige explícitamente, y hasta
-			// entonces el botón no se habilita.
-			const none = el( 'option', null, mw.msg( 'constellation-group-choose' ) );
-			none.value = '';
-			none.disabled = true;
-			none.selected = true;
-			select.append( none );
-			ctx.myThemes.forEach( ( t ) => {
-				const o = el( 'option', null, t.label );
-				o.value = t.id;
-				select.append( o );
-			} );
-			const fb = feedbackBox();
-			const go = submitButton( mw.msg( 'constellation-group' ), 'constel-button--primary' );
-			go.disabled = true;
-			select.addEventListener( 'change', () => {
-				go.disabled = !select.value;
-			} );
-			form.append( select, go, fb );
-			form.addEventListener( 'submit', ( e ) => {
-				e.preventDefault();
-				if ( !select.value ) {
-					return;
-				}
-				api.write( { action: 'constel-groupconcept', op: 'group', concept: node.id, theme: select.value } )
-					.then( ctx.onChanged, ( code, r ) => {
-						fb.innerHTML = api.describeError( code, r ).html;
-					} );
-			} );
-			themesBox.append( form );
+		meta.append( el( 'span', null, '·' ) );
+		meta.append( el( 'span', null, themes.length ?
+			mw.msg( 'constellation-belongs-to', themes.length ) :
+			mw.msg( 'constellation-in-no-theme' ) ) );
+		let inMine = false;
+		themes.forEach( ( t ) => {
+			const mine = !!ctx.me && t.author === ctx.me;
+			inMine = inMine || mine;
+			const chip = el( 'span', 'constel-chip' );
+			chip.append( el( 'span', 'constel-chip__label',
+				t.author && !mine ? mw.msg( 'constellation-theme-of', t.label, t.author ) : t.label ) );
+			// Sólo el lector saca su propio tema; los ajenos no se tocan.
+			if ( mine && ctx.canAnnotate ) {
+				const remove = icons.iconButton(
+					'x', mw.msg( 'constellation-disassociate', t.label ), 'constel-chip__remove'
+				);
+				remove.addEventListener( 'click', () => api.write( {
+					action: 'constel-groupconcept', op: 'ungroup', concept: node.id
+				} ).then( ctx.onChanged ) );
+				chip.append( remove );
+			}
+			meta.append( chip );
+		} );
+		const taken = new Set( themes.map( ( t ) => t.id ) );
+		const free = ctx.myThemes.filter( ( t ) => !taken.has( t.id ) );
+		if ( ctx.canAnnotate && free.length && !inMine ) {
+			meta.append( associate( node, free, ctx ) );
 		}
 	} );
+}
+
+/**
+ * «asociar»: un botón pequeño que se vuelve un campo de texto con
+ * autocompletado de los temas propios; elegir uno agrupa el concepto en él.
+ *
+ * @param {Object} node
+ * @param {Array} themes temas propios que aún no lo contienen
+ * @param {Object} ctx {onChanged}
+ * @return {HTMLElement}
+ */
+function associate( node, themes, ctx ) {
+	const wrap = el( 'span', 'constel-assoc' );
+	const open = el( 'button', 'constel-button constel-assoc__open', mw.msg( 'constellation-associate' ) );
+	open.type = 'button';
+	const field = el( 'span', 'constel-field constel-assoc__field' );
+	const input = el( 'input', 'constel-input constel-assoc__input' );
+	input.type = 'text';
+	input.placeholder = mw.msg( 'constellation-associate-placeholder' );
+	input.setAttribute( 'aria-label', mw.msg( 'constellation-group-into' ) );
+	field.append( input );
+	field.hidden = true;
+	const fb = feedbackBox();
+	wrap.append( open, field, fb );
+
+	let busy = false;
+	const group = ( theme ) => {
+		if ( busy ) {
+			return;
+		}
+		busy = true;
+		api.write( { action: 'constel-groupconcept', op: 'group', concept: node.id, theme: theme.id } )
+			.then( ctx.onChanged, ( code, r ) => {
+				busy = false;
+				fb.innerHTML = api.describeError( code, r ).html;
+			} );
+	};
+	const close = () => {
+		input.value = '';
+		field.hidden = true;
+		open.hidden = false;
+	};
+	open.addEventListener( 'click', () => {
+		fb.textContent = '';
+		open.hidden = true;
+		field.hidden = false;
+		input.focus();
+	} );
+	const combo = autocomplete.attach( input, {
+		source: ( typed ) => Promise.resolve( themes
+			.filter( ( t ) => t.label.toLowerCase().includes( typed.trim().toLowerCase() ) )
+			.map( ( t ) => ( { label: t.label, value: t } ) ) ),
+		onPick: ( text, item ) => group( item.value )
+	} );
+	input.addEventListener( 'keydown', ( e ) => {
+		if ( e.defaultPrevented ) {
+			return;
+		}
+		if ( e.key === 'Escape' ) {
+			e.preventDefault();
+			close();
+			open.focus();
+		} else if ( e.key === 'Enter' && !combo.isOpen() ) {
+			e.preventDefault();
+			const typed = input.value.trim().toLowerCase();
+			const found = themes.find( ( t ) => t.label.toLowerCase() === typed );
+			if ( found ) {
+				group( found );
+			} else if ( typed ) {
+				fb.textContent = mw.msg( 'constellation-associate-unknown', input.value.trim() );
+			}
+		}
+	} );
+	input.addEventListener( 'blur', () => setTimeout( () => {
+		if ( !busy && !input.value.trim() && document.activeElement !== input ) {
+			close();
+		}
+	}, 150 ) );
+	return wrap;
 }
 
 /**
@@ -615,12 +680,17 @@ function autosaveDevelopment( area, theme, status, fb, fail ) {
  *
  * @param {HTMLElement} box
  * @param {Array} themes de list=constelthemes
- * @param {Object} ctx {editable, deletable, ownerLabel, colorOffset, themeColor,
+ * @param {Object} ctx {editable, deletable, ownerLabel, ownerIcon, colorOffset, themeColor,
  *  onThemeColor, onChanged, onSelectConcept}
  */
 function themesPanel( box, themes, ctx ) {
 	box.textContent = '';
-	box.append( el( 'h4', 'constel-side__title', ctx.ownerLabel ) );
+	const title = el( 'h4', 'constel-side__title' );
+	if ( ctx.ownerIcon ) {
+		title.append( icons.icon( ctx.ownerIcon ), ' ' );
+	}
+	title.append( ctx.ownerLabel );
+	box.append( title );
 	if ( !themes.length && !ctx.editable ) {
 		box.append( el( 'p', 'constel-side__meta', mw.msg( 'constellation-no-themes' ) ) );
 	}

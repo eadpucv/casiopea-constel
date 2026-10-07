@@ -11,8 +11,7 @@
  *     mira, nunca vacía para una cuenta registrada). Los lectores se
  *     muestran con su nombre real (o el de usuario si no lo definieron).
  * Al elegir un concepto, el panel lateral muestra su detalle; si no, los
- * temas de la lente. Debajo, la misma información como lista
- * (AccessibleAlternative).
+ * temas de la lente.
  *
  * A pantalla completa (cfg.full) el mapa posee el viewport: barra arriba y,
  * debajo, el par ante-dentro —ante, el grafo; dentro, el panel—, cada uno
@@ -271,21 +270,16 @@ function main( root ) {
 	}
 	stage.append( viewport, below );
 	const aside = el( 'aside', 'constel-map__side' );
-	// Lo que cambia con la selección; la lista (a pantalla completa) queda.
+	// Lo que cambia con la selección.
 	const sideBody = el( 'div', 'constel-map__side-body' );
 	aside.append( sideBody );
-	const alt = el( 'details', 'constel-map__alt' );
-	alt.append( el( 'summary', null, mw.msg( 'constellation-as-list' ) ) );
-	const altList = el( 'ol', 'constel-map__fallback' );
-	alt.append( altList );
 	layout.append( stage, aside );
 	if ( full ) {
 		root.classList.add( 'constel-map--full' );
-		aside.append( alt );
 		layout.append( divider( layout ) );
 		root.append( controls, layout );
 	} else {
-		root.append( controls, layout, alt );
+		root.append( controls, layout );
 	}
 
 	// Controles en línea: un ícono Lucide en vez de rótulo; el nombre
@@ -478,9 +472,6 @@ function main( root ) {
 							state.view.setForces( state.forces );
 						}
 					}
-					if ( added.length ) {
-						renderList();
-					}
 				} );
 			} );
 		}
@@ -516,10 +507,6 @@ function main( root ) {
 			state.forcesTouched = true;
 			savePref( 'forces', state.forces );
 			applyForces();
-			// La lista alternativa nombra sólo las aristas de grados con fuerza.
-			if ( state.data ) {
-				renderList();
-			}
 		} );
 		const label = iconLabel( iconName, msg );
 		label.classList.add( 'constel-map__force' );
@@ -805,7 +792,6 @@ function main( root ) {
 		if ( state.rings ) {
 			// Con los anillos abiertos el lienzo es de ellos: sólo se repintan los temas.
 			state.rings.setThemes( themeIndex(), conceptColors() );
-			renderList();
 			return;
 		}
 		const shown = visibleData();
@@ -846,7 +832,6 @@ function main( root ) {
 		syncConcepts();
 		syncScope();
 		syncNotice();
-		renderList();
 	}
 
 	// Muestra un aviso sobre el mapa; lo cerrado o vencido no vuelve a salir
@@ -889,60 +874,6 @@ function main( root ) {
 			notes.push( mw.msg( 'constellation-notice-links', mw.language.convertNumber( limits.links ) ) );
 		}
 		showNotice( notes.join( ' ' ) );
-	}
-
-	function renderList() {
-		altList.textContent = '';
-		const shown = visibleData();
-		const byId = new Map( shown.nodes.map( ( n ) => [ n.id, n ] ) );
-		const near = new Map();
-		shown.links.filter( ( l ) => state.forces[ l.kind ] > 0 ).forEach( ( l ) => {
-			[ [ l.source, l.target ], [ l.target, l.source ] ].forEach( ( [ a, b ] ) => {
-				const entry = { id: b, kind: l.kind, weight: l.weight };
-				near.set( a, ( near.get( a ) || [] ).concat( entry ) );
-			} );
-		} );
-		// Los temas de la lente que contienen cada concepto: lo que en el
-		// grafo dice el color (spec: ConceptMap.AccessibleAlternative).
-		const themesOf = new Map();
-		state.themes.forEach( ( t ) => t.concepts.forEach( ( c ) => {
-			themesOf.set( c.id, ( themesOf.get( c.id ) || [] ).concat(
-				mw.msg( 'constellation-theme-of', t.label, lens.labelOf( t.author ) )
-			) );
-		} ) );
-		const byFrequency = ( a, b ) => b.excerpts - a.excerpts || a.label.localeCompare( b.label );
-		shown.nodes.slice().sort( byFrequency )
-			.forEach( ( n ) => {
-				const li = el( 'li' );
-				const open = el( 'button', 'constel-link constel-map__open', n.label );
-				open.type = 'button';
-				open.addEventListener( 'click', () => select( n ) );
-				const counts = mw.msg( 'constellation-counts',
-					mw.language.convertNumber( n.excerpts ), mw.language.convertNumber( n.pages ) );
-				li.append( open, ' ', el( 'span', 'constel-map__count', counts ) );
-				const inThemes = themesOf.get( n.id ) || [];
-				if ( inThemes.length ) {
-					li.append( el( 'span', 'constel-map__in-themes', ' — ' + mw.msg(
-						'constellation-list-themes', mw.language.listToText( inThemes ), inThemes.length
-					) ) );
-				}
-				const links = ( near.get( n.id ) || [] ).sort( ( a, b ) => b.weight - a.weight );
-				if ( links.length ) {
-					const kinds = {
-						// eslint-disable-next-line camelcase
-						co_excerpt: 'constellation-link-coexcerpt',
-						overlap: 'constellation-link-overlap',
-						// eslint-disable-next-line camelcase
-						co_page: 'constellation-link-copage'
-					};
-					// Mensajes: constellation-link-coexcerpt, -overlap, -copage
-					const describe = ( l ) => mw.msg(
-						kinds[ l.kind ], byId.get( l.id ).label, l.weight
-					);
-					li.append( el( 'span', 'constel-map__near', ' — ' + links.map( describe ).join( ', ' ) ) );
-				}
-				altList.append( li );
-			} );
 	}
 
 	/**
@@ -1021,16 +952,16 @@ function main( root ) {
 		ringsButton.addEventListener( 'click', () => openRings( node ) );
 		const box = el( 'div' );
 		sideBody.textContent = '';
-		// Fila de cabecera: «← Temas» a la izquierda y los anillos a la derecha,
-		// centrados en la misma línea.
+		// Fila de cabecera: sólo «← Temas»; los anillos van junto al nombre del concepto.
 		const head = el( 'div', 'constel-map__head' );
-		head.append( back, ringsButton );
+		head.append( back );
 		sideBody.append( head, box );
 		side.conceptDetail( box, node, {
 			me,
 			canAnnotate: cfg.canAnnotate,
 			canModerate: cfg.canModerate,
 			myThemes: state.myThemes,
+			ringsButton,
 			onChanged: () => loadThemes().then( () => select( node ) ),
 			onModerated
 		} );
@@ -1064,8 +995,9 @@ function main( root ) {
 					savePref( 'themeColors', state.themeColors );
 					render();
 				},
+				ownerIcon: name === me ? 'book-type' : null,
 				ownerLabel: name === me ?
-					mw.msg( 'constellation-my-themes' ) :
+					mw.msg( 'constellation-themes' ) :
 					mw.msg( 'constellation-themes-of', lens.labelOf( name ) ),
 				onChanged: () => loadThemes(),
 				onSelectConcept: ( id ) => {

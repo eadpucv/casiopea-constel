@@ -338,7 +338,7 @@
 }
 
 .constel-graph__link {
-	stroke: var( --constel-ink-faint );
+	stroke: color-mix( in srgb, var( --constel-ink-faint ) 30%, var( --constel-hairline ) );
 	stroke-opacity: var( --constel-link-opacity, 0.8 );
 }
 
@@ -361,7 +361,7 @@
 
 /* El halo claro del texto: fino y translúcido (los círculos conservan el suyo). */
 text.constel-graph__node {
-	stroke-width: 2px;
+	stroke-width: 2.5px;
 	stroke-opacity: 0.5;
 }
 
@@ -389,7 +389,7 @@ text.constel-graph__node {
 }
 
 .constel-graph__wash {
-	filter: blur( 2.25ex );
+	filter: blur( 0.9ex );
 	opacity: 0.6;
 	pointer-events: none;
 }
@@ -640,13 +640,6 @@ text.constel-graph__node {
 	margin: 0 0 var( --constel-s-3 );
 	color: var( --constel-ink-soft );
 	font-size: var( --constel-fs-xs );
-}
-
-.constel-map .constel-side__themes h5 {
-	margin: var( --constel-s-3 ) 0 var( --constel-s-1 );
-	font-family: var( --constel-font-ui );
-	font-size: var( --constel-fs-sm );
-	font-weight: 600;
 }
 
 .constel-side__source {
@@ -985,16 +978,6 @@ text.constel-graph__node {
 
 /* ── Lista (alternativa textual) ──────────────────────────────────────── */
 
-.constel-map__alt {
-	margin-top: var( --constel-s-4 );
-	font-family: var( --constel-font-ui );
-	font-size: var( --constel-fs-sm );
-}
-
-.constel-map__alt summary {
-	cursor: pointer;
-}
-
 .constel-map__count,
 .constel-map__near {
 	color: var( --constel-ink-soft );
@@ -1295,12 +1278,6 @@ span.constel-mine__page {
 	overflow-y: auto;
 }
 
-.constel-map--full .constel-map__alt {
-	margin-top: var( --constel-s-4 );
-	padding-top: var( --constel-s-3 );
-	border-top: 1px solid var( --constel-hairline-soft );
-}
-
 @media ( max-width: 50rem ) {
 	.constel-map--full {
 		height: auto;
@@ -1497,4 +1474,65 @@ span.constel-mine__page {
 		opacity: 1;
 		transform: none;
 	}
+}
+
+/* Ícono del título de los temas: el tono del label de los deslizadores. */
+.constel-side__title .constel-i {
+	color: var( --constel-icon );
+}
+
+/* Anillos junto al nombre del concepto: algo mayores que el texto, pegados a él. */
+.constel-side__title .constel-map__rings {
+	display: inline-flex;
+	min-height: 0;
+	height: auto;
+	padding: 0;
+	margin-left: 0;
+	line-height: 1;
+	vertical-align: -0.2em;
+}
+
+.constel-side__title .constel-map__rings .constel-i {
+	width: 1.3em;
+	height: 1.3em;
+}
+
+/* «n secciones · n páginas · [tema ×] [asociar]»: pegada al nombre. */
+.constel-side__meta--row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --constel-s-2 );
+	align-items: center;
+	margin-top: 0;
+}
+
+.constel-map h4.constel-side__title {
+	margin-bottom: 0;
+	line-height: 1.3;
+}
+
+.constel-map .constel-side__title + .constel-feedback:empty {
+	display: none;
+}
+
+/* «asociar»: botón del tema que se vuelve campo con autocompletado. */
+.constel-assoc {
+	display: inline-flex;
+	position: relative;
+	align-items: center;
+}
+
+.constel-assoc__open {
+	padding: 0 var( --constel-s-3 );
+	font-size: inherit;
+	line-height: 1.6;
+}
+
+.constel-assoc__input {
+	width: 10rem;
+	font-size: inherit;
+}
+
+.constel-assoc__field[ hidden ] {
+	display: none;
 }

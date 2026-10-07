@@ -1,6 +1,6 @@
 {
 	"name": "Casiopea-Con§tel",
-	"version": "0.16.0",
+	"version": "0.17.0",
 	"author": [
 		"[https://herbertspencer.net Herbert Spencer González]",
 		".:TIG:. Taller de Investigaciones Gráficas, e[ad] Escuela de Arquitectura y Diseño, Pontificia Universidad Católica de Valparaíso"
@@ -437,6 +437,12 @@
 				"constellation-link-coexcerpt",
 				"constellation-back-to-themes",
 				"constellation-my-themes",
+				"constellation-themes",
+				"constellation-associate",
+				"constellation-belongs-to",
+				"constellation-disassociate",
+				"constellation-associate-placeholder",
+				"constellation-associate-unknown",
 				"constellation-themes-of",
 				"constellation-no-lens",
 				"constellation-no-themes",

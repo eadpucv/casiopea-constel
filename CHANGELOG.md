@@ -1,5 +1,23 @@
 # Changelog — Casiopea-Con§tel
 
+## 0.17.0 — 2026-10-07
+
+- **Vista del concepto renovada.** El título lleva `[a]`, el concepto y el
+  ícono de anillos en la misma línea, al tamaño del texto. Debajo, una fila:
+  «n secciones · n páginas · Pertenece al tema [tema ×]», o «Sin tema
+  asociado» con un botón «asociar» (del tema Stella Nova) que se vuelve un
+  campo con autocompletado de los temas propios. La × saca el concepto de su
+  tema. Desaparece el select «Agregar al tema» del pie del panel.
+- **«Temas» con ícono.** En la vista de partida, «Mis temas» pasa a
+  ícono (el del deslizador de tema) + «Temas».
+- **Se retira «Ver como lista»** de todas las vistas, junto con su
+  alternativa textual (`AccessibleAlternative`, retirada en la spec).
+- **Vista de nodos encuadrada.** Sin rótulos el encuadre ya no se limita a
+  zoom 1: el mapa se amplía hasta llenar el lienzo.
+- **Retoques de color.** Fondo del tema con menos desenfoque (`blur(0.9ex)`),
+  halo del texto de 2,5 px y aristas en un tono más suave que
+  `--constel-ink-faint` (mezcla con `--constel-hairline`).
+
 ## 0.16.0 — 2026-10-06
 
 - **El tema, de fondo del rótulo.** Con los conceptos como palabras (2D y 3D),
