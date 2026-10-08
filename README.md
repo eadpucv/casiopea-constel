@@ -91,6 +91,38 @@ del diálogo y ayuda a cada uno a ubicar su aporte entre los de sus pares.
 - **Filtros** por lectores y por páginas, y una **lente** para leer los temas
   de uno o varios lectores. El mapa se exporta como SVG.
 
+## Insertar el mapa en cualquier página
+
+La parser function `{{#constel: …}}` (también `{{#con§tel: …}}`) pone un
+**mapa limpio**, sin controles ni panel, en cualquier página de la wiki. Todos
+los parámetros son opcionales: sin ninguno se ve el mapa de todos los lectores,
+en 2D.
+
+```wiki
+{{#constel:}}
+{{#constel: usuario=Herbert | modo=3d | conceptos=nodos | alto=400px}}
+{{#constel: concepto=Diseño | paginas=Amereida | class=full-width}}
+```
+
+| Parámetro | Valores | Por omisión |
+|---|---|---|
+| `usuario` | uno o varios lectores, separados por `;` | todos |
+| `concepto` | concepto de foco: se resalta y se centra (si no existe en el mapa, se ignora) | ninguno |
+| `modo` | `2d` o `3d` | `2d` |
+| `girar` | `sí` o `no` (sólo en 3D) | `no` |
+| `aristas` | `sí` o `no` | `sí` |
+| `conceptos` | `palabras` o `nodos` | `palabras` |
+| `paginas` | páginas separadas por `;` | todas |
+| `alto` | alto del mapa: `px`, `em`, `rem`, `vh`, `dvh` o `%` | `480px` |
+| `fuerza-seccion`, `fuerza-traslape`, `fuerza-pagina`, `fuerza-tema` | 0 a 100 | 25 (con varios usuarios: traslape 100, mismo texto 0) |
+| `class` | clases CSS que se suman al contenedor (p. ej. `full-width` o su sinónimo `ancho-completo`, que en Stella Nova lo lleva a sangre y sin esquinas redondeadas) | ninguna |
+
+El `:` es obligatorio aun sin argumentos: es lo que distingue una parser
+function de una plantilla. El resultado no depende de quién mira (es
+cacheable) y no usa las preferencias del navegador; un clic en un concepto
+sólo lo resalta. Puede haber varios mapas en una página. Cómo funciona por
+dentro: [`docs/MAPA.md`](docs/MAPA.md), sección 15.
+
 En cada página, el menú de usuario ofrece la lectura en tres posiciones:
 **−** sin marcas, **§** solo las propias, **§\*** las de todos.
 `Especial:MiConstel` reúne la lectura propia y la exporta.

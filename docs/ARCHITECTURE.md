@@ -73,14 +73,16 @@ flowchart LR
         R["ext.constel.reader<br/>§ · marcas · detalle"]
         M["ext.constel.map<br/>grafo 3D/2D · temas"]
         Mi["ext.constel.mine<br/>lista propia"]
+        E["ext.constel.embed<br/>{{#constel:}}"]
         UI["ext.constel.ui<br/>api · panel · autocompletado<br/>variantes · detalle del §"]
         R --> UI
         M --> UI
         Mi --> UI
+        E --> M
     end
 
     subgraph MediaWiki
-        H["Hooks<br/>PageHooks · RevisionHooks<br/>SchemaHooks · ResourceLoaderHooks"]
+        H["Hooks<br/>PageHooks · RevisionHooks<br/>SchemaHooks · ParserHooks<br/>ResourceLoaderHooks"]
         SP["Páginas especiales<br/>Constelación · MiConstel"]
         API["Action API<br/>8 escritura · 4 lectura"]
         J["ReanchorJob<br/>(cola de jobs)"]
@@ -833,6 +835,17 @@ sin frontmatter y con `trim()`, que es como mide constel. Los §§ perdidos no
 se exportan. Cada tema propio sale con su color de la paleta de constel, y
 cada concepto con el `themeId` que le dio el lector.
 
+### Mapa embebido (`{{#constel:}}`)
+
+`ParserHooks` registra la parser function `constel` (sinónimo `con§tel`, ver
+`casiopea-constel.magic.php`). Sanea los parámetros (todos opcionales, con
+valor por omisión) y emite un `<div class="constel-embed" data-constel="…">`
+más los módulos `ext.constel.map.styles` y `ext.constel.embed`. Nada depende
+de quién mira, así que el HTML es cacheable en la ParserCache y no toca el
+contenido de la revisión. En el cliente, `embed.js` reusa `graph.draw` y la
+API `constelgraph`: un mapa de sólo lectura, sin barra ni panel, que no lee las
+preferencias del navegador. Parámetros y detalles en `docs/MAPA.md` (sección 15).
+
 ## API
 
 **Escritura** (`ApiConstelWriteBase`): todos los módulos son POST, exigen token
@@ -1000,7 +1013,7 @@ src/
   Export/                     ExportBuilder
   Moderation/                 ModerationLog
   Api/                        12 módulos + bases (ConstelWrite, ExcerptWrite, ThemeWrite)
-  Hooks/                      PageHooks · RevisionHooks · SchemaHooks · ResourceLoaderHooks
+  Hooks/                      PageHooks · ParserHooks · RevisionHooks · SchemaHooks · ResourceLoaderHooks
   Jobs/                       ReanchorJob
   Specials/                   SpecialConstellation · SpecialMyConstel
 resources/
@@ -1009,6 +1022,8 @@ resources/
   ext.constel.reader/         la página que se lee
   ext.constel.map/            Especial:Constelación
   ext.constel.mine/           Especial:MiConstel
+  ext.constel.embed/          {{#constel:}}: el mapa limpio en cualquier página
+casiopea-constel.magic.php    nombres de la parser function (constel, con§tel)
 tests/phpunit/{unit,integration}/ · tests/qunit/
 specs/casiopea-constel.allium
 docs/ARCHITECTURE.md          este archivo
@@ -1034,6 +1049,7 @@ docs/ARCHITECTURE.md          este archivo
 | 0.15.0 | Mis anotaciones y vista de partida | Mis anotaciones: sin columna Estado, exportación CSV, filtro de concepto tolerante, casillas y acciones por lote con modal, paginación y columnas rehechas; enlaces al § mismo (`Página#constel-N`); mapa que parte en 2D con deslizadores al 25 % y recuerda los ajustes del lector |
 | 0.16.0 | El tema de fondo | Con palabras, el color del tema va en una caja desenfocada tras el rótulo (2D y 3D; el SVG exportado conserva el texto de color); halo del texto más fino y translúcido; se retira la lista de vecinos de la vista de anillos |
 | 0.17.0 | Vista del concepto | Fila «Pertenece al tema [×] / asociar» con autocompletado, anillos junto al nombre, «Temas» con ícono, se retira «Ver como lista», nodos encuadrados a pantalla completa, desenfoque, halo y aristas más suaves |
+| _sin publicar_ | Mapa en cualquier página | Parser function `{{#constel:}}` (`ParserHooks`, módulo `ext.constel.embed`), parámetro `class`; «Mis anotaciones» sin texto introductorio |
 
 ### Ideas para más adelante
 

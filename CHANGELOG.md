@@ -1,5 +1,24 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Parser function `{{#constel: …}}`** (también `{{#con§tel: …}}`): inserta
+  en cualquier página el mapa de conceptos **limpio**, sin controles ni panel.
+  Parámetros opcionales, todos con valor por omisión: `usuario`, `concepto`
+  (foco), `modo` (2d/3d), `girar`, `aristas`, `conceptos` (palabras/nodos),
+  `paginas`, `alto`, `fuerza-seccion`, `fuerza-traslape`, `fuerza-pagina`,
+  `fuerza-tema` y `class`. Cacheable (no depende de quién mira), de sólo
+  lectura, y admite varios mapas por página. Módulo nuevo `ext.constel.embed`,
+  hook `ParserHooks`, palabra mágica en `casiopea-constel.magic.php`.
+- **`class=full-width` / `ancho-completo`** en el mapa embebido lo lleva a
+  sangre y sin esquinas redondeadas (regla en Stella Nova).
+- **Mis anotaciones** entra directo a los filtros: se retira el texto
+  introductorio (`myconstel-summary`).
+- `map.js` ya no falla si la página no trae la config de `Especial:Constelación`
+  (`wgConstelMap`), para poder reusarse desde `ext.constel.embed`.
+- **Documentación**: README, `docs/MAPA.md` (sección 15), `docs/ARCHITECTURE.md`
+  y la spec; manual de lectores en la wiki («Manual de con§tel»).
+
 ## 0.17.0 — 2026-10-07
 
 - **Vista del concepto renovada.** El título lleva `[a]`, el concepto y el

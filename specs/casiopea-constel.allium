@@ -1234,6 +1234,67 @@ surface ConceptMap {
         -- el cliente con los datos que ya pidió.
 }
 
+-- {{#constel: …}} (sinónimo {{#con§tel: …}}) — un mapa limpio insertado en
+-- cualquier página: sin controles, ni panel lateral, ni filtros (decisión
+-- 2026-10-07, pedido del usuario).
+surface EmbeddedMap {
+    facing viewer: User
+    context concept: Concept
+
+    exposes:
+        concept.label
+        concept.excerpts.count
+        concept.pages.count
+        concept_links(concept)
+
+    related:
+        ConceptMap(viewer)
+
+    @guarantee EmbedParametersHaveDefaults
+        -- Todos los parámetros son opcionales y cada uno tiene su valor por
+        -- omisión:
+        --   · usuario: lectores, separados por «;»; omisión: todos.
+        --   · concepto: el concepto de foco, que se resalta y centra; si no
+        --     está en el mapa se ignora.
+        --   · modo: 2d (omisión) o 3d.
+        --   · girar: no (omisión); sólo vale en 3d.
+        --   · aristas: sí (omisión).
+        --   · conceptos: palabras (omisión) o nodos (LabelsAreOptional).
+        --   · paginas: separadas por «;»; omisión: todas.
+        --   · alto: 480px (omisión); sólo en px, em, rem, vh, dvh o %.
+        --   · fuerza-seccion, fuerza-traslape, fuerza-pagina, fuerza-tema: de
+        --     0 a 100; omisión 25 % cada una. Con varios lectores el traslape
+        --     parte en 100 % y el mismo texto en 0 %, como en
+        --     OverlapFirstForSeveralReaders.
+        --   · class: clases CSS que se suman al contenedor; sólo se aceptan
+        --     nombres válidos (p. ej. full-width, que en Stella Nova lo lleva
+        --     a sangre, sin esquinas redondeadas).
+
+    @guarantee EmbedIsSameForEveryone
+        -- El resultado es idéntico para todos los lectores: nada depende de
+        -- quién mira, así que la página se guarda tal cual en la ParserCache.
+        -- El HTML lleva sólo los parámetros ya saneados y el cliente dibuja
+        -- el mapa. No lee ni guarda las preferencias del navegador (fuerzas,
+        -- colores, vista) que recuerda ConceptMap.
+
+    @guarantee EmbedIsReadOnly
+        -- Es de sólo lectura para todos, como el mapa para anónimos
+        -- (ReadOnlyForAnonymous): un clic en un concepto sólo lo resalta con
+        -- sus vecinos; no abre paneles, no modera ni anota. Ninguna acción le
+        -- está disponible.
+
+    @guarantee EmbedsAreIndependent
+        -- Una página puede llevar varios mapas; cada uno se dibuja y responde
+        -- por su cuenta, sin compartir foco ni estado con los demás.
+
+    @guarantee EmbedWithoutScript
+        -- Sin JavaScript, en lugar del mapa se lee un texto que lo explica.
+
+    @guarantee EmbedWritesNothing
+        -- Insertar o ver el mapa no escribe nada en la base de datos ni en
+        -- las revisiones (ContentUntouched se respeta).
+}
+
 -- Panel de temas: síntesis del lector (tab "Mapa" de constel, derecha).
 surface ThemesPanel {
     facing viewer: User

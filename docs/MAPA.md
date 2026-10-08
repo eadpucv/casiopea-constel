@@ -33,6 +33,7 @@ pueden ajustarse.
 12. [Constantes](#12-constantes)
 13. [Medición y decisiones descartadas](#13-medición-y-decisiones-descartadas)
 14. [Íconos y licencia](#14-íconos-y-licencia)
+15. [El mapa en cualquier página: `{{#constel:}}`](#15-el-mapa-en-cualquier-página-constel)
 
 ## 1. Recorrido rápido
 
@@ -596,3 +597,47 @@ los SVG en `docs/icons/` (con su `LICENSE`).
 | <img src="icons/plus.svg" width="18" alt=""> <img src="icons/x.svg" width="18" alt=""> | `plus`, `x` | igual | agregar, quitar y cerrar |
 | <img src="icons/arrow-left.svg" width="18" alt=""> | `arrow-left` | `arrow-left` | volver («← Temas», «← Mapa») |
 | <img src="icons/eye.svg" width="18" alt=""> | `eye` | `eye` | disponible (ya no se usa en la barra) |
+
+## 15. El mapa en cualquier página: `{{#constel:}}`
+
+La parser function `{{#constel: …}}` (también `{{#con§tel: …}}`) inserta el
+mapa **limpio** —el lienzo y nada más— en una página cualquiera. Sin barra, sin
+filtros, sin panel lateral, sin moderación.
+
+| Parámetro | Valores | Por omisión |
+|---|---|---|
+| `usuario` | uno o varios lectores, separados por `;` | todos |
+| `concepto` | concepto de foco: se resalta y se centra (si no existe en el mapa, se ignora) | ninguno |
+| `modo` | `2d` o `3d` | `2d` |
+| `girar` | `sí` o `no` (sólo en 3D) | `no` |
+| `aristas` | `sí` o `no` | `sí` |
+| `conceptos` | `palabras` o `nodos` | `palabras` |
+| `paginas` | páginas separadas por `;` | todas |
+| `alto` | alto del mapa: `px`, `em`, `rem`, `vh`, `dvh` o `%` | `480px` |
+| `fuerza-seccion`, `fuerza-traslape`, `fuerza-pagina`, `fuerza-tema` | 0 a 100 | 25 (con varios usuarios: traslape 100, mismo texto 0) |
+| `class` | clases CSS que se suman al contenedor (p. ej. `full-width` o su sinónimo `ancho-completo`, que en Stella Nova lo lleva a sangre y sin esquinas redondeadas) | ninguna |
+
+**Cómo funciona.**
+
+- `src/Hooks/ParserHooks.php` (hook `ParserFirstCallInit`) sanea los
+  parámetros y emite un `<div class="constel-embed" data-constel="{…}">` con
+  ellos en JSON, y carga el módulo `ext.constel.embed`. Los nombres de la
+  función están en `casiopea-constel.magic.php` (`constel`, `con§tel`).
+- `resources/ext.constel.embed/embed.js` pide el grafo a la API
+  (`list=constelgraph`, sólo los grados con fuerza) y lo dibuja con el mismo
+  `graph.draw` del mapa completo (`fill: true`). Reusa `ext.constel.map`; no
+  tiene estado compartido, así que cada mapa es independiente.
+- La vista sale **sólo** de los parámetros. No lee ni guarda `constel-map` en
+  `mw.storage`, y la salida no depende de quién mira: el parser cache la
+  conserva igual para todos.
+- Es de sólo lectura. Un clic en un concepto lo selecciona (resalta sus
+  vecinos); no abre el panel, no anota ni modera. Sin temas (`themeOf` vacío),
+  los conceptos no llevan color de tema.
+- Los topes de carga son los de fábrica de `graph.js` (`MAX_LABELS`,
+  `MAX_LINKS`), no los de `$wgConstelMapMaxLabels` / `$wgConstelMapMaxDrawnLinks`.
+- Sin JavaScript queda un texto que lo explica (`constel-embed-nojs`).
+- **Esquinas.** El lienzo es redondeado como el del mapa completo. En
+  Stella Nova, `class=full-width` (o `ancho-completo`) lo lleva a sangre y le
+  quita borde y esquinas redondeadas (`resources/stella-nova.css`).
+
+El manual para lectores vive en la wiki: página «Manual de con§tel».
