@@ -50,7 +50,6 @@ class SpecialMyConstel extends SpecialPage {
 
 		$typed = $this->typedFilters();
 		$this->setHeaders();
-		$this->outputHeader( 'myconstel-summary' );
 		$out = $this->getOutput();
 		$out->addModuleStyles( [ 'ext.constel.map.styles' ] );
 		// Página ancha: el skin decide qué significa (Stella Nova la absorbe en

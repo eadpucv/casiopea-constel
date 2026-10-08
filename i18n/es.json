@@ -115,7 +115,6 @@
 	"constellation-theme-new": "Nuevo tema",
 	"constellation-theme-create": "Crear tema",
 	"myconstel": "Mis anotaciones",
-	"myconstel-summary": "Todas tus secciones (§), incluidas las perdidas: aquellas cuyo texto cambió y ya no se pudieron ubicar. Puedes exportarlas a CSV.",
 	"myconstel-needlogin": "Necesitas una cuenta registrada para tener tu propia lectura con§tel.",
 	"myconstel-export": "Exportar CSV",
 	"myconstel-export-table": "Exportar esta tabla (CSV)",

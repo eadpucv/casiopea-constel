@@ -115,7 +115,6 @@
 	"constellation-theme-new": "Placeholder of the new theme field.",
 	"constellation-theme-create": "Button.",
 	"myconstel": "{{doc-special|MyConstel}}",
-	"myconstel-summary": "Intro of [[Special:MyConstel]].",
 	"myconstel-needlogin": "Shown to anonymous users.",
 	"myconstel-export": "Export link.",
 	"myconstel-export-table": "Export link shown when filters are active: CSV of the filtered table.",
