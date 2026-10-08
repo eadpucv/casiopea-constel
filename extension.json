@@ -26,7 +26,8 @@
 		]
 	},
 	"ExtensionMessagesFiles": {
-		"CasiopeaConstelAlias": "casiopea-constel.alias.php"
+		"CasiopeaConstelAlias": "casiopea-constel.alias.php",
+		"CasiopeaConstelMagic": "casiopea-constel.magic.php"
 	},
 	"ServiceWiringFiles": [
 		"src/ServiceWiring.php"
@@ -34,6 +35,7 @@
 	"Hooks": {
 		"LoadExtensionSchemaUpdates": "schema",
 		"BeforePageDisplay": "page",
+		"ParserFirstCallInit": "parser",
 		"GetPreferences": "page",
 		"PageSaveComplete": "revision",
 		"PageDeleteComplete": "revision",
@@ -51,6 +53,9 @@
 				"PermissionManager",
 				"UserOptionsLookup"
 			]
+		},
+		"parser": {
+			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Hooks\\ParserHooks"
 		},
 		"revision": {
 			"class": "MediaWiki\\Extension\\CasiopeaConstel\\Hooks\\RevisionHooks",
@@ -369,6 +374,18 @@
 			"dependencies": [
 				"ext.constel.ui",
 				"mediawiki.storage"
+			]
+		},
+		"ext.constel.embed": {
+			"packageFiles": [
+				"ext.constel.embed/embed.js"
+			],
+			"messages": [
+				"constel-error-generic"
+			],
+			"dependencies": [
+				"ext.constel.ui",
+				"ext.constel.map"
 			]
 		},
 		"ext.constel.map.styles": {

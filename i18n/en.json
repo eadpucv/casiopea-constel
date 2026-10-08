@@ -115,6 +115,7 @@
 	"constellation-theme-new": "New theme",
 	"constellation-theme-create": "Create theme",
 	"myconstel": "My annotations",
+	"constel-embed-nojs": "JavaScript is required to view the con§tel concept map.",
 	"myconstel-needlogin": "You need a registered account to have your own con§tel reading.",
 	"myconstel-export": "Export CSV",
 	"myconstel-export-table": "Export this table (CSV)",

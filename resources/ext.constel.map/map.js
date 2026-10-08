@@ -25,7 +25,7 @@ const side = require( './sidepanel.js' );
 const pills = require( './pills.js' );
 const rings = require( './rings.js' );
 
-const cfg = mw.config.get( 'wgConstelMap' );
+const cfg = mw.config.get( 'wgConstelMap' ) || {};
 const me = mw.user.isNamed() ? mw.config.get( 'wgUserName' ) : null;
 const full = !!cfg.full;
 /** Proporción de ante (el grafo) en el par ante-dentro, en %. */
@@ -1105,7 +1105,7 @@ function main( root ) {
 
 $( () => {
 	const root = document.getElementById( 'constel-map' );
-	if ( root && cfg ) {
+	if ( root && mw.config.get( 'wgConstelMap' ) ) {
 		main( root );
 	}
 } );

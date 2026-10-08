@@ -1537,3 +1537,17 @@ span.constel-mine__page {
 .constel-assoc__field[ hidden ] {
 	display: none;
 }
+
+/* {{#constel:}} — mapa limpio dentro de una página: el alto lo fija la plantilla. */
+.constel-embed {
+	margin: 1em 0;
+}
+
+.constel-embed__canvas {
+	height: 100%;
+}
+
+.constel-embed__fallback {
+	color: var( --constel-ink-soft );
+	font-style: italic;
+}
