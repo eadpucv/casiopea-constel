@@ -771,7 +771,9 @@ function main( root ) {
 	chevron.classList.add( 'constel-map__chevron' );
 	brand.append( el( 'span', null, 'con§tel' ), chevron );
 	const smallScreen = window.matchMedia( '(max-width: 40rem)' );
-	let menuOpen = prefs().menuOpen !== false;
+	// Plegados por omisión (lo que importa en el teléfono: el mapa primero); se
+	// despliegan si el lector los abrió antes.
+	let menuOpen = prefs().menuOpen === true;
 	const syncMenu = () => {
 		controls.classList.toggle( 'constel-map__controls--collapsed', !menuOpen );
 		brand.disabled = !smallScreen.matches;

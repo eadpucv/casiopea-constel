@@ -1006,8 +1006,8 @@ surface ConceptMap {
 
     @guarantee SmallScreenControls
         -- En pantallas chicas (hasta 40 rem) la marca «con§tel» de la barra
-        -- pliega y despliega los controles (el estado se recuerda por
-        -- navegador), los deslizadores de proximidad ocupan todo el ancho y los
+        -- pliega y despliega los controles (parten plegados; si el lector
+        -- los abre, se recuerda por navegador), los deslizadores de proximidad ocupan todo el ancho y los
         -- íconos de navegación se reparten por todo el ancho en su propia línea,
         -- con aire hacia los bordes;
         -- en pantallas grandes la marca no hace nada (decisión 2026-10-09,

@@ -1,6 +1,6 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.18.1 — 2026-10-09
 
 - **Botón destructivo de la piel**: «Fusionar», «Borrar» y «Guardar y borrar»
   usan el relleno de peligro de Stella Nova (`--sn-btn-danger-bg` y `-fg`, con
@@ -9,7 +9,8 @@
   mismo que el campo.
 
 - **Controles del mapa en pantallas chicas** (hasta 40 rem): el texto «con§tel»
-  pliega y despliega los controles (se recuerda por navegador); los
+  pliega y despliega los controles (parten plegados; se recuerda si el lector
+  los abre); los
   deslizadores van a todo el ancho; los íconos de navegación (acercar, alejar,
   encuadrar, exportar, copiar) se reparten por todo el ancho en su propia línea, con aire
   hacia los bordes.

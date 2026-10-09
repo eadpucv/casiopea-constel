@@ -473,8 +473,9 @@ Accesibilidad:
 - `prefers-reduced-motion` apaga el giro automático, el deslizamiento entre
   posiciones, el de los anillos y el latido del texto de carga.
 - **Pantallas chicas** (hasta 40 rem): la marca «con§tel» es un botón que
-  pliega y despliega los controles (`aria-expanded`; la elección se guarda como
-  `menuOpen` en `constel-map`; en pantallas grandes está deshabilitado). Los
+  pliega y despliega los controles (`aria-expanded`; **parten plegados**, y si el
+  lector los abre se guarda `menuOpen` en `constel-map`; en pantallas grandes
+  está deshabilitado y los controles siempre se ven). Los
   controles de la primera fila van en `.constel-map__menu` (`display: contents`
   en pantallas grandes), los deslizadores ocupan todo el ancho y los íconos de
   navegación se reparten por todo el ancho en su propia línea, con aire hacia los bordes.

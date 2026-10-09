@@ -1077,6 +1077,7 @@ docs/ARCHITECTURE.md          este archivo
 | 0.16.0 | El tema de fondo | Con palabras, el color del tema va en una caja desenfocada tras el rótulo (2D y 3D; el SVG exportado conserva el texto de color); halo del texto más fino y translúcido; se retira la lista de vecinos de la vista de anillos |
 | 0.17.0 | Vista del concepto | Fila «Pertenece al tema [×] / asociar» con autocompletado, anillos junto al nombre, «Temas» con ícono, se retira «Ver como lista», nodos encuadrados a pantalla completa, desenfoque, halo y aristas más suaves |
 | 0.18.0 | Mapa en cualquier página, panel de referencias | Parser function `{{#constel:}}` (`ParserHooks`, módulo `ext.constel.embed`), parámetro `class`; «Mis anotaciones» sin texto introductorio. Cámara estable (elegir no centra); iOS y móviles sin desenfoque ni animaciones; panel flotante de referencias en un árbol con enlaces `?concept=&users=` (nunca «Todos»); botón para copiar el código de incrustación; hilo entre la ventana del § y el texto, y trazo erguido del minimapa |
+| 0.18.1 | Controles en el teléfono | Hasta 40 rem, «con§tel» pliega los controles del mapa (plegados por omisión), deslizadores a todo el ancho e íconos repartidos; «con§tel» un 11 % más grande; botón destructivo con el relleno de peligro de la piel; ícono de fusionar girado 180° |
 
 ### Ideas para más adelante
 
