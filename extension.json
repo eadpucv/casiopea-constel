@@ -302,7 +302,8 @@
 				"ext.constel.ui/variants.js",
 				"ext.constel.ui/detail.js",
 				"ext.constel.ui/icons.js",
-				"ext.constel.ui/device.js"
+				"ext.constel.ui/device.js",
+				"ext.constel.ui/links.js"
 			],
 			"messages": [
 				"constel-panel-close",

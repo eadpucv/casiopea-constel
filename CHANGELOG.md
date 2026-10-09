@@ -2,6 +2,12 @@
 
 ## Sin publicar
 
+- **Conceptos como enlaces**: en la ventana de un § en el texto y en las
+  píldoras de los temas del panel lateral del mapa, cada concepto es un enlace a
+  `Especial:Constelación?concept=Nombre` (clic derecho, Ctrl+clic, pestaña
+  nueva). En el panel lateral, el clic simple sigue eligiéndolo en el mismo mapa.
+  Módulo nuevo `ext.constel.ui/links.js`.
+
 - **Minimapa de la lectura**: con la ventana de un § abierta (clic en su marca
   en el texto), su trazo del minimapa se yergue (como al pasar el puntero) y
   vuelve a su tamaño al cerrarla. `minimap.setActive()`, `panel.open` acepta

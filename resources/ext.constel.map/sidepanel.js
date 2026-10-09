@@ -3,7 +3,7 @@
  * temas de un lector (spec: ThemesPanel). Los temas ajenos se leen, nunca se
  * editan (OthersReadOnly).
  */
-const { api, autocomplete, icons } = require( 'ext.constel.ui' );
+const { api, autocomplete, icons, links } = require( 'ext.constel.ui' );
 
 function el( tag, className, text ) {
 	const node = document.createElement( tag );
@@ -723,9 +723,15 @@ function themesPanel( box, themes, ctx ) {
 		const chips = el( 'ul', 'constel-chips' );
 		theme.concepts.forEach( ( c ) => {
 			const li = el( 'li', 'constel-chip' );
-			const open = el( 'button', 'constel-chip__label constel-chip__open', c.label );
-			open.type = 'button';
-			open.addEventListener( 'click', () => ctx.onSelectConcept( c.id ) );
+			// Enlace al mapa con ese concepto; el clic simple lo elige aquí mismo.
+			const open = el( 'a', 'constel-chip__label constel-chip__open constel-chip__link', c.label );
+			open.href = links.conceptHref( c.label );
+			open.addEventListener( 'click', ( event ) => {
+				if ( links.isPlainClick( event ) ) {
+					event.preventDefault();
+					ctx.onSelectConcept( c.id );
+				}
+			} );
 			li.append( open );
 			if ( ctx.editable ) {
 				const remove = icons.iconButton(

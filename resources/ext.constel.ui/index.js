@@ -10,5 +10,6 @@ module.exports = {
 	variants: require( './variants.js' ),
 	detail: require( './detail.js' ),
 	icons: require( './icons.js' ),
-	device: require( './device.js' )
+	device: require( './device.js' ),
+	links: require( './links.js' )
 };

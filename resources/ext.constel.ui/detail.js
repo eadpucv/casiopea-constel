@@ -12,6 +12,7 @@
 const api = require( './api.js' );
 const panel = require( './panel.js' );
 const conceptPills = require( './conceptpills.js' );
+const links = require( './links.js' );
 const variants = require( './variants.js' );
 const icons = require( './icons.js' );
 
@@ -51,6 +52,18 @@ function open( excerpts, ctx ) {
 	}
 }
 
+/**
+ * El concepto como enlace a su lugar en el mapa.
+ *
+ * @param {string} label
+ * @return {HTMLAnchorElement}
+ */
+function conceptLink( label ) {
+	const link = el( 'a', 'constel-chip__label constel-chip__link', label );
+	link.href = links.conceptHref( label );
+	return link;
+}
+
 function section( excerpt, ctx ) {
 	const mine = ctx.isMine( excerpt );
 	const box = el( 'section', 'constel-excerpt' + ( mine ? ' constel-excerpt--mine' : '' ) );
@@ -72,7 +85,11 @@ function section( excerpt, ctx ) {
 
 	// Lectura: conceptos y glosa.
 	const chips = el( 'ul', 'constel-chips' );
-	excerpt.concepts.forEach( ( c ) => chips.append( el( 'li', 'constel-chip', c.label ) ) );
+	excerpt.concepts.forEach( ( c ) => {
+		const li = el( 'li', 'constel-chip' );
+		li.append( conceptLink( c.label ) );
+		chips.append( li );
+	} );
 	box.append( chips );
 	if ( excerpt.gloss ) {
 		box.append( el( 'div', 'constel-gloss-text', excerpt.gloss ) );
@@ -102,7 +119,7 @@ function editor( excerpt, ctx ) {
 	const chips = el( 'ul', 'constel-chips' );
 	excerpt.concepts.forEach( ( concept ) => {
 		const li = el( 'li', 'constel-chip' );
-		li.append( el( 'span', 'constel-chip__label', concept.label ) );
+		li.append( conceptLink( concept.label ) );
 		const remove = icons.iconButton(
 			'x', mw.msg( 'constel-detail-remove', concept.label ), 'constel-chip__remove'
 		);

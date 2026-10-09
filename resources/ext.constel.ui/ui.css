@@ -270,6 +270,17 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 	text-decoration: line-through;
 }
 
+/* Concepto como enlace al mapa: se ve como el resto de la píldora. */
+a.constel-chip__link {
+	color: inherit;
+	text-decoration: none;
+}
+
+a.constel-chip__link:hover,
+a.constel-chip__link:focus-visible {
+	text-decoration: underline;
+}
+
 .constel-chip__remove[ aria-pressed='true' ] {
 	color: var( --constel-danger );
 }
