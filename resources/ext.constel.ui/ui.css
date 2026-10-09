@@ -38,6 +38,29 @@
 	max-width: calc( 100vw - 2 * var( --constel-s-4 ) );
 }
 
+.constel-panel__link {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: var( --constel-z-popup );
+	width: 1px;
+	height: 1px;
+	overflow: visible;
+	color: var( --constel-accent );
+	pointer-events: none;
+}
+
+.constel-panel__link line {
+	stroke: currentcolor;
+	stroke-opacity: 0.55;
+	stroke-width: 1;
+}
+
+.constel-panel__link circle {
+	fill: currentcolor;
+	fill-opacity: 0.8;
+}
+
 .constel-panel--dragging {
 	cursor: grabbing;
 	user-select: none;

@@ -2,6 +2,12 @@
 
 ## Sin publicar
 
+- **Hilo entre la ventana y el texto**: la ventana flotante de un § (y la del
+  formulario de anotar) se une al texto al que se refiere con una recta fina y un
+  punto en el borde del texto: horizontal si la ventana está al lado, vertical si
+  está debajo o encima. Sigue a la ventana al arrastrarla o redimensionarla y al
+  texto al desplazar o reflujar (`connect()` en `ext.constel.ui/panel.js`).
+
 - **Conceptos como enlaces**: en la ventana de un § en el texto y en las
   píldoras de los temas del panel lateral del mapa, cada concepto es un enlace a
   `Especial:Constelación?concept=Nombre` (clic derecho, Ctrl+clic, pestaña

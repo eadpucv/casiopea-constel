@@ -13,6 +13,97 @@
  */
 let current = null;
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * Hilo leve y preciso entre la ventana y el texto al que se refiere: un
+ * punto en el borde del texto (de su línea más cercana a la ventana) y una
+ * recta fina hasta el borde de la ventana, a la misma altura si cabe. Sigue
+ * a la ventana (arrastre, tamaño) y al texto (reflujo, desplazamiento) y no
+ * recibe punteros. Coordenadas del documento, como la ventana.
+ *
+ * @param {HTMLElement} el la ventana
+ * @param {Element|Range} anchor el texto
+ * @return {{destroy: Function}}
+ */
+function connect( el, anchor ) {
+	const svg = document.createElementNS( SVG_NS, 'svg' );
+	svg.setAttribute( 'class', 'constel-ui constel-panel__link' );
+	svg.setAttribute( 'aria-hidden', 'true' );
+	const line = document.createElementNS( SVG_NS, 'line' );
+	const dot = document.createElementNS( SVG_NS, 'circle' );
+	dot.setAttribute( 'r', '2.5' );
+	svg.append( line, dot );
+	el.before( svg );
+
+	let frame = 0;
+	let last = '';
+	const draw = () => {
+		frame = requestAnimationFrame( draw );
+		const panelRect = el.getBoundingClientRect();
+		const rects = Array.from( anchor.getClientRects() ).filter( ( r ) => r.width || r.height );
+		if ( !rects.length || !document.contains( el ) ) {
+			svg.style.display = 'none';
+			return;
+		}
+		// La línea de texto más próxima (en vertical) al comienzo de la ventana.
+		const aim = panelRect.top + Math.min( 24, panelRect.height / 2 );
+		let rect = rects[ 0 ];
+		for ( const r of rects ) {
+			if ( Math.abs( ( r.top + r.bottom ) / 2 - aim ) <
+				Math.abs( ( rect.top + rect.bottom ) / 2 - aim ) ) {
+				rect = r;
+			}
+		}
+		// Del lado del texto que mira a la ventana: a la derecha, a la izquierda
+		// o (si se solapan en horizontal) por abajo o por arriba, en vertical.
+		let x;
+		let y;
+		let px;
+		let py;
+		if ( panelRect.left >= rect.right - 4 ) {
+			x = rect.right;
+			y = ( rect.top + rect.bottom ) / 2;
+			px = panelRect.left;
+			py = Math.min( Math.max( y, panelRect.top + 14 ), panelRect.bottom - 14 );
+		} else if ( panelRect.right <= rect.left + 4 ) {
+			x = rect.left;
+			y = ( rect.top + rect.bottom ) / 2;
+			px = panelRect.right;
+			py = Math.min( Math.max( y, panelRect.top + 14 ), panelRect.bottom - 14 );
+		} else {
+			const below = panelRect.top >= ( rect.top + rect.bottom ) / 2;
+			x = Math.min( Math.max( ( rect.left + rect.right ) / 2, panelRect.left + 14 ),
+				panelRect.right - 14 );
+			x = Math.min( Math.max( x, rect.left ), rect.right );
+			y = below ? rect.bottom : rect.top;
+			px = x;
+			py = below ? panelRect.top : panelRect.bottom;
+		}
+		const key = [ x, y, px, py ].map( Math.round ).join( ',' );
+		if ( key === last ) {
+			return;
+		}
+		last = key;
+		svg.style.display = '';
+		const ox = window.scrollX;
+		const oy = window.scrollY;
+		line.setAttribute( 'x1', x + ox );
+		line.setAttribute( 'y1', y + oy );
+		line.setAttribute( 'x2', px + ox );
+		line.setAttribute( 'y2', py + oy );
+		dot.setAttribute( 'cx', x + ox );
+		dot.setAttribute( 'cy', y + oy );
+	};
+	draw();
+	return {
+		destroy: () => {
+			cancelAnimationFrame( frame );
+			svg.remove();
+		}
+	};
+}
+
 /**
  * @param {Object} opts
  * @param {string} opts.label nombre accesible del diálogo
@@ -64,6 +155,7 @@ function open( opts ) {
 	const stopDrag = draggable( el, markMoved );
 	resizable( el, markMoved );
 
+	const link = opts.anchor ? connect( el, opts.anchor ) : null;
 	current = {
 		el,
 		body,
@@ -72,6 +164,9 @@ function open( opts ) {
 		close: () => {
 			document.removeEventListener( 'mousedown', onOutside );
 			stopDrag();
+			if ( link ) {
+				link.destroy();
+			}
 			el.remove();
 			current = null;
 			if ( opts.onClose ) {
