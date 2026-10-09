@@ -3,7 +3,7 @@
  * temas de un lector (spec: ThemesPanel). Los temas ajenos se leen, nunca se
  * editan (OthersReadOnly).
  */
-const { api, autocomplete, icons, links, detail } = require( 'ext.constel.ui' );
+const { api, autocomplete, icons, links } = require( 'ext.constel.ui' );
 
 function el( tag, className, text ) {
 	const node = document.createElement( tag );
@@ -109,16 +109,6 @@ function conceptDetail( box, node, ctx ) {
 				cap.append( ' · ', status );
 			}
 			item.append( cap );
-			// El mismo borrar que en la ventana del § sobre el texto: una papelera
-			// tenue abajo a la izquierda; el autor y los moderadores.
-			if ( e.author === ctx.me || ctx.canModerate ) {
-				const foot = el( 'div', 'constel-actions constel-actions--trash' );
-				const fb = feedbackBox();
-				foot.append( detail.trashButton( e, {
-					onChanged: () => ctx.onModerated( node.id )
-				}, fb ), fb );
-				item.append( foot );
-			}
 			list.append( item );
 		} );
 	} );

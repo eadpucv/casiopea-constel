@@ -863,10 +863,9 @@ surface PageReading {
         -- apuntarla o enfocarla; pide confirmación en línea («¿Borrar esta
         -- sección y sus conceptos?»). Lo ofrecen el autor del § y los
         -- moderadores, también sobre el § propio en edición, donde Guardar
-        -- queda a la derecha. El mismo control, con la misma confirmación,
-        -- acompaña a cada § en el panel lateral del mapa (ConceptDetail), de
-        -- modo que borrar se ve igual en la lectura y en el mapa (decisión
-        -- 2026-10-09, pedido del usuario).
+        -- queda a la derecha. En el panel lateral del mapa (ConceptDetail)
+        -- no hay borrar: los §§ se borran sólo desde esta ventana, sobre el
+        -- texto (decisión 2026-10-09, pedido del usuario).
 
     @guarantee LostNotDrawn
         -- Los §§ perdidos no se dibujan (no hay dónde); viven en

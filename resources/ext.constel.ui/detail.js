@@ -302,4 +302,4 @@ function deleteAction( excerpt, ctx ) {
 	return wrap;
 }
 
-module.exports = { open, trashButton };
+module.exports = { open };

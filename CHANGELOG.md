@@ -1,5 +1,10 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- El panel lateral de `Especial:Constelación` ya no lleva la papelera de borrar
+  bajo cada §: borrar un § se hace sólo desde su ventana sobre el texto.
+
 ## 0.18.1 — 2026-10-09
 
 - **Botón destructivo de la piel**: «Fusionar», «Borrar» y «Guardar y borrar»
