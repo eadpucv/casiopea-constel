@@ -372,6 +372,45 @@ a.constel-chip__link:focus-visible {
 	margin-top: var( --constel-s-3 );
 }
 
+/* El borrar de la ventana del §: una papelera tenue en la esquina inferior
+ * izquierda que se pone colorada al apuntarla o enfocarla. */
+.constel-excerpt__trash {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	margin: 0 auto 0 0;
+	padding: 0;
+	border: 0;
+	border-radius: var( --constel-radius );
+	background: transparent;
+	color: var( --constel-icon );
+	cursor: pointer;
+	opacity: 0.4;
+	transition: color var( --constel-dur ) var( --constel-ease ), opacity var( --constel-dur ) var( --constel-ease );
+}
+
+.constel-excerpt__trash:hover,
+.constel-excerpt__trash:focus-visible {
+	color: var( --constel-danger );
+	opacity: 1;
+}
+
+.constel-excerpt__trash:focus-visible {
+	outline: 0;
+	box-shadow: var( --constel-focus-ring );
+}
+
+.constel-actions--trash {
+	justify-content: flex-start;
+}
+
+/* La confirmación ocupa el lugar de la papelera, sin el margen de una fila aparte. */
+.constel-actions .constel-confirm {
+	margin: 0 auto 0 0;
+}
+
 /* ── Autocompletado ───────────────────────────────────────────────────── */
 
 .constel-ac {

@@ -171,7 +171,8 @@ function editor( excerpt, ctx ) {
 	const actions = el( 'div', 'constel-actions' );
 	const save = el( 'button', 'constel-button constel-button--primary', mw.msg( 'constel-detail-save' ) );
 	save.type = 'submit';
-	actions.append( save );
+	// El borrar, tenue, en la esquina inferior izquierda; Guardar a la derecha.
+	actions.append( trashButton( excerpt, ctx, feedback ), save );
 
 	const deletesExcerpt = () => removing.size === excerpt.concepts.length &&
 		!adding.values().length;
@@ -248,19 +249,18 @@ function editor( excerpt, ctx ) {
 }
 
 /**
- * Borrar un § sin editarlo, con confirmación en línea: uno ajeno (sólo
- * moderadores) o uno propio cuando no se tiene el derecho de anotar.
+ * El borrar de un §: un ícono de papelera tenue (Lucide `trash`) que se pone
+ * colorado al apuntarlo, con confirmación en línea («¿Borrar esta sección y sus
+ * conceptos?» · No · Borrar). Va en la esquina inferior izquierda de la ventana.
+ * Lo ofrecen el autor del § y los moderadores (spec: RightToWithdraw).
  *
  * @param {Object} excerpt
  * @param {Object} ctx
- * @return {HTMLElement}
+ * @param {HTMLElement} feedback dónde se dice un error
+ * @return {HTMLButtonElement}
  */
-function deleteAction( excerpt, ctx ) {
-	const wrap = el( 'div', 'constel-actions' );
-	const feedback = el( 'div', 'constel-feedback' );
-	feedback.setAttribute( 'role', 'alert' );
-	const del = el( 'button', 'constel-button constel-button--danger', mw.msg( 'constel-detail-delete' ) );
-	del.type = 'button';
+function trashButton( excerpt, ctx, feedback ) {
+	const del = icons.iconButton( 'trash', mw.msg( 'constel-detail-delete' ), 'constel-excerpt__trash' );
 	del.addEventListener( 'click', () => {
 		const confirm = el( 'div', 'constel-confirm' );
 		confirm.append( el( 'span', null, mw.msg( 'constel-detail-delete-confirm' ) ) );
@@ -283,8 +283,23 @@ function deleteAction( excerpt, ctx ) {
 		del.replaceWith( confirm );
 		no.focus();
 	} );
-	wrap.append( del, feedback );
+	return del;
+}
+
+/**
+ * Borrar un § sin editarlo: uno ajeno (sólo moderadores) o uno propio cuando no
+ * se tiene el derecho de anotar.
+ *
+ * @param {Object} excerpt
+ * @param {Object} ctx
+ * @return {HTMLElement}
+ */
+function deleteAction( excerpt, ctx ) {
+	const wrap = el( 'div', 'constel-actions constel-actions--trash' );
+	const feedback = el( 'div', 'constel-feedback' );
+	feedback.setAttribute( 'role', 'alert' );
+	wrap.append( trashButton( excerpt, ctx, feedback ), feedback );
 	return wrap;
 }
 
-module.exports = { open };
+module.exports = { open, trashButton };
