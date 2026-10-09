@@ -725,7 +725,7 @@ function themesPanel( box, themes, ctx ) {
 			const li = el( 'li', 'constel-chip' );
 			// Enlace al mapa con ese concepto; el clic simple lo elige aquí mismo.
 			const open = el( 'a', 'constel-chip__label constel-chip__open constel-chip__link', c.label );
-			open.href = links.conceptHref( c.label );
+			open.href = links.conceptHref( c.label, [ ctx.owner ] );
 			open.addEventListener( 'click', ( event ) => {
 				if ( links.isPlainClick( event ) ) {
 					event.preventDefault();

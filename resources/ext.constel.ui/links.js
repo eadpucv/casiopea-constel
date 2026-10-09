@@ -3,14 +3,22 @@
  */
 
 /**
- * Dirección de Especial:Constelación con el concepto elegido (y las secciones
- * de todos los lectores).
+ * Dirección de Especial:Constelación con el concepto elegido y las secciones de
+ * sus autores. Nunca abre «Todos»: con decenas de miles de notas sería cargar
+ * todo el corpus. Sin autores (anónimo u oculto), el mapa abre con los de quien
+ * mira.
  *
  * @param {string} label
+ * @param {Array<string|null>} [authors] quienes anotaron
  * @return {string}
  */
-function conceptHref( label ) {
-	return mw.util.getUrl( 'Special:Constellation', { concept: label } );
+function conceptHref( label, authors ) {
+	const params = { concept: label };
+	const names = ( authors || [] ).filter( Boolean );
+	if ( names.length ) {
+		params.users = names.join( ';' );
+	}
+	return mw.util.getUrl( 'Special:Constellation', params );
 }
 
 /**

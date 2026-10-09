@@ -2,6 +2,11 @@
 
 ## Sin publicar
 
+- **Los enlaces de concepto nunca abren «Todos»**: llevan a
+  `Especial:Constelación?concept=Nombre&users=Autor`, con las secciones de quien
+  anotó (con ~20.000 notas, «Todos» carga el corpus entero). `?users=A;B` es
+  nuevo en el mapa; sin él, abre con los de quien mira.
+
 - **Hilo entre la ventana y el texto**: la ventana flotante de un § (y la del
   formulario de anotar) se une al texto al que se refiere con una recta fina y un
   punto en el borde del texto: horizontal si la ventana está al lado, vertical si

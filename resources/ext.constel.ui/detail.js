@@ -56,11 +56,12 @@ function open( excerpts, ctx ) {
  * El concepto como enlace a su lugar en el mapa.
  *
  * @param {string} label
+ * @param {string|null} author quien anotó el § (el mapa abre con sus secciones)
  * @return {HTMLAnchorElement}
  */
-function conceptLink( label ) {
+function conceptLink( label, author ) {
 	const link = el( 'a', 'constel-chip__label constel-chip__link', label );
-	link.href = links.conceptHref( label );
+	link.href = links.conceptHref( label, [ author ] );
 	return link;
 }
 
@@ -87,7 +88,7 @@ function section( excerpt, ctx ) {
 	const chips = el( 'ul', 'constel-chips' );
 	excerpt.concepts.forEach( ( c ) => {
 		const li = el( 'li', 'constel-chip' );
-		li.append( conceptLink( c.label ) );
+		li.append( conceptLink( c.label, excerpt.author ) );
 		chips.append( li );
 	} );
 	box.append( chips );
@@ -119,7 +120,7 @@ function editor( excerpt, ctx ) {
 	const chips = el( 'ul', 'constel-chips' );
 	excerpt.concepts.forEach( ( concept ) => {
 		const li = el( 'li', 'constel-chip' );
-		li.append( conceptLink( concept.label ) );
+		li.append( conceptLink( concept.label, excerpt.author ) );
 		const remove = icons.iconButton(
 			'x', mw.msg( 'constel-detail-remove', concept.label ), 'constel-chip__remove'
 		);

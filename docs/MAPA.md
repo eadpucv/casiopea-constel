@@ -641,8 +641,9 @@ filtros, sin panel lateral, sin moderación.
   (`refpanel.js`) con sus páginas, los textos de sus §§ y los demás conceptos de
   cada §, unidos por líneas de árbol. Un concepto del panel lleva a `Especial:Constelación?concept=Nombre`:
   el mapa completo con ese concepto elegido (sin mover el encuadre: el centro
-  es siempre el de la escena completa), y sus secciones en todos los textos (el
-  filtro de lectores queda en «Todos»). A pantalla completa en
+  es siempre el de la escena completa) y con las secciones de quien anotó
+  (`&users=Autor`; varios, separados por `;`). Nunca abre «Todos»: sin `users`
+  abre con los de quien mira. A pantalla completa en
   `Especial:Constelación` no navega: elige el concepto en el mismo mapa. El parámetro `?concept=` sirve también como enlace.
 - Sin JavaScript queda un texto que lo explica (`constel-embed-nojs`).
 - **Esquinas.** El lienzo es redondeado como el del mapa completo. En

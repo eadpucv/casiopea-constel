@@ -182,10 +182,13 @@ function divider( layout ) {
 
 function main( root ) {
 	const pageParam = mw.util.getParamValue( 'page' );
-	// ?concept=Nombre: se llega con ese concepto elegido y al centro, con las
-	// secciones de todos los lectores (lo usa el panel de referencias de las
-	// incrustaciones).
+	// ?concept=Nombre: se llega con ese concepto elegido (lo usan los enlaces del
+	// panel de referencias, de la ventana del § y de los temas).
 	const conceptParam = ( mw.util.getParamValue( 'concept' ) || '' ).trim().toLowerCase();
+	// ?users=A;B: abre con las secciones de esos lectores (el enlace de un
+	// concepto manda a quien anotó, nunca a «Todos»).
+	const usersParam = ( mw.util.getParamValue( 'users' ) || '' ).split( ';' )
+		.map( ( name ) => name.trim() ).filter( Boolean ).slice( 0, MAX_READERS );
 	const state = {
 		// 2D por defecto: se lee de un vistazo y se arregla a mano; la última
 		// vista elegida se recuerda.
@@ -208,7 +211,7 @@ function main( root ) {
 		scope: 'all',
 		// Lectores del filtro «Secciones de»: quien mira, o «Todos» (ALL_READERS)
 		// para un visitante anónimo.
-		readers: me && !conceptParam ? [ me ] : [ ALL_READERS ],
+		readers: usersParam.length ? usersParam : ( me ? [ me ] : [ ALL_READERS ] ),
 		readerLabel: ( name ) => name,
 		pages: pageParam ? [ pageParam ] : [],
 		lens: me ? [ me ] : [],
@@ -1128,6 +1131,7 @@ function main( root ) {
 				editable: cfg.canAnnotate && name === me,
 				// Borrar lo propio no pide el derecho (spec: RightToWithdraw).
 				deletable: !!me && name === me,
+				owner: name,
 				colorOffset: offset,
 				themeColor,
 				onThemeColor: ( theme, color ) => {

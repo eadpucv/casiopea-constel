@@ -15,7 +15,7 @@
  * y se redimensiona por la esquina. Con teclado: flechas en la cabecera lo
  * mueven (16 px) y, con Mayús, lo redimensionan.
  */
-const { api, icons } = require( 'ext.constel.ui' );
+const { api, icons, links } = require( 'ext.constel.ui' );
 
 /** Caracteres visibles del texto de un § antes de los puntos suspensivos. */
 const SNIPPET = 40;
@@ -224,7 +224,7 @@ function create( host, options ) {
 					// navega.
 					const entry = el( 'li', 'constel-refs__other' );
 					const pick = el( 'a', 'constel-refs__concept', c.label );
-					pick.href = mw.util.getUrl( 'Special:Constellation', { concept: c.label } );
+					pick.href = links.conceptHref( c.label, [ e.author ] );
 					pick.title = mw.msg( 'constellation-refs-concept', c.label );
 					pick.addEventListener( 'click', ( event ) => {
 						const plain = event.button === 0 && !event.ctrlKey && !event.metaKey &&
