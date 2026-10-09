@@ -28,14 +28,16 @@ function el( tag, className, text ) {
 
 /**
  * @param {Array} excerpts los §§ bajo el punto
- * @param {Object} ctx {near, anchor, returnFocus, isMine, canAnnotate, canModerate, onChanged}
+ * @param {Object} ctx {near, anchor, returnFocus, isMine, canAnnotate, canModerate,
+ *  onChanged, onClose}
  */
 function open( excerpts, ctx ) {
 	const p = panel.open( {
 		label: mw.msg( 'constel-detail-title' ),
 		near: ctx.near,
 		anchor: ctx.anchor,
-		returnFocus: ctx.returnFocus
+		returnFocus: ctx.returnFocus,
+		onClose: ctx.onClose
 	} );
 	const title = el( 'p', 'constel-panel__title' );
 	title.append( el( 'span', 'constel-sign', '§' ), ' ', mw.msg( 'constel-detail-title' ) );

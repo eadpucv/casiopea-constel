@@ -20,6 +20,7 @@ let current = null;
  * @param {Element|null} [opts.returnFocus]
  * @param {Element|Range} [opts.anchor] el texto al que se refiere: el panel
  *  se pone a su derecha
+ * @param {Function} [opts.onClose] se llama al cerrarse el panel
  * @return {{el: HTMLElement, body: HTMLElement, close: Function}}
  */
 function open( opts ) {
@@ -73,6 +74,9 @@ function open( opts ) {
 			stopDrag();
 			el.remove();
 			current = null;
+			if ( opts.onClose ) {
+				opts.onClose();
+			}
 			if ( opts.returnFocus && document.contains( opts.returnFocus ) ) {
 				opts.returnFocus.focus();
 			}

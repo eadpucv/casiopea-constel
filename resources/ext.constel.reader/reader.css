@@ -205,7 +205,8 @@
 }
 
 .constel-minimap__tick:hover::before,
-.constel-minimap__tick:focus-visible::before {
+.constel-minimap__tick:focus-visible::before,
+.constel-minimap__tick--active::before {
 	left: 0;
 	right: -4px;
 	height: 3px;

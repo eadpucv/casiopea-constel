@@ -28,6 +28,8 @@ let known = null;
 let fresh = new Set();
 let freshAt = 0;
 let freshTimer = null;
+/* §§ cuya ventana de detalle está abierta: su trazo se yergue. */
+let active = new Set();
 /* Lo que dura la entrada (ms); igual que la onda en reader.css. */
 const FRESH_MS = 1400;
 /* Cuánto se asoman los conceptos nuevos (ms). */
@@ -157,6 +159,7 @@ function layout() {
 	const elapsed = performance.now() - freshAt;
 	const freshIds = fresh.size && elapsed < FRESH_MS ? fresh : new Set();
 	let firstFresh = null;
+	const opened = active;
 	for ( const g of groups ) {
 		const labels = [];
 		g.members.forEach( ( m ) => m.excerpt.concepts.forEach( ( c ) => {
@@ -178,6 +181,10 @@ function layout() {
 		}
 		tick.style.top = g.y + 'px';
 		tick.dataset.excerpt = String( lead.excerpt.id );
+		tick.dataset.members = g.members.map( ( m ) => m.excerpt.id ).join( ',' );
+		if ( g.members.some( ( m ) => opened.has( m.excerpt.id ) ) ) {
+			tick.classList.add( 'constel-minimap__tick--active' );
+		}
 		tick.dataset.labels = labels.join( ' · ' );
 		tick.setAttribute( 'aria-label', mw.msg( 'constel-mark-label', labels.join( ', ' ) ) );
 		// Si un relayout (el texto cambió de alto) rehace el trazo a media
@@ -191,6 +198,24 @@ function layout() {
 	}
 	bar.replaceChildren( ticks );
 	return firstFresh;
+}
+
+/**
+ * Yergue el trazo de los §§ dados (la ventana de su detalle está abierta);
+ * con una lista vacía, los baja.
+ *
+ * @param {number[]} ids
+ */
+function setActive( ids ) {
+	active = new Set( ids );
+	if ( !bar ) {
+		return;
+	}
+	Array.from( bar.querySelectorAll( '.constel-minimap__tick' ) ).forEach( ( tick ) => {
+		const on = tick.dataset.members.split( ',' ).some( ( id ) => active.has( Number( id ) ) );
+		// Clase: constel-minimap__tick--active
+		tick.classList.toggle( 'constel-minimap__tick--active', on );
+	} );
 }
 
 /**
@@ -262,4 +287,4 @@ function update( contentRoot, excerpts, isMine ) {
 	}
 }
 
-module.exports = { update };
+module.exports = { update, setActive };

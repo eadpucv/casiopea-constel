@@ -86,8 +86,11 @@ function main( root ) {
 			isMine,
 			canAnnotate: cfg.canAnnotate,
 			canModerate: cfg.canModerate,
-			onChanged: reload
+			onChanged: reload,
+			onClose: () => minimap.setActive( [] )
 		} );
+		// Con la ventana del § abierta, su trazo del minimapa se yergue.
+		minimap.setActive( here.map( ( e ) => e.id ) );
 	};
 	root.addEventListener( 'click', ( e ) => {
 		// Un clic que termina una selección no abre el detalle.
