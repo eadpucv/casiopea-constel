@@ -453,6 +453,8 @@
 				"constellation-zoom-reset",
 				"constellation-fullscreen",
 				"constellation-fullscreen-exit",
+				"constellation-menu-collapse",
+				"constellation-menu-expand",
 				"constellation-refs-label",
 				"constellation-refs-close",
 				"constellation-refs-resize",

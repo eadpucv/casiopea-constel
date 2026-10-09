@@ -83,6 +83,8 @@
 	"constellation-zoom-reset": "Encuadrar todo el mapa: vuelve al zoom y la posición de partida",
 	"constellation-fullscreen": "Mapa a pantalla completa (Esc para salir)",
 	"constellation-fullscreen-exit": "Salir de pantalla completa",
+	"constellation-menu-collapse": "Plegar los controles del mapa",
+	"constellation-menu-expand": "Mostrar los controles del mapa",
 	"constellation-refs-label": "Referencias de «$1»",
 	"constellation-refs-close": "Cerrar las referencias",
 	"constellation-refs-resize": "Arrastrar para cambiar el tamaño",

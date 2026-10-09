@@ -41,14 +41,31 @@
 	align-items: center;
 }
 
+/* Los controles de la primera fila: en pantallas grandes el contenedor no
+ * cuenta y sus hijos se reparten la fila como siempre. */
+.constel-map__menu {
+	display: contents;
+}
+
 /* La marca: CON§TEL en versales pequeñas, con aire entre letras, centrada
- * en la altura de la barra. */
+ * en la altura de la barra. Es un botón (pliega el menú en pantallas chicas) y
+ * se ve como texto. */
 .constel-map__brand {
+	display: inline-flex;
 	flex: none;
+	gap: var( --constel-s-1 );
+	align-items: center;
 	align-self: center;
+	/* Menos aire a su derecha que el hueco de la fila (la mitad). */
+	margin-right: calc( -1 * var( --constel-s-2 ) );
+	padding: 0;
+	border: 0;
+	background: transparent;
+	cursor: default;
 	color: var( --constel-ink );
 	font-family: var( --constel-font-ui );
-	font-size: 0.87rem;
+	/* 0,87 rem × 1,11 */
+	font-size: 0.966rem;
 	font-weight: 382;
 	letter-spacing: 0.12ex;
 	line-height: 1;
@@ -674,6 +691,11 @@ text.constel-graph__node {
 	color: var( --constel-ink-soft );
 	white-space: nowrap;
 	text-overflow: ellipsis;
+}
+
+/* El ícono de fusionar, girado 180° (ramas que convergen hacia abajo). */
+.constel-map__merge-icon {
+	transform: rotate( 180deg );
 }
 
 .constel-map__merge-concept {
@@ -1386,7 +1408,8 @@ span.constel-mine__page {
 }
 
 /* Botones de acción del panel (Guardar desarrollo, Crear tema, Agrupar):
- * contorneados como «Fusionar», en tinta tenue en vez de sólidos. */
+ * contorneados, en tinta tenue en vez de sólidos. «Fusionar» y «Borrar» son
+ * la acción destructiva de la piel (relleno de peligro). */
 .constel-map__side .constel-button--primary {
 	border-color: var( --constel-ink-faint );
 	background: var( --constel-btn-bg );
@@ -1720,4 +1743,84 @@ span.constel-mine__page {
 	background: linear-gradient( 135deg, transparent 55%, var( --constel-hairline ) 55%, var( --constel-hairline ) 62%, transparent 62%, transparent 74%, var( --constel-hairline ) 74%, var( --constel-hairline ) 81%, transparent 81% );
 	cursor: nwse-resize;
 	touch-action: none;
+}
+
+.constel-map__chevron {
+	display: none;
+	width: 1rem;
+	height: 1rem;
+	color: var( --constel-icon );
+	transition: transform var( --constel-dur ) var( --constel-ease );
+}
+
+/* ── Pantallas chicas: controles plegables, deslizadores a todo el ancho ────
+ * La marca (con§tel) pliega y despliega los controles. Los controles van en un
+ * bloque bajo la marca, así que ya no comparten línea con el isotipo de la piel
+ * y pueden llegar al borde derecho. */
+@media ( max-width: 40rem ) {
+	.constel-map__brand {
+		cursor: pointer;
+	}
+
+	.constel-map__chevron {
+		display: inline-block;
+	}
+
+	.constel-map__controls--collapsed .constel-map__chevron {
+		transform: rotate( -90deg );
+	}
+
+	.constel-map__brand:focus-visible {
+		outline: 0;
+		box-shadow: var( --constel-focus-ring );
+	}
+
+	/* En la línea de la marca sólo va la marca: no hace falta el hueco del isotipo. */
+	.constel-full .constel-map__controls > .constel-map__row:first-child {
+		padding-inline-end: 0;
+	}
+
+	.constel-map__menu {
+		display: flex;
+		flex: 1 1 100%;
+		flex-wrap: wrap;
+		gap: var( --constel-s-3 ) var( --constel-s-4 );
+		align-items: center;
+		min-width: 0;
+	}
+
+	.constel-map__controls--collapsed .constel-map__menu,
+	.constel-map__controls--collapsed .constel-map__row--filters {
+		display: none;
+	}
+
+	/* Deslizadores a todo el ancho: ícono · barra · porcentaje. */
+	.constel-map__forces {
+		display: grid;
+		flex: 1 1 100%;
+		grid-template-columns: minmax( 0, 1fr );
+		gap: var( --constel-s-2 );
+	}
+
+	.constel-map__force {
+		display: flex;
+		gap: var( --constel-s-2 );
+		align-items: center;
+	}
+
+	.constel-map__force input[ type='range' ] {
+		flex: 1;
+		width: auto;
+		min-width: 0;
+	}
+
+	/* Íconos de navegación en su propia línea, repartidos por todo el ancho con
+	 * aire hacia los bordes: sin el margen negativo de la tinta, y con relleno a
+	 * cada lado. */
+	.constel-map__zoom {
+		flex: 1 1 100%;
+		justify-content: space-between;
+		margin-inline: 0;
+		padding-inline: var( --constel-s-3 );
+	}
 }

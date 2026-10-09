@@ -472,6 +472,12 @@ Accesibilidad:
   nombre accesible. Los interruptores usan `role="switch"`.
 - `prefers-reduced-motion` apaga el giro automático, el deslizamiento entre
   posiciones, el de los anillos y el latido del texto de carga.
+- **Pantallas chicas** (hasta 40 rem): la marca «con§tel» es un botón que
+  pliega y despliega los controles (`aria-expanded`; la elección se guarda como
+  `menuOpen` en `constel-map`; en pantallas grandes está deshabilitado). Los
+  controles de la primera fila van en `.constel-map__menu` (`display: contents`
+  en pantallas grandes), los deslizadores ocupan todo el ancho y los íconos de
+  navegación se reparten por todo el ancho en su propia línea, con aire hacia los bordes.
 - **iOS, iPadOS y móviles táctiles** (`ext.constel.ui/device.js`: `navigator.userAgent`
   o Mac con varios puntos de toque, o `(hover: none) and (pointer: coarse)`) no
   pintan bien los fondos desenfocados del SVG ni ejecutan con soltura las

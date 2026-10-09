@@ -83,6 +83,8 @@
 	"constellation-zoom-reset": "Fit the whole map: back to the starting zoom and position",
 	"constellation-fullscreen": "Full-screen map (Esc to leave)",
 	"constellation-fullscreen-exit": "Exit full screen",
+	"constellation-menu-collapse": "Fold the map controls",
+	"constellation-menu-expand": "Show the map controls",
 	"constellation-refs-label": "References of “$1”",
 	"constellation-refs-close": "Close the references",
 	"constellation-refs-resize": "Drag to resize",

@@ -256,7 +256,9 @@ function moderation( node, ctx ) {
 	const lead = el( 'label', 'constel-map__merge-lead' );
 	lead.htmlFor = intoId;
 	lead.title = mw.msg( 'constellation-merge-hint' );
-	lead.append( icons.icon( 'git-merge' ), ' ' );
+	const mergeIcon = icons.icon( 'git-merge' );
+	mergeIcon.classList.add( 'constel-map__merge-icon' );
+	lead.append( mergeIcon, ' ' );
 	const [ before, after ] = mw.msg( 'constellation-merge-with', '\u0000' ).split( '\u0000' );
 	lead.append( before, el( 'strong', 'constel-map__merge-concept', node.label ), after );
 	const field = el( 'div', 'constel-field' );

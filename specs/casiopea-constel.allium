@@ -1004,6 +1004,15 @@ surface ConceptMap {
         -- accesible. La vista por omisión es 2D con rótulos (palabras).
         -- (decisión 2026-09-30, pedido del usuario).
 
+    @guarantee SmallScreenControls
+        -- En pantallas chicas (hasta 40 rem) la marca «con§tel» de la barra
+        -- pliega y despliega los controles (el estado se recuerda por
+        -- navegador), los deslizadores de proximidad ocupan todo el ancho y los
+        -- íconos de navegación se reparten por todo el ancho en su propia línea,
+        -- con aire hacia los bordes;
+        -- en pantallas grandes la marca no hace nada (decisión 2026-10-09,
+        -- pedido del usuario).
+
     @guarantee LoadingIsStated
         -- Mientras se lee el mapa y se calculan las distancias, el lienzo lo dice
         -- con un texto al centro, horizontal y verticalmente, que late

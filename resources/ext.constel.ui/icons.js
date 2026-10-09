@@ -20,6 +20,7 @@ const SHAPES = {
 		[ 'line', { x1: 21, x2: 16.65, y1: 21, y2: 16.65 } ],
 		[ 'line', { x1: 8, x2: 14, y1: 11, y2: 11 } ]
 	],
+	'chevron-down': [ [ 'path', { d: 'm6 9 6 6 6-6' } ] ],
 	maximize: [
 		[ 'path', { d: 'M8 3H5a2 2 0 0 0-2 2v3' } ],
 		[ 'path', { d: 'M21 8V5a2 2 0 0 0-2-2h-3' } ],

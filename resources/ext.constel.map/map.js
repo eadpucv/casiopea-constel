@@ -762,10 +762,29 @@ function main( root ) {
 		form.submit();
 		form.remove();
 	}
-	// La marca, como isotipo al inicio de la barra (decorativa: la página ya
-	// se llama Constelación).
-	const brand = el( 'span', 'constel-map__brand', 'con§tel' );
-	brand.setAttribute( 'aria-hidden', 'true' );
+	// La marca, al inicio de la barra. En pantallas chicas es el botón que
+	// pliega y despliega los controles (el menú); en las grandes es sólo la marca
+	// y no hace nada (deshabilitado, fuera del orden de tabulación).
+	const brand = el( 'button', 'constel-map__brand' );
+	brand.type = 'button';
+	const chevron = icons.icon( 'chevron-down' );
+	chevron.classList.add( 'constel-map__chevron' );
+	brand.append( el( 'span', null, 'con§tel' ), chevron );
+	const smallScreen = window.matchMedia( '(max-width: 40rem)' );
+	let menuOpen = prefs().menuOpen !== false;
+	const syncMenu = () => {
+		controls.classList.toggle( 'constel-map__controls--collapsed', !menuOpen );
+		brand.disabled = !smallScreen.matches;
+		brand.setAttribute( 'aria-expanded', String( menuOpen ) );
+		brand.title = smallScreen.matches ?
+			mw.msg( menuOpen ? 'constellation-menu-collapse' : 'constellation-menu-expand' ) : '';
+	};
+	brand.addEventListener( 'click', () => {
+		menuOpen = !menuOpen;
+		savePref( 'menuOpen', menuOpen );
+		syncMenu();
+	} );
+	smallScreen.addEventListener( 'change', syncMenu );
 	// Con varios lectores (fila «qué se ve»): qué conceptos se ven, si todos, los
 	// que comparten dos o más de los lectores filtrados o los propios de uno solo.
 	const SCOPES = [
@@ -789,7 +808,13 @@ function main( root ) {
 		state.scope = scope.value;
 		renderSoon();
 	} );
-	rowView.append( brand, viewGroup, edgesGroup, conceptsGroup, forces, zoom );
+	// Los controles de la primera fila van en un contenedor propio: en
+	// pantallas grandes no cuenta (display: contents); en las chicas es un bloque
+	// bajo la marca, que se pliega.
+	const menu = el( 'div', 'constel-map__menu' );
+	menu.append( viewGroup, edgesGroup, conceptsGroup, forces, zoom );
+	rowView.append( brand, menu );
+	syncMenu();
 
 	// ── Fila 2: filtros como píldoras ─────────────────────────────────────
 	// Secciones: como la lente (por defecto quien mira; se suman lectores).

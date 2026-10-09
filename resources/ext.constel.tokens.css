@@ -65,6 +65,9 @@
 	--constel-btn-border: var( --sn-btn-border, var( --border-color-base, #a2a9b1 ) );
 	--constel-btn-primary-bg: var( --sn-btn-primary-bg, var( --background-color-progressive, #36c ) );
 	--constel-btn-primary-fg: var( --sn-btn-primary-fg, var( --color-inverted, #fff ) );
+	/* Acción destructiva primaria (Fusionar, Borrar): relleno de peligro. */
+	--constel-btn-danger-bg: var( --sn-btn-danger-bg, var( --background-color-destructive, #d73333 ) );
+	--constel-btn-danger-fg: var( --sn-btn-danger-fg, var( --color-inverted-fixed, #fff ) );
 	--constel-opt-hover-bg: var( --sn-opt-hover-bg, var( --background-color-interactive, #eaecf0 ) );
 	--constel-opt-sel-bg: var( --sn-opt-sel-bg, var( --background-color-progressive-subtle, #eaf3ff ) );
 	--constel-focus-border: var( --sn-focus-border, var( --border-color-progressive--focus, #36c ) );

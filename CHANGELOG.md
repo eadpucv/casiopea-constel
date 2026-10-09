@@ -1,5 +1,21 @@
 # Changelog — Casiopea-Con§tel
 
+## Sin publicar
+
+- **Botón destructivo de la piel**: «Fusionar», «Borrar» y «Guardar y borrar»
+  usan el relleno de peligro de Stella Nova (`--sn-btn-danger-bg` y `-fg`, con
+  alias nuevos `--constel-btn-danger-*`) en vez de una variante propia de fondo
+  neutro con texto rojo. Un botón junto a su campo (`.constel-add`) mide lo
+  mismo que el campo.
+
+- **Controles del mapa en pantallas chicas** (hasta 40 rem): el texto «con§tel»
+  pliega y despliega los controles (se recuerda por navegador); los
+  deslizadores van a todo el ancho; los íconos de navegación (acercar, alejar,
+  encuadrar, exportar, copiar) se reparten por todo el ancho en su propia línea, con aire
+  hacia los bordes.
+- El texto «con§tel» de la barra es un 11 % más grande (0,966 rem) y deja la
+  mitad de aire a su derecha, en todos los tamaños.
+
 ## 0.18.0 — 2026-10-09
 
 - **Borrar en la ventana del §**: una papelera tenue (Lucide `trash`) en la

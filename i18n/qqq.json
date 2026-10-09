@@ -83,6 +83,8 @@
 	"constellation-zoom-reset": "Zoom reset button.",
 	"constellation-fullscreen": "Accessible name and tooltip of the button in the top-right corner of the concept map that shows only the map in full screen.",
 	"constellation-fullscreen-exit": "Accessible name and tooltip of the same button while the map is in full screen.",
+	"constellation-menu-collapse": "Tooltip of the con§tel label in the map bar on small screens, while the controls are shown: pressing it folds them.",
+	"constellation-menu-expand": "Tooltip of the con§tel label in the map bar on small screens, while the controls are folded: pressing it shows them.",
 	"constellation-refs-label": "Accessible name of the floating references panel (pages, sections and neighbouring concepts of the chosen concept). $1 is the concept.",
 	"constellation-refs-close": "Accessible name and tooltip of the close button of the floating references panel.",
 	"constellation-refs-resize": "Tooltip of the corner handle that resizes the floating references panel.",

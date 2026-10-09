@@ -230,13 +230,22 @@ a.constel-button--primary:is( :link, :visited, :hover, :active ) {
 }
 
 .constel-button--danger {
-	border-color: var( --constel-danger );
-	color: var( --constel-danger );
+	border-color: transparent;
+	background: var( --constel-btn-danger-bg );
+	color: var( --constel-btn-danger-fg );
 }
 
 .constel-button:disabled {
 	opacity: 0.6;
 	cursor: default;
+}
+
+/* Un botón junto a su campo mide lo mismo que el campo (el campo lleva más
+ * relleno que un botón suelto) y centra su texto. */
+.constel-add > .constel-button {
+	display: inline-flex;
+	align-items: center;
+	align-self: stretch;
 }
 
 .constel-link {
