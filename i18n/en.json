@@ -4,7 +4,7 @@
 			"Herbert Spencer González"
 		]
 	},
-	"casiopea-constel-desc": "con§tel: active reading and a collective concept map. Readers select sections (§), code them with shared concepts and synthesise their own themes.",
+	"casiopea-constel-desc": "Con§tel is an annotation tool for MediaWiki where readers/annotators share their marginalia, their lexicon and their notes. It is about building a common ground for study.",
 	"right-constel-annotate": "Create and code sections (§), and keep themes and their development in con§tel",
 	"right-constel-moderate": "Moderate the shared con§tel vocabulary (rename and merge concepts, delete other readers' sections)",
 	"action-constel-annotate": "annotate sections with con§tel",

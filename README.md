@@ -1,54 +1,52 @@
 # Casiopea-Con§tel
 
-**Marginalia compartida** para [Casiopea](https://wiki.ead.pucv.cl), la wiki de
-la e[ad] PUCV. Es la aplicación a MediaWiki de
-[con§tel](https://github.com/hspencer/constel), un proyecto de la Escuela que
-nació entre 2004 y 2006.
+Con§tel es una herramienta de anotación para MediaWiki donde los
+lectores/anotadores comparten su marginalia, su léxico y sus notas. Se trata de
+la construcción de un suelo común para el estudio.
+
+Esta extensión la trae a [Casiopea](https://wiki.ead.pucv.cl), la wiki de la
+e[ad] PUCV. Viene del proyecto de investigación
+[Con§tel](https://wiki.ead.pucv.cl/Con%C2%A7tel) (PUCV, 2004–2006). Para
+usarla, el [Manual de con§tel](https://wiki.ead.pucv.cl/Manual_de_con%C2%A7tel);
+para entender de dónde sale, [El acto de leer en Con§tel](https://wiki.ead.pucv.cl/El_acto_de_leer_en_Con%C2%A7tel).
 
 > Allí donde haya lector estaré yo.
 
 ## Marginalia compartida
 
-Quien estudia lee con lápiz. Subraya, pone títulos al margen, anota y le
-responde al autor en el blanco de la página. Esa marginalia ha sido siempre
-íntima: queda en el ejemplar de cada uno y se pierde con él.
+Quien estudia lee con lápiz: subraya, pone un título al margen, escribe una
+nota junto al párrafo. Esa marginalia ha sido siempre del ejemplar de cada uno
+y se pierde con él.
 
-con§tel lleva ese gesto a un lugar común. Las lecturas de cada lector, sus
-pasajes, títulos y notas, quedan junto a las de los demás sobre los mismos
-textos. La relación entre autor y lector, privada y asimétrica, se vuelve un
-diálogo entre pares. El lector, sin darse cuenta, se vuelve autor y ve cómo
-su pequeño aporte modifica el mapa de todos. La idea es la de la ponencia de
-2006: pasar *desde la marginalia compartida hacia una conformación de la figura
-de pueblo*.
+Con§tel la lleva a un lugar común. Lo que cada lector marca, titula y anota
+queda junto a lo que marcan los demás sobre los mismos textos, y la relación
+entre autor y lector se vuelve un diálogo entre muchos. La ponencia de 2006 lo
+dice así: pasar *desde la marginalia compartida hacia una conformación de la
+figura de pueblo*.
 
-## Un suelo común para que haya pueblo
+## Un suelo común
 
-Una comunidad no nace de anotaciones sueltas. Etiquetas personales dispersas no
-hacen pueblo, porque cada una significa algo distinto para cada quien. Para que
-haya pueblo hace falta un **suelo común**, y con§tel lo ofrece en dos capas:
+Para que las lecturas se encuentren hace falta un suelo común. Con§tel lo pone
+en dos capas:
 
-- **Textos comunes.** Todos leen y anotan sobre el mismo cuerpo de textos.
-  El estudio original partió de los 28 textos fundamentales de Amereida, la
-  vértebra de la Escuela. Esa visión le da a la comunidad *«a solid ground
-  for dialogue»*, como dice *Con§tel: Sharing Marginalia*. En Casiopea ese
-  cuerpo es la wiki misma: la [Biblioteca Con§tel](https://wiki.ead.pucv.cl/Biblioteca_Con%C2%A7tel)
-  reúne los *Textos Fundamentales* y las *Publicaciones de Apertura*. Por
-  eso, como dice la página del proyecto, «Casiopea es un intento de Con§tel».
-- **Un léxico común.** Los conceptos no son etiquetas privadas. Cada concepto
-  es uno solo para todos, y cada lector lo encuentra ya nombrado por otros
-  cuando lo asigna. Sobre ese léxico compartido las lecturas convergen y los
-  conceptos se vuelven, a fuerza de conversación, referencias comunes.
+- **Textos comunes.** Todos leen y anotan sobre el mismo cuerpo. El proyecto
+  original partió de los textos fundamentales de la Escuela, escritos entre 1952
+  y 2002, para darle a la comunidad *«a solid ground for dialogue»* (*Con§tel:
+  Sharing Marginalia*). En Casiopea ese cuerpo es la wiki, y la
+  [Biblioteca Con§tel](https://wiki.ead.pucv.cl/Biblioteca_Con%C2%A7tel) reúne
+  los *Textos Fundamentales* y las *Publicaciones de Apertura*. «Casiopea es un
+  intento de Con§tel», dice la página del proyecto.
+- **Un léxico común.** Cada concepto es uno solo para todos. Al asignarlo, el
+  lector puede descubrir que otro ya lo había nombrado.
 
-El suelo común no borra la diferencia. Cada sección es de su lector, y cada
-tema con su desarrollo es la lectura propia de quien lo escribe. Cuando dos
-lectores marcan pasajes que se solapan, el mapa muestra que se encontraron,
-pero no funde sus conceptos: cada uno leyó a su manera. El pueblo aparece como
-figura de muchas lecturas singulares sobre un suelo compartido.
+Cada sección sigue siendo de su lector, y cada tema, con su desarrollo, es la
+lectura propia de quien lo escribe. Si dos lectores marcan pasajes que se
+solapan, quedan dos lecturas, cada una con sus conceptos, y el mapa muestra que
+se encontraron.
 
 ## Los gestos del lector
 
-Como en el scriptorium de los glosadores, el lector hace tres cosas sobre el
-texto:
+Sobre el texto, el lector hace lo que los glosadores en el scriptorium:
 
 | Gesto | Signo | En la extensión |
 |---|---|---|
@@ -59,11 +57,12 @@ texto:
 Después, cada lector agrupa sus conceptos en **temas** y escribe el
 **desarrollo** de cada tema: el paso de la marginalia al texto propio.
 
-## El mapa: la figura de todos
+## La constelación
 
-`Especial:Constelación` reúne los conceptos de todos los lectores en un mapa.
-El mapa no es obra de un solo autor. Es la imagen que refleja el estado actual
-del diálogo y ayuda a cada uno a ubicar su aporte entre los de sus pares.
+`Especial:Constelación` dibuja todas las lecturas juntas. Los conceptos se
+acercan cuando un mismo lector los pone sobre un pasaje, cuando lectores
+distintos marcan pasajes que se tocan y cuando aparecen en un mismo texto. Cada
+lector ve en el mapa dónde cae su aporte entre los de sus pares.
 
 - **Tres grados de proximidad** unen los conceptos: la *misma sección*, el
   *traslape* entre secciones de lectores distintos y el *mismo texto*. Cada
@@ -74,8 +73,10 @@ del diálogo y ayuda a cada uno a ubicar su aporte entre los de sus pares.
 - **Vista 2D (por defecto) o 3D**, con un interruptor. En 2D los rótulos
   nunca se pisan y cada concepto se arrastra con el mapa reaccionando en
   vivo: sus aristas tiran de los vecinos y los rótulos se empujan. El
-  concepto elegido pasa a ser el centro del mapa, en negrita, y en 3D «Girar
-  solo» orbita en torno a él, con niebla en profundidad.
+  concepto elegido se destaca en negrita sin mover el encuadre (el centro es
+  siempre el de la escena completa), y en 3D «Girar solo» orbita con niebla
+  en profundidad. En iOS y móviles el mapa se dibuja sin desenfoque ni
+  animaciones, con el texto en el color del tema.
 - **Palabras o nodos.** Otro interruptor dibuja cada concepto como su palabra
   (tamaño según su frecuencia) o como un círculo del color de su tema, útil
   cuando el mapa es denso.
@@ -89,7 +90,16 @@ del diálogo y ayuda a cada uno a ubicar su aporte entre los de sus pares.
 - **Pantalla completa.** El mapa (*ante*) y el panel de lectura (*dentro*)
   se reparten la pantalla, y la división entre ambos se arrastra.
 - **Filtros** por lectores y por páginas, y una **lente** para leer los temas
-  de uno o varios lectores. El mapa se exporta como SVG.
+  de uno o varios lectores. El mapa se exporta como SVG, y un botón copia el
+  código `{{#constel: …}}` que reproduce el mapa tal como está.
+- **Panel de referencias.** A pantalla completa y en las incrustaciones, un
+  concepto elegido abre un panel flotante (arrastrable y redimensionable) con
+  sus páginas, secciones y conceptos vecinos, unidos con líneas de árbol. Los
+  conceptos son enlaces al mapa (`?concept=…&users=…`) con las secciones de
+  quien anotó; nunca abren «Todos». Detalle en [`docs/MAPA.md`](docs/MAPA.md),
+  sección 16.
+- **La lectura.** La ventana de un § se une al texto marcado con un hilo fino,
+  y su trazo del minimapa se yergue mientras está abierta.
 
 ## Insertar el mapa en cualquier página
 
@@ -107,7 +117,7 @@ en 2D.
 | Parámetro | Valores | Por omisión |
 |---|---|---|
 | `usuario` | uno o varios lectores, separados por `;` | todos |
-| `concepto` | concepto de foco: se resalta y se centra (si no existe en el mapa, se ignora) | ninguno |
+| `concepto` | concepto de foco: se resalta (si no existe en el mapa, se ignora) | ninguno |
 | `modo` | `2d` o `3d` | `2d` |
 | `girar` | `sí` o `no` (sólo en 3D) | `no` |
 | `aristas` | `sí` o `no` | `sí` |
@@ -119,8 +129,8 @@ en 2D.
 
 El `:` es obligatorio aun sin argumentos: es lo que distingue una parser
 function de una plantilla. El resultado no depende de quién mira (es
-cacheable) y no usa las preferencias del navegador; un clic en un concepto
-sólo lo resalta. Puede haber varios mapas en una página. Cómo funciona por
+cacheable) y no usa las preferencias del navegador; un clic en un concepto lo
+resalta y abre su panel de referencias. Puede haber varios mapas en una página. Cómo funciona por
 dentro: [`docs/MAPA.md`](docs/MAPA.md), sección 15.
 
 En cada página, el menú de usuario ofrece la lectura en tres posiciones:
