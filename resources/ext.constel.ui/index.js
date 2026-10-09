@@ -9,5 +9,6 @@ module.exports = {
 	conceptPills: require( './conceptpills.js' ),
 	variants: require( './variants.js' ),
 	detail: require( './detail.js' ),
-	icons: require( './icons.js' )
+	icons: require( './icons.js' ),
+	device: require( './device.js' )
 };

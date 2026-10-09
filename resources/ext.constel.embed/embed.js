@@ -6,8 +6,8 @@
  * completo; no lee ni guarda las preferencias del navegador, así todos ven lo
  * mismo. Cada mapa es independiente: puede haber varios en una página.
  */
-const { api } = require( 'ext.constel.ui' );
-const { graph } = require( 'ext.constel.map' );
+const { api, device } = require( 'ext.constel.ui' );
+const { graph, refpanel } = require( 'ext.constel.map' );
 
 const DEFAULT_FORCE = 0.25;
 const ALL_KINDS = Object.keys( graph.FORCES );
@@ -25,6 +25,17 @@ function categoryColor( index ) {
 	const color = getComputedStyle( probe ).color;
 	probe.remove();
 	return color;
+}
+
+/**
+ * Títulos iguales sin distinguir «_» de espacio.
+ *
+ * @param {string} a
+ * @param {string} b
+ * @return {boolean}
+ */
+function sameTitle( a, b ) {
+	return a.replace( /_/g, ' ' ) === b.replace( /_/g, ' ' );
 }
 
 function settings( raw ) {
@@ -88,7 +99,14 @@ function mount( root ) {
 			canvas.replaceChildren( empty );
 			return;
 		}
-		const view = graph.draw( canvas, data, {
+		let view = null;
+		// Los conceptos del panel son enlaces al mapa completo con ese concepto
+		// elegido (y las secciones de todos los lectores).
+		const refs = refpanel.create( root, {
+			filter: ( e ) => ( !s.readers.length || s.readers.includes( e.author ) ) &&
+				( !s.pages.length || s.pages.some( ( t ) => sameTitle( t, e.title || '' ) ) )
+		} );
+		view = graph.draw( canvas, data, {
 			readers: s.readers.length >= 2 ? s.readers : null,
 			readerColors: s.readers.length >= 2 ?
 				s.readers.map( ( r, i ) => categoryColor( i ) ) : null,
@@ -101,12 +119,17 @@ function mount( root ) {
 			themeOf: new Map(),
 			conceptColors: new Map(),
 			wash: false,
-			onSelect: ( node ) => view.select( node.id )
+			calm: device.isMobile(),
+			onSelect: ( node ) => {
+				view.select( node.id );
+				refs.show( node );
+			}
 		} );
 		if ( s.concept ) {
 			const focus = data.nodes.find( ( n ) => n.label.toLowerCase() === s.concept );
 			if ( focus ) {
 				view.select( focus.id );
+				refs.show( focus );
 			}
 		}
 	}, () => {

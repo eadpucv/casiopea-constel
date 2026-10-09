@@ -14,7 +14,7 @@
  * Al elegir un vecino pasa al centro deslizándose (salvo con
  * prefers-reduced-motion). Los temas de la lente colorean igual que en el mapa.
  */
-const { icons } = require( 'ext.constel.ui' );
+const { icons, device } = require( 'ext.constel.ui' );
 const SVG = 'http://www.w3.org/2000/svg';
 const CATEGORIES = 8;
 /** Grado de cada anillo, del más fuerte al más débil. */
@@ -188,7 +188,7 @@ function open( container, data, options ) {
 	const maxPages = Math.max( 1, ...data.nodes.map( ( n ) => n.pages ) );
 	const dotOf = ( n ) => DOT_MIN + ( DOT_MAX - DOT_MIN ) *
 		Math.sqrt( 0.6 * n.excerpts / maxExc + 0.4 * n.pages / maxPages );
-	const reduce = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+	const reduce = device.isMobile() || window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 	let themeOf = options.themeOf;
 	let colors = options.conceptColors || new Map();
 

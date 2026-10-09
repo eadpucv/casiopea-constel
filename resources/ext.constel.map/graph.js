@@ -566,7 +566,8 @@ function draw( container, data, view ) {
 	}
 
 	// ── Cámara ────────────────────────────────────────────────────────────
-	const reduce = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+	// view.calm: iOS y móviles, que no ejecutan bien las animaciones del mapa.
+	const reduce = !!view.calm || window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 	let yaw = is3d ? 0.6 : 0;
 	let pitch = is3d ? -0.35 : 0;
 	let zoom = 1;
@@ -823,6 +824,11 @@ function draw( container, data, view ) {
 			'aria-label': mw.msg( 'constellation-node-label', node.label, node.excerpts, node.pages )
 		} );
 		text.textContent = node.label;
+		// Sin desenfoque (iOS, móviles) el tema lo lleva el color del texto.
+		const tint = view.conceptColors && view.conceptColors.get( node.id );
+		if ( !view.wash && theme !== undefined && tint ) {
+			text.style.fill = tint;
+		}
 		if ( view.wash && theme !== undefined && labelled( node ) ) {
 			const wash = svg( 'rect', { class: 'constel-graph__wash' } );
 			wash.style.fill = ( view.conceptColors && view.conceptColors.get( node.id ) ) ||
@@ -1736,12 +1742,6 @@ function draw( container, data, view ) {
 		} );
 		zoomGoal = framed ? fit : null;
 		gliding = true;
-		if ( selected ) {
-			// El concepto elegido sigue al medio, en su lugar nuevo.
-			target.x = selected.tx;
-			target.y = selected.ty;
-			target.z = selected.tz;
-		}
 		if ( reduce ) {
 			land();
 			Object.assign( center, target );
@@ -1772,19 +1772,16 @@ function draw( container, data, view ) {
 			focusEdges();
 			resetView();
 		},
-		// El concepto elegido pasa a ser el foco y el centro del mapa.
+		// El concepto elegido pasa a ser el foco de rótulos y aristas, pero la
+		// cámara no se mueve: el encuadre (zoom, desplazamiento y centro) queda
+		// como estaba, con el mapa entero como marco estable.
 		select: ( id ) => {
 			nodeEls.forEach( ( el, nid ) => el.classList.toggle( 'constel-graph__node--selected', nid === id ) );
 			dotEls.forEach( ( dot, nid ) => dot.classList.toggle( 'constel-graph__node--selected', nid === id ) );
-			pan = { x: 0, y: 0 };
-			applyPan();
 			selected = byId.get( id ) || null;
 			peekLabels();
 			focusEdges();
-			if ( gliding ) {
-				land();
-			}
-			aim( selected );
+			render();
 		},
 		setForces,
 		addLinks,

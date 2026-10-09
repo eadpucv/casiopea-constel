@@ -301,7 +301,8 @@
 				"ext.constel.ui/conceptpills.js",
 				"ext.constel.ui/variants.js",
 				"ext.constel.ui/detail.js",
-				"ext.constel.ui/icons.js"
+				"ext.constel.ui/icons.js",
+				"ext.constel.ui/device.js"
 			],
 			"messages": [
 				"constel-panel-close",
@@ -401,7 +402,8 @@
 				"ext.constel.map/graph.js",
 				"ext.constel.map/sidepanel.js",
 				"ext.constel.map/rings.js",
-				"ext.constel.map/pills.js"
+				"ext.constel.map/pills.js",
+				"ext.constel.map/refpanel.js"
 			],
 			"messages": [
 				"constellation-graph-label",
@@ -450,6 +452,11 @@
 				"constellation-zoom-reset",
 				"constellation-fullscreen",
 				"constellation-fullscreen-exit",
+				"constellation-refs-label",
+				"constellation-refs-close",
+				"constellation-refs-resize",
+				"constellation-refs-empty",
+				"constellation-refs-concept",
 				"constellation-link-overlap",
 				"constellation-link-coexcerpt",
 				"constellation-back-to-themes",
@@ -504,6 +511,9 @@
 				"constellation-all-pages",
 				"constellation-pill-remove",
 				"constellation-export-svg",
+				"constellation-copy-embed",
+				"constellation-copy-done",
+				"constellation-copy-failed",
 				"constellation-svg-title",
 				"constellation-navigation",
 				"constellation-divider",

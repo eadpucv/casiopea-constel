@@ -2,6 +2,30 @@
 
 ## Sin publicar
 
+- **Minimapa de la lectura**: con la ventana de un § abierta (clic en su marca
+  en el texto), su trazo del minimapa se yergue (como al pasar el puntero) y
+  vuelve a su tamaño al cerrarla. `minimap.setActive()`, `panel.open` acepta
+  `onClose`.
+
+- **Panel de referencias como árbol**: líneas dibujadas (│ ├ └) unen la página,
+  sus §§ y los conceptos de cada §; los conceptos son enlaces reales al mapa
+  (`?concept=`), con clic derecho y pestaña nueva.
+
+- **Volver al mapa**: un concepto del panel de referencias de una incrustación
+  lleva a `Especial:Constelación?concept=Nombre` (concepto elegido, secciones de
+  todos los lectores, encuadre de la escena completa). A pantalla completa lo
+  elige sin navegar.
+- **Elegir un concepto ya no mueve la cámara**: antes lo llevaba al centro y
+  reiniciaba el desplazamiento, aunque el contexto no cupiera. Ahora el zoom,
+  el desplazamiento y el centro quedan como estaban (el mapa entero es el marco);
+  tampoco lo mueve cambiar una fuerza de proximidad.
+- **iOS y móviles**: sin fondos desenfocados ni animaciones; los textos de los
+  conceptos van del color del tema (`ext.constel.ui/device.js`, `view.calm`).
+- **Panel flotante de referencias** (`refpanel.js`) en el mapa a pantalla
+  completa y en `{{#constel:}}`: páginas del concepto, sus §§ (40 caracteres y
+  puntos suspensivos) y los demás conceptos de cada §; se arrastra y
+  redimensiona dentro del marco.
+
 - **Parser function `{{#constel: …}}`** (también `{{#con§tel: …}}`): inserta
   en cualquier página el mapa de conceptos **limpio**, sin controles ni panel.
   Parámetros opcionales, todos con valor por omisión: `usuario`, `concepto`

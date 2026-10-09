@@ -54,7 +54,7 @@ La pantalla tiene tres zonas:
   acciones que permite el rol de quien mira. La división entre mapa y panel se
   arrastra.
 
-Un clic sobre un concepto lo elige: el mapa lo centra, su palabra pasa a negrita
+Un clic sobre un concepto lo elige: el encuadre no se mueve (ni el zoom ni el desplazamiento: el mapa entero es el marco estable), su palabra pasa a negrita
 y el panel muestra sus secciones. Un clic en el fondo del mapa no cambia la
 selección, y arrastrar el fondo desplaza el mapa.
 
@@ -80,6 +80,7 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/crosshair.svg" width="18" alt=""> | **Encuadrar todo el mapa** | Vuelve al zoom y la posición de partida, centrado en todo el mapa | |
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | **Volver al orden automático** (sólo en 2D, y sólo si hay conceptos movidos a mano) | Suelta los conceptos que se arrastraron y rehace el layout | |
 | <img src="icons/download.svg" width="18" alt=""> | **Exportar el mapa como SVG** | Descarga el mapa tal como se ve (vista, filtros y zoom), con colores, tipografías y el halo de contraste de los textos ya resueltos | |
+| <img src="icons/copy.svg" width="18" alt=""> | **Copiar el código de incrustación** | Copia al portapapeles el `{{#constel: …}}` que reproduce el mapa tal como está: lectores, páginas, concepto elegido, 2D/3D, aristas, palabras o nodos y las fuerzas que difieren de las de partida (los temas no, porque la incrustación no los lleva). El ícono pasa un momento a un visto | |
 | <img src="icons/maximize.svg" width="18" alt=""> / <img src="icons/minimize.svg" width="18" alt=""> | **Pantalla completa del mapa** (esquina del mapa) | Pone sólo el mapa a pantalla completa; Esc sale | |
 
 Las tres fuerzas de proximidad (la cuarta, la de tema, no tiene aristas) se explican en la sección 4; al moverlas el mapa
@@ -323,7 +324,7 @@ crece, se redistribuye.
   volverse ilegible. (Antes era de 0,08 y cuadrática, y atenuaba demasiado.) Los rótulos pueden cruzarse en 3D; la
   garantía de no traslape es sólo de 2D.
 - **Órbita.** Arrastrar el fondo orbita (con Mayús o el botón del medio, desplaza);
-  el concepto elegido pasa a ser el centro de la rotación.
+  elegir un concepto no cambia el centro de la rotación.
 
 ## 6. Vista de anillos
 
@@ -429,7 +430,7 @@ El mapa **sigue al control mientras se arrastra** (`input`), sin saltos:
   de apertura que el cálculo en frío.
 - Los conceptos **se deslizan** a su lugar nuevo (un 25 % del camino por cuadro,
   `GLIDE`); si el mapa estaba encuadrado, el zoom sigue al encuadre nuevo; si no, se
-  respeta el de quien mira. El concepto elegido sigue al centro. Con
+  respeta el de quien mira. Elegir un concepto no mueve el encuadre. Con
   `prefers-reduced-motion`, llegan sin deslizarse.
 - Las aristas de un grado que baja a 0 se retiran del lienzo y vuelven al subirlo,
   sin redibujar. Un grado que estaba en 0 desde la carga se pide al servidor la
@@ -587,6 +588,7 @@ los SVG en `docs/icons/` (con su `LICENSE`).
 | <img src="icons/crosshair.svg" width="18" alt=""> | `crosshair` | `crosshair` | encuadrar |
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | `rotate-ccw` | `rotate-ccw` | volver al orden automático |
 | <img src="icons/download.svg" width="18" alt=""> | `download` | `download` | exportar SVG |
+| <img src="icons/copy.svg" width="18" alt=""> <img src="icons/check.svg" width="18" alt=""> | `copy`, `check` | igual | copiar código de incrustación |
 | <img src="icons/maximize.svg" width="18" alt=""> <img src="icons/minimize.svg" width="18" alt=""> | `maximize`, `minimize` | igual | pantalla completa |
 | <img src="icons/users.svg" width="18" alt=""> | `users` | `users` | secciones de (lectores) |
 | <img src="icons/file.svg" width="18" alt=""> | `file` | `file` | páginas |
@@ -635,6 +637,13 @@ filtros, sin panel lateral, sin moderación.
   los conceptos no llevan color de tema.
 - Los topes de carga son los de fábrica de `graph.js` (`MAX_LABELS`,
   `MAX_LINKS`), no los de `$wgConstelMapMaxLabels` / `$wgConstelMapMaxDrawnLinks`.
+- **Panel de referencias.** Al elegir un concepto sale un panel flotante
+  (`refpanel.js`) con sus páginas, los textos de sus §§ y los demás conceptos de
+  cada §, unidos por líneas de árbol. Un concepto del panel lleva a `Especial:Constelación?concept=Nombre`:
+  el mapa completo con ese concepto elegido (sin mover el encuadre: el centro
+  es siempre el de la escena completa), y sus secciones en todos los textos (el
+  filtro de lectores queda en «Todos»). A pantalla completa en
+  `Especial:Constelación` no navega: elige el concepto en el mismo mapa. El parámetro `?concept=` sirve también como enlace.
 - Sin JavaScript queda un texto que lo explica (`constel-embed-nojs`).
 - **Esquinas.** El lienzo es redondeado como el del mapa completo. En
   Stella Nova, `class=full-width` (o `ancho-completo`) lo lleva a sangre y le

@@ -381,11 +381,12 @@ text.constel-graph__node {
 	fill: var( --constel-ink );
 }
 
-/* El texto de un concepto va siempre en el color del texto: el tema lo lleva
+/* Con el desenfoque (todos menos iOS y móviles) el texto de un concepto va en
+ * el color del texto: el tema lo lleva
  * el círculo (modo nodos) o la caja desenfocada tras el rótulo (modo palabras,
  * graph.js, view.wash). Las clases --cat-N las comparten texto y círculo, así
  * que el texto las anula aquí. */
-text.constel-graph__node {
+.constel-graph--wash text.constel-graph__node {
 	fill: var( --constel-ink );
 }
 
@@ -1540,6 +1541,7 @@ span.constel-mine__page {
 
 /* {{#constel:}} — mapa limpio dentro de una página: el alto lo fija la plantilla. */
 .constel-embed {
+	position: relative;
 	margin: 1em 0;
 }
 
@@ -1550,4 +1552,172 @@ span.constel-mine__page {
 .constel-embed__fallback {
 	color: var( --constel-ink-soft );
 	font-style: italic;
+}
+
+/* ── Panel flotante de referencias (refpanel.js) ─────────────────────────
+ * Páginas del concepto elegido, con sus §§ y los conceptos de cada §. Flota
+ * sobre la ventana (en <body>, o en el elemento a pantalla completa) y puede
+ * salirse del marco del mapa; se arrastra por la cabecera y se redimensiona
+ * por la esquina. */
+.constel-refs {
+	position: fixed;
+	z-index: 1000;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid var( --constel-hairline );
+	border-radius: var( --constel-radius-l );
+	background: var( --constel-surface );
+	box-shadow: var( --constel-lift );
+	color: var( --constel-ink );
+	font-family: var( --constel-font-ui );
+	font-size: 0.8125rem;
+	line-height: 1.35;
+}
+
+.constel-refs[ hidden ] {
+	display: none;
+}
+
+.constel-refs__head {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: space-between;
+	gap: var( --constel-s-2 );
+	padding: var( --constel-s-1 ) var( --constel-s-1 ) var( --constel-s-1 ) var( --constel-s-3 );
+	border-bottom: 1px solid var( --constel-hairline-soft );
+	background: var( --constel-surface-sunk );
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+}
+
+.constel-refs__head:active {
+	cursor: grabbing;
+}
+
+.constel-refs__head:focus-visible {
+	outline: 0;
+	box-shadow: inset var( --constel-focus-ring );
+}
+
+.constel-refs__name {
+	min-width: 0;
+	overflow: hidden;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.constel-refs .constel-refs__close {
+	flex: none;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	color: var( --constel-icon );
+}
+
+.constel-refs .constel-refs__close:hover {
+	background: transparent;
+	color: var( --constel-icon-active );
+}
+
+.constel-refs__body {
+	flex: 1;
+	min-height: 0;
+	padding: var( --constel-s-2 ) var( --constel-s-3 ) var( --constel-s-4 );
+	overflow: auto;
+	overscroll-behavior: contain;
+}
+
+.constel-refs__page + .constel-refs__page {
+	margin-top: var( --constel-s-3 );
+}
+
+.constel-refs__title {
+	display: block;
+	font-weight: 600;
+}
+
+/* Líneas de árbol: cada nivel dibuja su conector (│ ├ └) con bordes. */
+.constel-refs__sections,
+.constel-refs__others {
+	margin: 0;
+	padding: 0 0 0 var( --constel-s-2 );
+	list-style: none;
+}
+
+.constel-refs__section,
+.constel-refs__other {
+	position: relative;
+	margin: 0;
+	padding: 2px 0 2px var( --constel-s-4 );
+}
+
+/* Los conceptos de un § cuelgan de su texto, bajo su propio tronco. */
+.constel-refs__others {
+	margin-top: 2px;
+}
+
+.constel-refs__section::before,
+.constel-refs__other::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	border-left: 1px solid var( --constel-hairline );
+}
+
+.constel-refs__section::after,
+.constel-refs__other::after {
+	content: '';
+	position: absolute;
+	top: 0.8em;
+	left: 0;
+	width: var( --constel-s-3 );
+	border-top: 1px solid var( --constel-hairline );
+}
+
+/* El último cierra el tramo vertical en su codo (└). */
+.constel-refs__section:last-child::before,
+.constel-refs__other:last-child::before {
+	bottom: auto;
+	height: 0.8em;
+}
+
+.constel-refs__text {
+	color: var( --constel-link );
+	font-family: var( --constel-font-quote );
+	font-style: italic;
+}
+
+.constel-refs__concept {
+	color: var( --constel-ink-soft );
+	font-size: 0.75rem;
+}
+
+.constel-refs__concept:focus-visible,
+.constel-refs__concept:hover {
+	color: var( --constel-ink );
+	text-decoration: underline;
+}
+
+.constel-refs__note {
+	margin: 0;
+	color: var( --constel-ink-soft );
+	font-style: italic;
+}
+
+.constel-refs__grip {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 22px;
+	height: 22px;
+	background: linear-gradient( 135deg, transparent 55%, var( --constel-hairline ) 55%, var( --constel-hairline ) 62%, transparent 62%, transparent 74%, var( --constel-hairline ) 74%, var( --constel-hairline ) 81%, transparent 81% );
+	cursor: nwse-resize;
+	touch-action: none;
 }

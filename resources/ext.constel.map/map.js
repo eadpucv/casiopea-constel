@@ -19,11 +19,12 @@
  * de la pantalla. La división entre ambos se arrastra (o se mueve con las
  * flechas) y cada navegador recuerda la proporción.
  */
-const { api, icons } = require( 'ext.constel.ui' );
+const { api, icons, device } = require( 'ext.constel.ui' );
 const graph = require( './graph.js' );
 const side = require( './sidepanel.js' );
 const pills = require( './pills.js' );
 const rings = require( './rings.js' );
+const refpanel = require( './refpanel.js' );
 
 const cfg = mw.config.get( 'wgConstelMap' ) || {};
 const me = mw.user.isNamed() ? mw.config.get( 'wgUserName' ) : null;
@@ -181,6 +182,10 @@ function divider( layout ) {
 
 function main( root ) {
 	const pageParam = mw.util.getParamValue( 'page' );
+	// ?concept=Nombre: se llega con ese concepto elegido y al centro, con las
+	// secciones de todos los lectores (lo usa el panel de referencias de las
+	// incrustaciones).
+	const conceptParam = ( mw.util.getParamValue( 'concept' ) || '' ).trim().toLowerCase();
 	const state = {
 		// 2D por defecto: se lee de un vistazo y se arregla a mano; la última
 		// vista elegida se recuerda.
@@ -203,7 +208,7 @@ function main( root ) {
 		scope: 'all',
 		// Lectores del filtro «Secciones de»: quien mira, o «Todos» (ALL_READERS)
 		// para un visitante anónimo.
-		readers: me ? [ me ] : [ ALL_READERS ],
+		readers: me && !conceptParam ? [ me ] : [ ALL_READERS ],
 		readerLabel: ( name ) => name,
 		pages: pageParam ? [ pageParam ] : [],
 		lens: me ? [ me ] : [],
@@ -248,10 +253,37 @@ function main( root ) {
 	// minimize). Se pone en pantalla completa el visor, no el lienzo, para que
 	// el botón siga a mano; Esc también sale.
 	const viewport = el( 'div', 'constel-map__viewport' );
+	let showRefs = () => {};
+	let hideRefs = () => {};
 	viewport.append( canvas, notice );
 	if ( viewport.requestFullscreen ) {
 		const fullscreen = icons.iconButton( 'maximize', mw.msg( 'constellation-fullscreen' ),
 			'constel-button constel-button--icon constel-map__fullscreen' );
+		// Panel flotante de referencias: sólo a pantalla completa, donde el panel
+		// lateral no está (con el lateral a la vista, sobra).
+		let refs = null;
+		const sameTitle = ( a, b ) => a.replace( /_/g, ' ' ) === b.replace( /_/g, ' ' );
+		const refsPanel = () => {
+			refs = refs || refpanel.create( viewport, {
+				filter: ( e ) => ( state.readers.includes( ALL_READERS ) ||
+					state.readers.includes( e.author ) ) &&
+					( !state.pages.length || state.pages.some( ( t ) => sameTitle( t, e.title || '' ) ) ),
+				onPick: ( id ) => {
+					const node = state.data && state.data.nodes.find( ( n ) => n.id === id );
+					if ( node ) {
+						select( node );
+					}
+					return !!node;
+				}
+			} );
+			return refs;
+		};
+		showRefs = ( node ) => {
+			if ( document.fullscreenElement === viewport ) {
+				refsPanel().show( node );
+			}
+		};
+		hideRefs = () => refs && refs.hide();
 		fullscreen.addEventListener( 'click', () => {
 			if ( document.fullscreenElement ) {
 				document.exitFullscreen();
@@ -265,6 +297,11 @@ function main( root ) {
 			fullscreen.replaceChildren( icons.icon( on ? 'minimize' : 'maximize' ) );
 			fullscreen.setAttribute( 'aria-label', label );
 			fullscreen.title = label;
+			if ( !on ) {
+				hideRefs();
+			} else if ( state.selected ) {
+				showRefs( state.selected );
+			}
 		} );
 		viewport.append( fullscreen );
 	}
@@ -533,6 +570,7 @@ function main( root ) {
 	// Navegación del mapa: íconos Lucide con nombre accesible.
 	const zoom = el( 'div', 'constel-map__zoom' );
 	let unpin = null;
+	let copyButton = null;
 	zoom.setAttribute( 'role', 'group' );
 	zoom.setAttribute( 'aria-label', mw.msg( 'constellation-navigation' ) );
 	[ [ 'zoom-in', 'constellation-zoom-in', () => state.view && state.view.zoomIn() ],
@@ -546,10 +584,14 @@ function main( root ) {
 			} );
 			render();
 		} ],
-		[ 'download', 'constellation-export-svg', () => state.view && exportSvg() ]
+		[ 'download', 'constellation-export-svg', () => state.view && exportSvg() ],
+		[ 'copy', 'constellation-copy-embed', () => copyEmbed() ]
 	].forEach( ( [ name, msg, fn ] ) => {
 		const b = icons.iconButton( name, mw.msg( msg ) );
-		b.addEventListener( 'click', fn );
+		b.addEventListener( 'click', () => fn( b ) );
+		if ( name === 'copy' ) {
+			copyButton = b;
+		}
 		zoom.append( b );
 		if ( name === 'rotate-ccw' ) {
 			unpin = b;
@@ -559,6 +601,100 @@ function main( root ) {
 	const syncUnpin = () => {
 		unpin.hidden = state.mode !== '2d' || !state.data.nodes.some( ( n ) => n.pin );
 	};
+
+	/**
+	 * El código `{{#constel: …}}` que reproduce el mapa tal como se ve: lectores,
+	 * páginas, concepto elegido, vista, aristas, palabras o nodos y las fuerzas
+	 * que difieren de las de partida de la incrustación. Los temas no entran
+	 * (la incrustación no los lleva).
+	 *
+	 * @return {string}
+	 */
+	function embedCode() {
+		const parts = [];
+		const chosen = everyone() ? [] : state.readers;
+		if ( chosen.length ) {
+			parts.push( 'usuario=' + chosen.join( ';' ) );
+		}
+		if ( state.pages.length ) {
+			parts.push( 'paginas=' + state.pages.join( ';' ) );
+		}
+		if ( state.selected ) {
+			parts.push( 'concepto=' + state.selected.label );
+		}
+		if ( state.mode === '3d' ) {
+			parts.push( 'modo=3d' );
+			if ( state.autorotate ) {
+				parts.push( 'girar=sí' );
+			}
+		}
+		if ( !state.edges ) {
+			parts.push( 'aristas=no' );
+		}
+		if ( effectiveConcepts() === 'nodes' ) {
+			parts.push( 'conceptos=nodos' );
+		}
+		// Los de partida de la incrustación (embed.js): 25 %, y con varios
+		// lectores traslape 100 % y mismo texto 0 %.
+		const several = chosen.length >= 2;
+		const names = {
+			// eslint-disable-next-line camelcase
+			co_excerpt: 'fuerza-seccion', overlap: 'fuerza-traslape', co_page: 'fuerza-pagina'
+		};
+		Object.keys( names ).forEach( ( kind ) => {
+			let base = DEFAULT_FORCE;
+			if ( several && kind === 'overlap' ) {
+				base = 1;
+			} else if ( several && kind === 'co_page' ) {
+				base = 0;
+			}
+			if ( Math.abs( state.forces[ kind ] - base ) > 0.004 ) {
+				parts.push( names[ kind ] + '=' + Math.round( state.forces[ kind ] * 100 ) );
+			}
+		} );
+		return '{{#constel:' + parts.map( ( part ) => ' ' + part ).join( ' |' ) +
+			( parts.length ? ' ' : '' ) + '}}';
+	}
+
+	// Copia el código de incrustación al portapapeles y lo confirma en el botón.
+	function copyEmbed() {
+		const code = embedCode();
+		const done = ( ok ) => {
+			const label = mw.msg( ok ? 'constellation-copy-done' : 'constellation-copy-failed' );
+			copyButton.replaceChildren( icons.icon( ok ? 'check' : 'copy' ) );
+			copyButton.title = label;
+			copyButton.setAttribute( 'aria-label', label );
+			setTimeout( () => {
+				copyButton.replaceChildren( icons.icon( 'copy' ) );
+				copyButton.title = mw.msg( 'constellation-copy-embed' );
+				copyButton.setAttribute( 'aria-label', mw.msg( 'constellation-copy-embed' ) );
+			}, 2000 );
+			if ( !ok ) {
+				mw.notify( code, { title: label, type: 'warn', autoHide: false } );
+			}
+		};
+		const fallback = () => {
+			const area = el( 'textarea' );
+			area.value = code;
+			area.style.position = 'fixed';
+			area.style.opacity = '0';
+			document.body.append( area );
+			area.select();
+			let ok = false;
+			try {
+				ok = document.execCommand( 'copy' );
+			} catch ( e ) {
+				ok = false;
+			}
+			area.remove();
+			done( ok );
+		};
+		if ( navigator.clipboard && navigator.clipboard.writeText ) {
+			navigator.clipboard.writeText( code ).then( () => done( true ), fallback );
+		} else {
+			fallback();
+		}
+	}
 
 	/**
 	 * Parte segura para un nombre de archivo: minúsculas, sin tildes ni §,
@@ -820,7 +956,9 @@ function main( root ) {
 				themeOf: themeIndex(),
 				conceptColors: conceptColors(),
 				// Prueba: el tema como fondo desenfocado del rótulo; ?wash=0 la apaga.
-				wash: mw.util.getParamValue( 'wash' ) !== '0',
+				wash: mw.util.getParamValue( 'wash' ) !== '0' && !device.isMobile(),
+				// iOS y móviles: sin desenfoque (texto del color del tema) ni animaciones.
+				calm: device.isMobile(),
 				onSelect: select,
 				onArrange: syncUnpin
 			} );
@@ -920,6 +1058,7 @@ function main( root ) {
 
 	function select( node ) {
 		state.selected = node;
+		showRefs( node );
 		if ( state.view ) {
 			state.view.select( node.id );
 		}
@@ -933,6 +1072,7 @@ function main( root ) {
 		back.title = mw.msg( 'constellation-back-to-themes-hint' );
 		back.addEventListener( 'click', () => {
 			state.selected = null;
+			hideRefs();
 			if ( state.view ) {
 				state.view.select( null );
 			}
@@ -1100,7 +1240,13 @@ function main( root ) {
 		} );
 	}
 
-	loadGraph().then( loadThemes );
+	loadGraph().then( loadThemes ).then( () => {
+		const arrived = conceptParam && state.data &&
+			state.data.nodes.find( ( n ) => n.label.toLowerCase() === conceptParam );
+		if ( arrived && state.view ) {
+			select( arrived );
+		}
+	} );
 }
 
 $( () => {
@@ -1111,4 +1257,4 @@ $( () => {
 } );
 
 // Para las pruebas QUnit (la lógica pura del grafo).
-module.exports = { graph, rings };
+module.exports = { graph, rings, refpanel };
