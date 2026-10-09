@@ -42,7 +42,8 @@
 -- sí entró (2026-09-25, pedido del usuario); es presentación del
 -- resaltado, así que vive en el código (minimap.js), no aquí. Incorpora al
 -- instante los §§ nuevos o que ganan conceptos, con una entrada animada
--- (2026-09-26).
+-- (2026-09-26). Sólo su relación con la ventana abierta de un § se fija
+-- aquí (PageReading.MinimapShowsOpenSection, 2026-10-08).
 
 ------------------------------------------------------------
 -- External Entities
@@ -856,6 +857,17 @@ surface PageReading {
         -- Codificar, descodificar y borrar se ofrecen sólo sobre §§
         -- propios (borrar, además, a moderadores).
 
+    @guarantee DeleteIsQuiet
+        -- El borrar de la ventana de un § es una papelera tenue (Lucide
+        -- trash) en la esquina inferior izquierda, que se pone colorada al
+        -- apuntarla o enfocarla; pide confirmación en línea («¿Borrar esta
+        -- sección y sus conceptos?»). Lo ofrecen el autor del § y los
+        -- moderadores, también sobre el § propio en edición, donde Guardar
+        -- queda a la derecha. El mismo control, con la misma confirmación,
+        -- acompaña a cada § en el panel lateral del mapa (ConceptDetail), de
+        -- modo que borrar se ve igual en la lectura y en el mapa (decisión
+        -- 2026-10-09, pedido del usuario).
+
     @guarantee LostNotDrawn
         -- Los §§ perdidos no se dibujan (no hay dónde); viven en
         -- ConceptDetail, MyReading y el mapa.
@@ -865,6 +877,28 @@ surface PageReading {
         -- en una revisión antigua, un diff o una acción que no sea «ver», la
         -- página se muestra sin marcas ni afordancia, porque los §§ se
         -- anclan a la vigente (decisión 2026-09-23).
+
+    @guarantee SectionWindowThread
+        -- La ventana flotante de un § (y la del formulario de un § nuevo) se
+        -- une al texto al que se refiere con una recta de 1 px que termina
+        -- en un punto sobre el borde del texto: horizontal si la ventana
+        -- está al lado (a la derecha o a la izquierda), vertical si está
+        -- debajo o encima; si el § ocupa varias líneas, va a la línea más
+        -- próxima a la ventana. El hilo sigue a la ventana al arrastrarla o
+        -- cambiarle el tamaño y al texto al desplazar la página o al
+        -- reflujar, y no recibe punteros: nunca tapa un clic (decisión
+        -- 2026-10-08, pedido del usuario).
+
+    @guarantee MinimapShowsOpenSection
+        -- Mientras la ventana de un § está abierta, su trazo del minimapa se
+        -- yergue (el mismo estado que al pasar el cursor) y vuelve a su
+        -- tamaño al cerrarla (decisión 2026-10-08, pedido del usuario).
+
+    @guarantee ConceptChipsAreLinks
+        -- Los conceptos de la ventana de un § (también al editar un § propio)
+        -- son enlaces al mapa según ConceptMap.ConceptLinksNeverOpenEveryone,
+        -- con el autor de ese § como lector (decisión 2026-10-08, pedido del
+        -- usuario).
 }
 
 -- Detalle de un concepto (panel de constel: "§ en este texto" / "en otros").
@@ -1201,10 +1235,74 @@ surface ConceptMap {
         -- otros lectores y quitarlos, pero para una cuenta registrada la
         -- lente nunca queda vacía. Sólo los temas propios son editables.
         -- Con los conceptos como palabras (2D y 3D) el color del tema va como
-        -- fondo de una caja desenfocada del tamaño exacto del rótulo, que
-        -- lleva el color del texto; sólo los conceptos con tema la tienen.
+        -- fondo de una caja desenfocada del tamaño exacto del rótulo, con el
+        -- texto en color de tinta; sólo los conceptos con tema la tienen.
+        -- En iOS/iPadOS y móviles táctiles no hay caja desenfocada: el texto
+        -- lleva el color del tema (MobileDropsBlurAndMotion).
         -- Con círculos, el círculo lleva el color. El SVG exportado conserva
         -- el esquema anterior: texto de color, sin fondo (decisión 2026-10-06).
+
+    @guarantee CameraIgnoresSelection
+        -- Elegir un concepto (con un clic, al llegar con ?concept=, desde el
+        -- panel lateral o el de referencias, o en los anillos) o mover una
+        -- fuerza NO mueve el zoom, el desplazamiento ni el centro de la
+        -- vista. El centro es siempre el de la escena completa, también el
+        -- de la rotación en 3D: el mapa entero es el marco estable y la
+        -- elección sólo resalta (decisión 2026-10-08, pedido del usuario).
+        -- La vista de anillos (RingsView) pone al elegido en el centro de
+        -- SU disposición, que es otra vista, no un movimiento de cámara.
+
+    @guarantee MobileDropsBlurAndMotion
+        -- En iOS/iPadOS y en móviles táctiles (sin hover y con puntero
+        -- grueso: hover:none y pointer:coarse) el mapa no pone fondos
+        -- desenfocados detrás de los rótulos ni anima nada (deslizamientos,
+        -- anillos, girar solo): el texto de cada concepto va del color de su
+        -- tema, o del color elegido para el concepto. En los demás
+        -- dispositivos el texto va en color de tinta sobre el tema como fondo
+        -- desenfocado (ThemeLens) (decisión 2026-10-08, pedido del usuario).
+
+    @guarantee ReferencesPanel
+        -- A pantalla completa (Fullscreen API) y en un mapa incrustado
+        -- (EmbeddedMap), elegir un concepto abre un panel flotante con sus
+        -- referencias: por cada página, su título enlazado; bajo él, sus §§
+        -- (el texto cortado a 40 caracteres con «…», enlazado al § sobre la
+        -- página si está anclado); y bajo cada § los demás conceptos que lo
+        -- codifican, como enlaces (ConceptLinksNeverOpenEveryone), todo unido
+        -- con líneas de árbol. Respeta los filtros de lectores y de páginas.
+        -- El panel flota sobre la ventana (fijo, en el cuerpo de la página o
+        -- en el elemento a pantalla completa), se arrastra por su cabecera,
+        -- se redimensiona por su esquina y nunca sale de la ventana; con el
+        -- teclado, las flechas lo mueven y Mayús+flechas lo redimensionan.
+        -- En Especial:Constelación sin pantalla completa no aparece: ahí
+        -- está el panel lateral (ConceptDetail) (decisión 2026-10-08, pedido
+        -- del usuario).
+
+    @guarantee ConceptLinksNeverOpenEveryone
+        -- Todo enlace a un concepto (panel de referencias, ventana de un §
+        -- sobre el texto, píldoras de conceptos de los temas del panel
+        -- lateral) es un enlace real a Especial:Constelación?concept=Nombre
+        -- &users=Autor, con el autor del § (o el dueño del tema) como lector.
+        -- El mapa acepta ?concept= y ?users=A;B (hasta
+        -- config.map_max_readers); sin users abre con los lectores de quien
+        -- mira, y un enlace NUNCA lo abre con «Todos» (el corpus tiene del
+        -- orden de 20.000 §§ y cargarlo entero no tiene sentido). Llegar por
+        -- un enlace elige el concepto sin mover el encuadre
+        -- (CameraIgnoresSelection). En el panel lateral un clic simple elige
+        -- el concepto en el mismo mapa (con modificadores se abre el
+        -- enlace); a pantalla completa el panel de referencias también elige
+        -- en el mismo mapa, y en una incrustación navega al mapa completo
+        -- (decisión 2026-10-08, pedido del usuario).
+
+    @guarantee CopyEmbedCode
+        -- Un botón junto a «Exportar SVG» copia al portapapeles el
+        -- {{#constel: …}} que reproduce el mapa que se ve (EmbeddedMap):
+        -- usuario (salvo con «Todos»), paginas, el concepto elegido, modo=3d
+        -- y girar, aristas=no, conceptos=nodos, y las fuerzas (seccion,
+        -- traslape, pagina) que difieren de las de partida de una
+        -- incrustación (25 %; con varios lectores, traslape 100 y pagina 0).
+        -- No incluye temas ni alto. Sin portapapeles del navegador usa la
+        -- copia clásica y, si también falla, muestra un aviso con el código
+        -- para copiarlo a mano (decisión 2026-10-08, pedido del usuario).
 
     @guarantee GraphIsCached
         -- El grafo se calcula una vez por conjunto de lectores, de páginas y
@@ -1254,8 +1352,9 @@ surface EmbeddedMap {
         -- Todos los parámetros son opcionales y cada uno tiene su valor por
         -- omisión:
         --   · usuario: lectores, separados por «;»; omisión: todos.
-        --   · concepto: el concepto de foco, que se resalta y centra; si no
-        --     está en el mapa se ignora.
+        --   · concepto: el concepto elegido, que se resalta (no se centra:
+        --     CameraIgnoresSelection, decisión 2026-10-08); si no está en el
+        --     mapa se ignora.
         --   · modo: 2d (omisión) o 3d.
         --   · girar: no (omisión); sólo vale en 3d.
         --   · aristas: sí (omisión).
@@ -1279,9 +1378,13 @@ surface EmbeddedMap {
 
     @guarantee EmbedIsReadOnly
         -- Es de sólo lectura para todos, como el mapa para anónimos
-        -- (ReadOnlyForAnonymous): un clic en un concepto sólo lo resalta con
-        -- sus vecinos; no abre paneles, no modera ni anota. Ninguna acción le
-        -- está disponible.
+        -- (ReadOnlyForAnonymous): un clic en un concepto lo resalta con sus
+        -- vecinos y abre el panel de referencias (ConceptMap.ReferencesPanel),
+        -- cuyos conceptos son enlaces al mapa completo
+        -- (ConceptMap.ConceptLinksNeverOpenEveryone). No modera ni anota:
+        -- ninguna acción le está disponible, y sigue sin escribir nada
+        -- (EmbedWritesNothing) (decisión 2026-10-08, pedido del usuario; antes
+        -- un clic sólo resaltaba y no abría paneles).
 
     @guarantee EmbedsAreIndependent
         -- Una página puede llevar varios mapas; cada uno se dibuja y responde

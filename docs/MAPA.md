@@ -34,6 +34,7 @@ pueden ajustarse.
 13. [Medición y decisiones descartadas](#13-medición-y-decisiones-descartadas)
 14. [Íconos y licencia](#14-íconos-y-licencia)
 15. [El mapa en cualquier página: `{{#constel:}}`](#15-el-mapa-en-cualquier-página-constel)
+16. [El panel de referencias y los enlaces a un concepto](#16-el-panel-de-referencias-y-los-enlaces-a-un-concepto)
 
 ## 1. Recorrido rápido
 
@@ -71,7 +72,7 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/square.svg" width="18" alt=""> ⇄ <img src="icons/box.svg" width="18" alt=""> | **Vista plana (2D) ⇄ vista en el espacio (3D)**, un interruptor con un ícono a cada lado | 2D dibuja el mapa en un plano, donde los rótulos nunca se pisan y cada concepto se arrastra. 3D lo dibuja en una esfera que se orbita arrastrando, con niebla en profundidad. Cambiar de vista rehace el layout desde cero, porque 2D y 3D no comparten posiciones | 2D (después, la última elegida) |
 | <img src="icons/rotate-3d.svg" width="18" alt=""> | **Girar solo** (casilla, sólo en 3D) | El mapa 3D gira por sí mismo y se detiene al apuntarlo. Nunca gira con `prefers-reduced-motion` | apagado |
 | <img src="icons/waypoints.svg" width="18" alt=""> | **Mostrar aristas** (interruptor) | Dibuja u oculta las relaciones entre conceptos. Ocultas, la atracción entre conceptos se mantiene | encendido |
-| <img src="icons/type.svg" width="18" alt=""> ⇄ <img src="icons/circle-dot.svg" width="18" alt=""> | **Conceptos como palabras ⇄ como nodos**, un interruptor con un ícono a cada lado | Palabras dibuja cada concepto con su texto, en el color del texto, y el color de su tema va de fondo, en una caja del tamaño exacto del rótulo con un desenfoque de `2.25ex` (sólo los conceptos con tema; en 2D y en 3D; `?wash=0` en la URL la apaga; el SVG exportado conserva el texto de color sin fondo). Nodos lo dibuja como un círculo del color de su tema y de área según su frecuencia, y la palabra aparece al apuntarlo (sección 3) | palabras |
+| <img src="icons/type.svg" width="18" alt=""> ⇄ <img src="icons/circle-dot.svg" width="18" alt=""> | **Conceptos como palabras ⇄ como nodos**, un interruptor con un ícono a cada lado | Palabras dibuja cada concepto con su texto, en el color del texto, y el color de su tema va de fondo, en una caja del tamaño exacto del rótulo con un desenfoque de `2.25ex` (sólo los conceptos con tema; en 2D y en 3D; `?wash=0` en la URL la apaga; el SVG exportado conserva el texto de color sin fondo). **En iOS y móviles táctiles no hay desenfoque** (no lo pintan bien): el texto va del color del tema, sin caja de fondo; ver sección 10. Nodos lo dibuja como un círculo del color de su tema y de área según su frecuencia, y la palabra aparece al apuntarlo (sección 3) | palabras |
 | <img src="icons/section.svg" width="18" alt=""> | **Proximidad: misma sección (§)** (deslizador 0 a 100 %) | Cuánto atrae a dos conceptos que titulan un mismo § y cuán visible es su arista | 25 % |
 | <img src="icons/layers.svg" width="18" alt=""> | **Proximidad: traslape** (deslizador) | Lo mismo para conceptos de secciones de lectores distintos que comparten texto | 25 % |
 | <img src="icons/file-text.svg" width="18" alt=""> | **Proximidad: mismo texto** (deslizador) | Lo mismo para conceptos anotados en una misma página | 25 % |
@@ -81,7 +82,7 @@ puntero encima) y el mismo texto como nombre accesible. Las imágenes de los
 | <img src="icons/rotate-ccw.svg" width="18" alt=""> | **Volver al orden automático** (sólo en 2D, y sólo si hay conceptos movidos a mano) | Suelta los conceptos que se arrastraron y rehace el layout | |
 | <img src="icons/download.svg" width="18" alt=""> | **Exportar el mapa como SVG** | Descarga el mapa tal como se ve (vista, filtros y zoom), con colores, tipografías y el halo de contraste de los textos ya resueltos | |
 | <img src="icons/copy.svg" width="18" alt=""> | **Copiar el código de incrustación** | Copia al portapapeles el `{{#constel: …}}` que reproduce el mapa tal como está: lectores, páginas, concepto elegido, 2D/3D, aristas, palabras o nodos y las fuerzas que difieren de las de partida (los temas no, porque la incrustación no los lleva). El ícono pasa un momento a un visto | |
-| <img src="icons/maximize.svg" width="18" alt=""> / <img src="icons/minimize.svg" width="18" alt=""> | **Pantalla completa del mapa** (esquina del mapa) | Pone sólo el mapa a pantalla completa; Esc sale | |
+| <img src="icons/maximize.svg" width="18" alt=""> / <img src="icons/minimize.svg" width="18" alt=""> | **Pantalla completa del mapa** (esquina del mapa) | Pone sólo el mapa a pantalla completa; Esc sale. Con un concepto elegido, flota sobre él el panel de referencias (sección 16) | |
 
 Las tres fuerzas de proximidad (la cuarta, la de tema, no tiene aristas) se explican en la sección 4; al moverlas el mapa
 reacomoda en vivo (sección 9). En 0 %, el grado no dibuja arista ni atrae.
@@ -471,6 +472,14 @@ Accesibilidad:
   nombre accesible. Los interruptores usan `role="switch"`.
 - `prefers-reduced-motion` apaga el giro automático, el deslizamiento entre
   posiciones, el de los anillos y el latido del texto de carga.
+- **iOS, iPadOS y móviles táctiles** (`ext.constel.ui/device.js`: `navigator.userAgent`
+  o Mac con varios puntos de toque, o `(hover: none) and (pointer: coarse)`) no
+  pintan bien los fondos desenfocados del SVG ni ejecutan con soltura las
+  animaciones. Ahí el mapa se dibuja sin la caja desenfocada (`wash` apagado) y el
+  texto de cada concepto va del color de su tema (o del color que se le eligió),
+  y se comporta como con `prefers-reduced-motion` (`view.calm`): sin deslizamientos,
+  sin giro automático, sin animación de los anillos. En el resto de los
+  dispositivos nada cambia.
 - El mapa respeta el tema claro y oscuro de Stella Nova: todos los colores son tokens
   `--constel-*` sobre `--sn-*`.
 
@@ -526,6 +535,8 @@ páginas.
 | `MAX_READERS` | 8 | lectores en el filtro |
 | `NOTICE_MS` | 12 000 | duración de un aviso sobre el mapa |
 | `RING_RADII`, `RING_QUOTAS` | 115, 215, 315 · 8, 16, 24 | anillos: radio y cupo |
+| `SNIPPET` (`refpanel.js`) | 40 | caracteres del texto de un § en el panel de referencias |
+| `MIN_W`, `MIN_H`, `STEP`, `MARGIN` (`refpanel.js`) | 180, 120, 16, 8 | tamaño mínimo (px), paso del teclado y margen del panel de referencias |
 
 ## 13. Medición y decisiones descartadas
 
@@ -551,6 +562,18 @@ entre dos cajas de texto.
 15 s sin topes (todas las palabras y todas las aristas), entre 2,5 y 3,7 s con los
 topes (layout 1,3 s, `settle` 0,8 s, DOM 0,1 s). El grafo completo de 20 000 §§ llega
 en 252 ms sin caché y en unos 30 ms con ella.
+
+**Centrar la cámara en el concepto elegido: descartado (2026-10-08).** Antes, elegir un
+concepto (o mover una fuerza con uno elegido) llevaba la cámara a su posición y
+reiniciaba el desplazamiento, aunque el contexto no cupiera. Era desorientador y
+inestable: lo que se ve cambia con cada clic. Ahora el encuadre (zoom, desplazamiento
+y centro, también el pivote de la rotación 3D) queda como estaba y el mapa entero es
+el marco estable; el concepto se destaca (negrita, vecinos) sin moverse. Llegar con
+`?concept=` tampoco lo centra.
+
+**Enlaces de concepto a «Todos»: descartado (2026-10-09).** Un enlace a un concepto
+abría el mapa con todos los lectores; con ~20 000 notas eso carga el corpus entero y
+el mapa funciona mal. Los enlaces llevan ahora al autor de la nota (`users=`).
 
 **Choque por la línea de centros: descartado.** Se probó empujar cada par por la
 línea que une sus centros, en vez de por el eje de menor traslape. Quitaba las
@@ -609,7 +632,7 @@ filtros, sin panel lateral, sin moderación.
 | Parámetro | Valores | Por omisión |
 |---|---|---|
 | `usuario` | uno o varios lectores, separados por `;` | todos |
-| `concepto` | concepto de foco: se resalta y se centra (si no existe en el mapa, se ignora) | ninguno |
+| `concepto` | concepto de foco: se resalta (no mueve el encuadre; si no existe en el mapa, se ignora) | ninguno |
 | `modo` | `2d` o `3d` | `2d` |
 | `girar` | `sí` o `no` (sólo en 3D) | `no` |
 | `aristas` | `sí` o `no` | `sí` |
@@ -633,21 +656,73 @@ filtros, sin panel lateral, sin moderación.
   `mw.storage`, y la salida no depende de quién mira: el parser cache la
   conserva igual para todos.
 - Es de sólo lectura. Un clic en un concepto lo selecciona (resalta sus
-  vecinos); no abre el panel, no anota ni modera. Sin temas (`themeOf` vacío),
+  vecinos) y abre el panel de referencias (sección 16); no abre el panel
+  lateral, no anota ni modera. Sin temas (`themeOf` vacío),
   los conceptos no llevan color de tema.
 - Los topes de carga son los de fábrica de `graph.js` (`MAX_LABELS`,
   `MAX_LINKS`), no los de `$wgConstelMapMaxLabels` / `$wgConstelMapMaxDrawnLinks`.
-- **Panel de referencias.** Al elegir un concepto sale un panel flotante
-  (`refpanel.js`) con sus páginas, los textos de sus §§ y los demás conceptos de
-  cada §, unidos por líneas de árbol. Un concepto del panel lleva a `Especial:Constelación?concept=Nombre`:
-  el mapa completo con ese concepto elegido (sin mover el encuadre: el centro
-  es siempre el de la escena completa) y con las secciones de quien anotó
-  (`&users=Autor`; varios, separados por `;`). Nunca abre «Todos»: sin `users`
-  abre con los de quien mira. A pantalla completa en
-  `Especial:Constelación` no navega: elige el concepto en el mismo mapa. El parámetro `?concept=` sirve también como enlace.
+- **Panel de referencias.** Al elegir un concepto sale un panel flotante con sus
+  páginas, §§ y conceptos vecinos; ver sección 16.
 - Sin JavaScript queda un texto que lo explica (`constel-embed-nojs`).
 - **Esquinas.** El lienzo es redondeado como el del mapa completo. En
   Stella Nova, `class=full-width` (o `ancho-completo`) lo lleva a sangre y le
   quita borde y esquinas redondeadas (`resources/stella-nova.css`).
 
 El manual para lectores vive en la wiki: página «Manual de con§tel».
+
+## 16. El panel de referencias y los enlaces a un concepto
+
+Un panel flotante (`resources/ext.constel.map/refpanel.js`) responde «¿dónde está
+este concepto?» sin salir del mapa. Es equivalente a la vista de anillos (un
+concepto y sus vecinos de anillo 1), pero como un menú de enlaces. Sirve al **mapa a
+pantalla completa** (donde no está el panel lateral) y a las **incrustaciones**
+(`{{#constel:}}`). En la página normal de `Especial:Constelación` no aparece: ahí el
+panel lateral ya lista las secciones.
+
+**Contenido**, como un árbol con líneas dibujadas (`│ ├ └`, bordes CSS):
+
+```
+Título de la página                    → enlace a la página
+ ├─ «Texto de la sección, hasta 40…»   → enlace al § (#constel-N, si está anclado)
+ │    └─ otro concepto                 → enlace a ese concepto en el mapa
+ └─ …
+```
+
+- Las páginas van con la de más §§ primero. El texto de cada § se corta a 40
+  caracteres (`SNIPPET`) con «…»; el texto completo está en el tooltip.
+- Respeta los filtros: en el mapa, lectores y páginas del momento; en una incrustación,
+  sus `usuario` y `paginas`.
+
+**Cómo flota.** Se monta en `<body>` con `position: fixed` (o dentro del elemento a
+pantalla completa mientras lo haya, que es la única capa visible en ese modo) y por eso
+puede salirse del marco del mapa; sólo lo limitan los bordes de la ventana. Se arrastra
+por la cabecera y se redimensiona por la esquina (mínimo 180 × 120 px). Con teclado, las
+flechas en la cabecera lo mueven 16 px y Mayús + flechas lo redimensionan. «×» lo cierra;
+elegir otro concepto lo vuelve a abrir. Parte en la esquina superior derecha del mapa.
+
+**Los conceptos son enlaces.** Cada concepto del panel (y, con el mismo criterio, los de
+la ventana de un § sobre el texto y las píldoras de los temas del panel lateral) es un
+`<a>` real:
+
+```
+Especial:Constelación?concept=Nombre&users=Autor
+```
+
+| Parámetro | Qué hace |
+|---|---|
+| `concept` | Elige ese concepto al llegar (sin mover el encuadre). |
+| `users` | Lectores cuyas secciones se ven, separados por `;` (hasta 8). Es el autor del § desde el que se hizo clic, o el dueño del tema. |
+
+- **Nunca abre «Todos».** Con decenas de miles de notas (la wiki local tiene unas 20 700)
+  «Todos» carga el corpus entero. Sin `users` (autor oculto o desconocido) el mapa abre
+  con los de quien mira; sólo un visitante anónimo sin parámetros cae en «Todos», que es
+  el comportamiento de partida del mapa.
+- **Clic simple vs. modificadores** (`ext.constel.ui/links.js`, `isPlainClick`): con
+  Ctrl, Cmd, Mayús, Alt o el botón del medio el navegador abre el enlace (pestaña
+  nueva). Con clic simple: en el panel lateral y en el panel flotante a pantalla
+  completa se elige el concepto **en el mismo mapa** (sin navegar); en una incrustación
+  se navega al mapa completo.
+
+**Dónde está en el código.** `refpanel.js` (`create(host, {filter, onPick})`) lo usan
+`map.js` (a pantalla completa) y `embed.js`; `links.js` arma la dirección; el CSS está
+en `map.css` (`.constel-refs*`).

@@ -74,7 +74,7 @@ flowchart LR
         M["ext.constel.map<br/>grafo 3D/2D · temas"]
         Mi["ext.constel.mine<br/>lista propia"]
         E["ext.constel.embed<br/>{{#constel:}}"]
-        UI["ext.constel.ui<br/>api · panel · autocompletado<br/>variantes · detalle del §"]
+        UI["ext.constel.ui<br/>api · panel · autocompletado<br/>variantes · detalle del § · enlaces · dispositivo"]
         R --> UI
         M --> UI
         Mi --> UI
@@ -624,10 +624,12 @@ Módulos:
 | `menu.js` | reader | El control de lectura del menú de usuario, de tres posiciones como en con§tel: − (sin marcas) · § (solo mis §§) · §* (los de todos); grupo de radios, se recuerda por navegador |
 | `config.json` | reader | Callback PHP: la lista de exclusión y los límites, los mismos del servidor |
 | `api.js` | ui | Llamadas a la API; errores localizados (`errorformat=html`) |
-| `panel.js` | ui | Panel emergente: Escape, clic fuera, foco retenido y devuelto, dentro del viewport |
+| `panel.js` | ui | Panel emergente: Escape, clic fuera, foco retenido y devuelto, dentro del viewport. Si tiene anclaje, lo une al texto con un **hilo** (`connect()`: recta de 1 px y un punto, horizontal o vertical según dónde esté la ventana; sigue ventana y texto con `requestAnimationFrame`, sin punteros). `onClose` avisa al cerrarse |
+| `links.js` | ui | `conceptHref(label, authors)` → `Especial:Constelación?concept=…&users=…` (nunca «Todos») e `isPlainClick(event)` |
+| `device.js` | ui | `isMobile()`: iOS/iPadOS o táctil sin cursor; el mapa apaga el desenfoque y las animaciones |
 | `autocomplete.js` | ui | Combobox ARIA sobre `list=constelconcepts&ccsearch` |
 | `variants.js` | ui | Respuesta común al error `variants` |
-| `detail.js` | ui | Detalle de los §§ bajo un punto. Sobre el propio: conceptos (× en espera), agregar concepto, glosa y **un solo «Guardar»** (avisa si borra el §). Quien modera ve «Borrar» en §§ ajenos |
+| `detail.js` | ui | Detalle de los §§ bajo un punto; sus conceptos son enlaces al mapa con el autor del § (`links.js`). Sobre el propio: conceptos (× en espera), agregar concepto, glosa y **un solo «Guardar»** (avisa si borra el §). Quien modera ve «Borrar» en §§ ajenos |
 
 La UI de con§tel lleva la clase `constel-ui`, que está en la lista de
 exclusión: nunca contamina el texto canónico. Las marcas **no** la llevan,
@@ -846,6 +848,31 @@ contenido de la revisión. En el cliente, `embed.js` reusa `graph.draw` y la
 API `constelgraph`: un mapa de sólo lectura, sin barra ni panel, que no lee las
 preferencias del navegador. Parámetros y detalles en `docs/MAPA.md` (sección 15).
 
+### Panel de referencias y enlaces a un concepto
+
+`refpanel.js` (módulo `ext.constel.map`, exportado como `refpanel`) es un panel
+flotante compartido por el mapa a pantalla completa (`map.js`) y por las
+incrustaciones (`embed.js`, que depende de `ext.constel.map`). Pide los §§ del concepto
+(`list=constelexcerpts&ceconcept`, ya devuelve página, texto, estado y los conceptos de
+cada §), filtra por lectores y páginas, agrupa por página y dibuja un árbol: página →
+§ (40 caracteres) → otros conceptos. Se monta en `<body>` con `position: fixed`, o en el
+elemento a pantalla completa mientras lo haya (`fullscreenchange`), se limita a la
+ventana y no a su anfitrión. En la página normal de `Especial:Constelación` no se
+crea (ya está el panel lateral).
+
+Los conceptos son `<a>` a `Especial:Constelación?concept=…&users=…` (`links.js`). El
+mapa lee `?concept=` y `?users=` (hasta 8, separados por `;`) al arrancar: `users`
+reemplaza el filtro de lectores de partida (quien mira, o «Todos» sólo para un anónimo
+sin parámetros), y `concept` elige el nodo al terminar de cargar, **sin mover el
+encuadre**. Un enlace nunca abre «Todos»: el corpus local tiene unas 20 700 notas. El
+clic simple elige el concepto en el mismo mapa (panel lateral y pantalla completa);
+los modificadores y las incrustaciones navegan.
+
+La cámara (`graph.js`) ya no sigue la selección: `select()` sólo cambia el foco de
+rótulos y aristas, y `setForces` no recentra; sólo «Encuadrar» (`resetView`) mueve la
+cámara, al origen de la escena. En iOS y móviles (`device.js`) `graph.draw` recibe
+`wash: false` y `calm: true`.
+
 ## API
 
 **Escritura** (`ApiConstelWriteBase`): todos los módulos son POST, exigen token
@@ -1049,7 +1076,7 @@ docs/ARCHITECTURE.md          este archivo
 | 0.15.0 | Mis anotaciones y vista de partida | Mis anotaciones: sin columna Estado, exportación CSV, filtro de concepto tolerante, casillas y acciones por lote con modal, paginación y columnas rehechas; enlaces al § mismo (`Página#constel-N`); mapa que parte en 2D con deslizadores al 25 % y recuerda los ajustes del lector |
 | 0.16.0 | El tema de fondo | Con palabras, el color del tema va en una caja desenfocada tras el rótulo (2D y 3D; el SVG exportado conserva el texto de color); halo del texto más fino y translúcido; se retira la lista de vecinos de la vista de anillos |
 | 0.17.0 | Vista del concepto | Fila «Pertenece al tema [×] / asociar» con autocompletado, anillos junto al nombre, «Temas» con ícono, se retira «Ver como lista», nodos encuadrados a pantalla completa, desenfoque, halo y aristas más suaves |
-| _sin publicar_ | Mapa en cualquier página | Parser function `{{#constel:}}` (`ParserHooks`, módulo `ext.constel.embed`), parámetro `class`; «Mis anotaciones» sin texto introductorio |
+| 0.18.0 | Mapa en cualquier página, panel de referencias | Parser function `{{#constel:}}` (`ParserHooks`, módulo `ext.constel.embed`), parámetro `class`; «Mis anotaciones» sin texto introductorio. Cámara estable (elegir no centra); iOS y móviles sin desenfoque ni animaciones; panel flotante de referencias en un árbol con enlaces `?concept=&users=` (nunca «Todos»); botón para copiar el código de incrustación; hilo entre la ventana del § y el texto, y trazo erguido del minimapa |
 
 ### Ideas para más adelante
 

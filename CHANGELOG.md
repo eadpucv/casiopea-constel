@@ -1,6 +1,13 @@
 # Changelog — Casiopea-Con§tel
 
-## Sin publicar
+## 0.18.0 — 2026-10-09
+
+- **Borrar en la ventana del §**: una papelera tenue (Lucide `trash`) en la
+  esquina inferior izquierda, que se pone colorada al apuntarla; reemplaza el
+  botón de texto y también está en el formulario del § propio (Guardar sigue a
+  la derecha). La confirmación en línea no cambia. El panel lateral del mapa
+  lleva la misma papelera bajo cada § (autor y moderadores), así que el borrar es
+  igual en la lectura y en el mapa.
 
 - **Los enlaces de concepto nunca abren «Todos»**: llevan a
   `Especial:Constelación?concept=Nombre&users=Autor`, con las secciones de quien
