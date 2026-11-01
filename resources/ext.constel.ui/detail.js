@@ -72,10 +72,22 @@ function section( excerpt, ctx ) {
 	const by = el( 'p', 'constel-excerpt__by' );
 	if ( mine ) {
 		by.textContent = mw.msg( 'constel-detail-mine' );
+	} else if ( excerpt.author === null ) {
+		by.textContent = mw.msg( 'constel-detail-hidden-user' );
 	} else {
-		by.textContent = excerpt.author === null ?
-			mw.msg( 'constel-detail-hidden-user' ) :
-			mw.msg( 'constel-detail-by', excerpt.author );
+		// Enlace a la página de usuario; si existe un redirect (p. ej. a su
+		// página personal), MediaWiki lo sigue en el click.
+		const parts = mw.msg( 'constel-detail-by', '\u0000' ).split( '\u0000' );
+		const link = el( 'a', 'constel-excerpt__author', excerpt.author );
+		try {
+			link.href = new mw.Title( excerpt.author, 2 ).getUrl();
+		} catch ( e ) {
+			link.href = mw.util.getUrl( 'User:' + excerpt.author );
+		}
+		by.append( document.createTextNode( parts[ 0 ] ), link );
+		if ( parts[ 1 ] ) {
+			by.append( document.createTextNode( parts[ 1 ] ) );
+		}
 	}
 	box.append( by );
 

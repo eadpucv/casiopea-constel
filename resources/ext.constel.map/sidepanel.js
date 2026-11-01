@@ -89,9 +89,25 @@ function conceptDetail( box, node, ctx ) {
 				item.append( el( 'div', 'constel-gloss-text', e.gloss ) );
 			}
 			const cap = el( 'figcaption', 'constel-side__by' );
-			cap.textContent = e.author === ctx.me ? mw.msg( 'constel-detail-mine' ) :
-				e.author === null ? mw.msg( 'constel-detail-hidden-user' ) :
-					mw.msg( 'constel-detail-by', e.author );
+			if ( e.author === ctx.me ) {
+				cap.textContent = mw.msg( 'constel-detail-mine' );
+			} else if ( e.author === null ) {
+				cap.textContent = mw.msg( 'constel-detail-hidden-user' );
+			} else {
+				// Enlace a la página de usuario; si existe un redirect (p. ej. a su
+				// página personal), MediaWiki lo sigue en el click.
+				const parts = mw.msg( 'constel-detail-by', '\u0000' ).split( '\u0000' );
+				const author = el( 'a', 'constel-side__author', e.author );
+				try {
+					author.href = new mw.Title( e.author, 2 ).getUrl();
+				} catch ( err ) {
+					author.href = mw.util.getUrl( 'User:' + e.author );
+				}
+				cap.append( document.createTextNode( parts[ 0 ] ), author );
+				if ( parts[ 1 ] ) {
+					cap.append( document.createTextNode( parts[ 1 ] ) );
+				}
+			}
 			if ( e.title ) {
 				const link = el( 'a', 'constel-side__source', e.title );
 				// Al § mismo, no a la página en general (reader/init.js resuelve el ancla);
