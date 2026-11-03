@@ -365,6 +365,7 @@
 				"constel-form-saving",
 				"constel-form-reload",
 				"constel-trigger-label",
+				"constel-trigger-toolong",
 				"constel-reading-menu",
 				"constel-reading-none",
 				"constel-reading-mine",
@@ -531,7 +532,9 @@
 				"constellation-concept-name",
 				"constellation-merge-with",
 				"constellation-merge-hint",
-				"constellation-unpin"
+				"constellation-unpin",
+				"constellation-excerpt-expand",
+				"constellation-excerpt-collapse"
 			],
 			"dependencies": [
 				"ext.constel.ui",
@@ -595,7 +598,7 @@
 			"description": "Largo mínimo (caracteres, sin espacios extremos) de un pasaje seleccionado."
 		},
 		"ConstelSelectionMaxLength": {
-			"value": 2000,
+			"value": 10000,
 			"description": "Largo máximo (caracteres) de un pasaje seleccionado."
 		},
 		"ConstelAnchorContextLength": {

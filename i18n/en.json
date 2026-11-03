@@ -33,6 +33,7 @@
 	"constel-detail-delete-yes": "Delete",
 	"constel-detail-delete-no": "No",
 	"constel-trigger-label": "con§tel: annotate the selection (Alt+Shift+Enter)",
+	"constel-trigger-toolong": "The selection is too long to annotate.",
 	"constellation": "Con§tel",
 	"constellationsvg": "Constellation SVG",
 	"constellation-svg-invalid": "There is no map to download. Use the download button on [[Special:Constellation]].",
@@ -215,5 +216,7 @@
 	"constellation-concept-name": "Concept name “$1” (edit to rename it for everyone; Enter saves, Esc cancels)",
 	"constellation-merge-with": "Merge “$1” with",
 	"constellation-merge-hint": "Merge: joins this concept with another of the vocabulary; its sections move to the one that stays (moderators only)",
-	"constellation-unpin": "Back to the automatic layout (releases the concepts you moved)"
+	"constellation-unpin": "Back to the automatic layout (releases the concepts you moved)",
+	"constellation-excerpt-expand": "Show more",
+	"constellation-excerpt-collapse": "Show less"
 }

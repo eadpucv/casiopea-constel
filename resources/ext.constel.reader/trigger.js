@@ -46,8 +46,11 @@ function currentSelection( root ) {
 	}
 	const exact = index.slice( start, end );
 	const length = end - start;
-	if ( length < config.selectionMinLength || length > config.selectionMaxLength ) {
+	if ( length < config.selectionMinLength ) {
 		return null;
+	}
+	if ( length > config.selectionMaxLength ) {
+		return { toolong: true };
 	}
 	const context = config.anchorContextLength;
 	return {
@@ -106,6 +109,7 @@ function install( root, onActivate ) {
 	document.body.appendChild( button );
 
 	let pending = null;
+	let tooLongNotified = false;
 
 	const hide = () => {
 		button.hidden = true;
@@ -113,17 +117,31 @@ function install( root, onActivate ) {
 	};
 	const refresh = () => {
 		pending = currentSelection( root );
-		if ( !pending ) {
+		if ( !pending || pending.toolong ) {
+			if ( pending && pending.toolong && !tooLongNotified ) {
+				mw.notify( mw.msg( 'constel-trigger-toolong' ),
+					{ type: 'warn', autoHide: true, autoHideSeconds: 5 } );
+				tooLongNotified = true;
+			}
+			pending = null;
 			button.hidden = true;
 			return;
 		}
+		tooLongNotified = false;
 		const r = pending.rect;
 		button.hidden = false;
-		// Al mostrarse, la tipografía web ya está (o su respaldo): se mide ésa.
 		glyph.style.setProperty( '--constel-trigger-dy', inkShift( glyph ) + 'em' );
 		const size = button.offsetWidth;
 		button.style.left = ( Math.min( r.right + 4, window.innerWidth - size - 8 ) + window.scrollX ) + 'px';
-		button.style.top = ( Math.max( 8, r.top - size - 4 ) + window.scrollY ) + 'px';
+		// Si la selección empieza antes del viewport visible, anclar el §
+		// cerca del final visible de la selección (donde está mirando el
+		// usuario) en vez de arriba, fuera de pantalla.
+		let top = r.top - size - 4;
+		if ( top < 8 ) {
+			top = Math.min( r.bottom + 4, window.innerHeight - size - 8 );
+		}
+		top = Math.max( 8, Math.min( top, window.innerHeight - size - 8 ) );
+		button.style.top = ( top + window.scrollY ) + 'px';
 	};
 	const activate = () => {
 		if ( pending ) {

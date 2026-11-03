@@ -84,7 +84,26 @@ function conceptDetail( box, node, ctx ) {
 		excerpts.forEach( ( e ) => {
 			// Clases: constel-side__excerpt--lost, constel-side__excerpt--frozen
 			const item = el( 'figure', 'constel-side__excerpt' + ( e.status !== 'anchored' ? ' constel-side__excerpt--' + e.status : '' ) );
-			item.append( el( 'blockquote', 'constel-quote', e.exact ) );
+			const quote = el( 'blockquote', 'constel-quote constel-quote--clamped', e.exact );
+			item.append( quote );
+			const toggle = el( 'button', 'constel-button constel-quote__toggle',
+				mw.msg( 'constellation-excerpt-expand' ) );
+			toggle.type = 'button';
+			toggle.hidden = true;
+			toggle.addEventListener( 'click', () => {
+				const clamped = quote.classList.toggle( 'constel-quote--clamped' );
+				toggle.textContent = mw.msg( clamped ?
+					'constellation-excerpt-expand' : 'constellation-excerpt-collapse' );
+			} );
+			quote.after( toggle );
+			// Si el texto cabe sin recorte, quitar el colapso.
+			requestAnimationFrame( () => {
+				if ( quote.scrollHeight <= quote.offsetHeight + 2 ) {
+					quote.classList.remove( 'constel-quote--clamped' );
+				} else {
+					toggle.hidden = false;
+				}
+			} );
 			if ( e.gloss ) {
 				item.append( el( 'div', 'constel-gloss-text', e.gloss ) );
 			}

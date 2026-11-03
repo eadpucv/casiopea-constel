@@ -33,6 +33,7 @@
 	"constel-detail-delete-yes": "Confirms deletion.\n{{Identical|Delete}}",
 	"constel-detail-delete-no": "Cancels deletion.\n{{Identical|No}}",
 	"constel-trigger-label": "Accessible name of the § button shown after selecting text. Mentions the keyboard shortcut.",
+	"constel-trigger-toolong": "Toast notification shown when the user selects text that exceeds the maximum length for annotation.",
 	"constellation": "{{doc-special|Constellation}}\nThe concept map of con§tel.",
 	"constellationsvg": "{{doc-special|ConstellationSvg|unlisted=1}}\nReturns the concept map as an SVG attachment.",
 	"constellation-svg-invalid": "Shown on Special:ConstellationSvg when it is opened without a valid SVG (e.g. directly, not through the map download button).",
@@ -215,5 +216,7 @@
 	"constellation-concept-name": "Accessible name and tooltip of the concept title, editable by moderators. $1: current concept label.",
 	"constellation-merge-with": "Label before the merge target field under the map; the field follows it. $1: label of the selected concept (shown in bold).",
 	"constellation-merge-hint": "Tooltip of the merge icon in the moderation line under the map.",
-	"constellation-unpin": "Tooltip of the 2D map button that releases the concepts pinned by dragging and recomputes the layout."
+	"constellation-unpin": "Tooltip of the 2D map button that releases the concepts pinned by dragging and recomputes the layout.",
+	"constellation-excerpt-expand": "Button to expand a collapsed long excerpt in the map side panel.",
+	"constellation-excerpt-collapse": "Button to collapse an expanded long excerpt in the map side panel."
 }

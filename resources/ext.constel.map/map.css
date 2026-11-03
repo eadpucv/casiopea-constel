@@ -730,6 +730,23 @@ text.constel-graph__node {
 	margin-bottom: var( --constel-s-1 );
 }
 
+.constel-side__excerpt .constel-quote--clamped {
+	max-height: 12em;
+	overflow: hidden;
+	-webkit-mask-image: linear-gradient( to bottom, #000 75%, transparent );
+	mask-image: linear-gradient( to bottom, #000 75%, transparent );
+}
+
+.constel-quote__toggle {
+	padding: 0;
+	border: 0;
+	background: none;
+	box-shadow: none;
+	color: var( --constel-accent );
+	font-size: var( --constel-fs-xs );
+	cursor: pointer;
+}
+
 .constel-side__excerpt--lost .constel-quote {
 	opacity: 0.75;
 }

@@ -33,6 +33,7 @@
 	"constel-detail-delete-yes": "Borrar",
 	"constel-detail-delete-no": "No",
 	"constel-trigger-label": "con§tel: anotar la selección (Alt+Mayús+Intro)",
+	"constel-trigger-toolong": "La selección es demasiado larga para anotar.",
 	"constellation": "Con§tel",
 	"constellationsvg": "SVG de la constelación",
 	"constellation-svg-invalid": "No hay mapa que descargar. Usa el botón de descarga en [[Special:Constellation]].",
@@ -215,5 +216,7 @@
 	"constellation-concept-name": "Nombre del concepto «$1» (edítalo para renombrarlo para todos; Intro guarda, Esc cancela)",
 	"constellation-merge-with": "Fusionar «$1» con",
 	"constellation-merge-hint": "Fusionar: junta este concepto con otro del vocabulario; sus secciones pasan al que queda (sólo moderación)",
-	"constellation-unpin": "Volver al orden automático (suelta los conceptos movidos a mano)"
+	"constellation-unpin": "Volver al orden automático (suelta los conceptos movidos a mano)",
+	"constellation-excerpt-expand": "Ver más",
+	"constellation-excerpt-collapse": "Ver menos"
 }
