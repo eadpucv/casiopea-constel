@@ -14,7 +14,7 @@ use Wikimedia\Rdbms\IConnectionProvider;
  */
 class AuthorFormatter {
 
-	/** @var array<int,array{name:?string,hidden:bool}> */
+	/** @var array<int,array{name:?string,realname:?string,hidden:bool}> */
 	private array $cache = [];
 
 	public function __construct(
@@ -52,27 +52,40 @@ class AuthorFormatter {
 		) {
 			$id = $this->actorStore->findActorId( $identity, $db );
 			$isHidden = isset( $hidden[$id] );
+			$visible = !$isHidden || $seesHidden;
+			$realname = null;
+			if ( $visible ) {
+				$rn = $this->userFactory->newFromUserIdentity( $identity )->getRealName();
+				$realname = $rn !== '' ? $rn : null;
+			}
 			$this->cache[$id] = [
-				'name' => !$isHidden || $seesHidden ? $identity->getName() : null,
+				'name' => $visible ? $identity->getName() : null,
+				'realname' => $realname,
 				'hidden' => $isHidden,
 			];
 		}
 		// Actores que ya no existen: sin nombre y sin ocultar, como antes.
 		foreach ( $need as $id ) {
-			$this->cache[$id] ??= [ 'name' => null, 'hidden' => false ];
+			$this->cache[$id] ??= [ 'name' => null, 'realname' => null, 'hidden' => false ];
 		}
 	}
 
 	/**
-	 * @return array{name:?string,hidden:bool}
+	 * @return array{name:?string,realname:?string,hidden:bool}
 	 */
 	public function format( int $actorId ): array {
 		if ( !isset( $this->cache[$actorId] ) ) {
 			$identity = $this->actorStore->getActorById( $actorId, $this->dbProvider->getReplicaDatabase() );
 			$hidden = $identity && $this->userFactory->newFromUserIdentity( $identity )->isHidden();
 			$visible = $identity && ( !$hidden || $this->viewer->isAllowed( 'hideuser' ) );
+			$realname = null;
+			if ( $visible && $identity ) {
+				$rn = $this->userFactory->newFromUserIdentity( $identity )->getRealName();
+				$realname = $rn !== '' ? $rn : null;
+			}
 			$this->cache[$actorId] = [
 				'name' => $visible ? $identity->getName() : null,
+				'realname' => $realname,
 				'hidden' => $hidden,
 			];
 		}

@@ -78,7 +78,7 @@ function section( excerpt, ctx ) {
 		// Enlace a la página de usuario; si existe un redirect (p. ej. a su
 		// página personal), MediaWiki lo sigue en el click.
 		const parts = mw.msg( 'constel-detail-by', '\u0000' ).split( '\u0000' );
-		const link = el( 'a', 'constel-excerpt__author', excerpt.author );
+		const link = el( 'a', 'constel-excerpt__author', excerpt.authorRealname || excerpt.author );
 		try {
 			link.href = new mw.Title( excerpt.author, 2 ).getUrl();
 		} catch ( e ) {

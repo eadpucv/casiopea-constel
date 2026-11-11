@@ -125,6 +125,7 @@ class ApiQueryConstelExcerpts extends ApiQueryBase {
 			'end' => $e->anchor->end,
 			'gloss' => $e->gloss,
 			'author' => $author['name'],
+			'authorRealname' => $author['realname'],
 			'userhidden' => $author['hidden'],
 			'created' => wfTimestamp( TS_ISO_8601, $e->created ),
 			'concepts' => [],
